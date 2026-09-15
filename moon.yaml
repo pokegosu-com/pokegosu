@@ -1,0 +1,25 @@
+# Repo-wide tasks that belong to no single project — moon calls this a
+# "root-level project". Keep it thin.
+id: 'root'
+layer: 'scaffolding'
+
+# The root would otherwise inherit every task defined in .moon/tasks/.
+workspace:
+  inheritedTasks:
+    include: []
+
+# Formatting is repo-wide: one style, one command. Per-project build, test and
+# typecheck tasks arrive later, in .moon/tasks/.
+tasks:
+  format:
+    description: 'Format the whole repository'
+    command: 'prettier --write .'
+    # Writes files, so it must never be cached or run by `moon ci`.
+    preset: 'utility'
+
+  format-check:
+    description: 'Fail if any file is not formatted'
+    command: 'prettier --check .'
+    # Cache key, and what `moon ci` matches changed files against.
+    inputs:
+      - '**/*'

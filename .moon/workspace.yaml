@@ -4,7 +4,15 @@ projects:
   globs:
     - 'apps/*'
     - 'libs/*/*'
+  sources:
+    root: '.'
 
 vcs:
   defaultBranch: 'main'
   provider: 'github'
+
+hasher:
+  # moon excludes node_modules on its own, but nothing else — not even paths
+  # listed in .gitignore.
+  ignorePatterns:
+    - '**/.moon/cache/**'

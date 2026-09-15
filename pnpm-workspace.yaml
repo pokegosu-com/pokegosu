@@ -1,0 +1,5 @@
+# Only directories holding a package.json count, so Go and Swift apps can sit
+# in apps/ untouched.
+packages:
+  - 'apps/*'
+  - 'libs/ts/*'

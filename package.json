@@ -1,0 +1,9 @@
+{
+  "name": "pokegosu",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.9.6"
+  },
+  "packageManager": "pnpm@12.4.1"
+}
