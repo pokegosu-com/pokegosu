@@ -1,0 +1,3 @@
+# moon config is committed, its cache is not
+.moon/cache/
+.moon/docker/

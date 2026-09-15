@@ -1,0 +1,10 @@
+# A directory is a project only if it holds a moon.yaml, so these globs never
+# sweep in the Go or Swift apps that will sit alongside.
+projects:
+  globs:
+    - 'apps/*'
+    - 'libs/*/*'
+
+vcs:
+  defaultBranch: 'main'
+  provider: 'github'
