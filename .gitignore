@@ -3,3 +3,8 @@ node_modules/
 # moon config is committed, its cache is not
 .moon/cache/
 .moon/docker/
+
+# supabase working directories
+supabase/.branches/
+supabase/.temp/
+supabase/.env

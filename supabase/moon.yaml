@@ -1,0 +1,26 @@
+# The Supabase project: schema, auth and storage configuration, and later
+# edge functions. Language-neutral — every client talks to what it owns.
+id: 'supabase'
+layer: 'application'
+stack: 'backend'
+toolchains:
+  default: 'node'
+
+# Every task here is an imperative command, not a build step. `utility` keeps
+# them out of `moon check` and `moon ci`, so nothing automated can stop the
+# local stack or reach a remote project.
+tasks:
+  start:
+    description: 'Start the local Supabase stack (requires Docker)'
+    command: 'supabase start'
+    preset: 'utility'
+
+  stop:
+    description: 'Stop the local Supabase stack'
+    command: 'supabase stop'
+    preset: 'utility'
+
+  status:
+    description: 'Print local URLs and keys'
+    command: 'supabase status'
+    preset: 'utility'
