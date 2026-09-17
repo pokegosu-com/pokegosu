@@ -281,6 +281,12 @@ importers:
 
   libs/ts/ui: {}
 
+  supabase:
+    devDependencies:
+      supabase:
+        specifier: ^2.117.0
+        version: 2.117.0
+
 packages:
 
   '@alloc/quick-lru@5.3.0':

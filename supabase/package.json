@@ -1,5 +1,8 @@
 {
   "name": "@pokegosu/supabase-project",
   "version": "0.0.0",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "supabase": "^2.117.0"
+  }
 }
