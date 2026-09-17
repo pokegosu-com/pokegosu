@@ -7,6 +7,9 @@ node_modules/
 # build output
 .next/
 
+# rewritten by Next on every build, and differently by `next dev`
+next-env.d.ts
+
 # per-developer environment; .env.example is the committed template
 .env
 .env*.local
