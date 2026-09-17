@@ -24,3 +24,31 @@ tasks:
     description: 'Print local URLs and keys'
     command: 'supabase status'
     preset: 'utility'
+
+  reset:
+    description: 'Drop the local database and replay every migration'
+    command: 'supabase db reset'
+    preset: 'utility'
+
+  diff:
+    description: 'Capture local schema changes as a migration file'
+    command: 'supabase db diff'
+    preset: 'utility'
+
+  # Deploys replay every migration against an empty database; a local one got
+  # its state incrementally and can diverge. This walks the deploy path.
+  #
+  # CI only: it ends in `db reset`, which would wipe a developer's local data.
+  # `moon ci` still skips it unless a migration changed, so a PR that touches
+  # nothing here pulls no images. Starting only the four services the schema
+  # needs costs 2GB instead of 8.5GB.
+  verify:
+    description: 'Apply every migration to a clean database (CI only)'
+    script: >-
+      supabase start -x studio,edge-runtime,logflare,vector,imgproxy,realtime,storage-api,postgres-meta,mailpit,supavisor
+      && supabase db reset
+    inputs:
+      - 'migrations/**/*.sql'
+      - 'config.toml'
+    options:
+      runInCI: 'only'
