@@ -1,0 +1,3 @@
+# prettier already skips node_modules and reads .gitignore, so only committed
+# files that must not be reformatted belong here.
+pnpm-lock.yaml

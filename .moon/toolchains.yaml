@@ -1,0 +1,10 @@
+# The single source of truth for language versions; moon installs them, so no
+# runtime is set up by hand. Go and Swift arrive with their apps.
+javascript:
+  packageManager: 'pnpm'
+
+node:
+  version: '26.8.2'
+
+pnpm:
+  version: '12.4.1'

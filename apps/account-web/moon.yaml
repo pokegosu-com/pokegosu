@@ -1,0 +1,15 @@
+id: 'account-web'
+layer: 'application'
+language: 'typescript'
+stack: 'frontend'
+toolchains:
+  default: 'node'
+tags:
+  - 'nextjs'
+dependsOn:
+  - 'ts-config'
+  - 'ts-supabase'
+  - 'ts-ui'
+
+env:
+  PORT: '3001'

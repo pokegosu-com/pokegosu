@@ -1,0 +1,19 @@
+{
+  "name": "@pokegosu/supabase",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/database.types.ts",
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts"
+  },
+  "devDependencies": {
+    "@pokegosu/config": "workspace:*",
+    "@types/node": "^22.20.3"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0"
+  }
+}

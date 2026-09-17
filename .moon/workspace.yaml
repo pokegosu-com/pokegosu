@@ -1,0 +1,24 @@
+# A directory is a project only if it holds a moon.yaml, so these globs never
+# sweep in the Go or Swift apps that will sit alongside.
+projects:
+  globs:
+    - 'apps/*'
+    - 'libs/*/*'
+  sources:
+    root: '.'
+    supabase: 'supabase'
+
+vcs:
+  defaultBranch: 'main'
+  provider: 'github'
+
+hasher:
+  # moon does not read .gitignore, and its own node_modules exclusion misses
+  # the .bin shims. Everything that must not affect a cache key is listed here
+  # once, for every project.
+  ignorePatterns:
+    - '**/node_modules/**'
+    - '**/.moon/cache/**'
+    - '**/.next/**'
+    - '**/supabase/.branches/**'
+    - '**/supabase/.temp/**'

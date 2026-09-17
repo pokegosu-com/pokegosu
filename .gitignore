@@ -1,0 +1,20 @@
+node_modules/
+
+# moon config is committed, its cache is not
+.moon/cache/
+.moon/docker/
+
+# build output
+.next/
+
+# rewritten by Next on every build, and differently by `next dev`
+next-env.d.ts
+
+# per-developer environment; .env.example is the committed template
+.env
+.env*.local
+
+# supabase working directories
+supabase/.branches/
+supabase/.temp/
+supabase/.env
