@@ -1,0 +1,11 @@
+# Configuration files only — nothing here is typechecked or built. It is a moon
+# project so dependents rebuild when the shared settings change.
+id: 'ts-config'
+layer: 'library'
+language: 'typescript'
+toolchains:
+  default: 'node'
+
+workspace:
+  inheritedTasks:
+    include: []

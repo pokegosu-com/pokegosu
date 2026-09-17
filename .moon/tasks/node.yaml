@@ -1,0 +1,16 @@
+# Inherited by every TypeScript project on the node toolchain. The supabase
+# project is on the node toolchain only so the CLI resolves, and holds no
+# TypeScript, so the language condition keeps this away from it.
+inheritedBy:
+  toolchains: 'node'
+  languages: 'typescript'
+
+tasks:
+  typecheck:
+    command: 'tsc --noEmit'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      # Leading / is workspace-relative. dependsOn alone does not reach a
+      # project with no tasks, so the shared settings go in explicitly.
+      - '/libs/ts/config/tsconfig/base.json'

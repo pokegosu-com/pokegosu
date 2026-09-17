@@ -1,0 +1,17 @@
+id: 'ts-supabase'
+layer: 'library'
+language: 'typescript'
+toolchains:
+  default: 'node'
+dependsOn:
+  - 'ts-config'
+
+tasks:
+  # Reads the running database, not the migration files, so its result cannot
+  # be keyed on them honestly — no caching. Requires `moon run supabase:start`.
+  types:
+    description: 'Regenerate database types from the local database'
+    script: >-
+      supabase gen types typescript --local > src/database.types.ts
+      && prettier --write src/database.types.ts
+    preset: 'utility'

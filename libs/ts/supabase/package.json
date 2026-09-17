@@ -1,0 +1,12 @@
+{
+  "name": "@pokegosu/supabase",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/database.types.ts"
+  },
+  "devDependencies": {
+    "@pokegosu/config": "workspace:*"
+  }
+}
