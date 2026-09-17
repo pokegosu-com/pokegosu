@@ -1,0 +1,14 @@
+id: 'landing-web'
+layer: 'application'
+language: 'typescript'
+stack: 'frontend'
+toolchains:
+  default: 'node'
+tags:
+  - 'nextjs'
+dependsOn:
+  - 'ts-config'
+  - 'ts-ui'
+
+env:
+  PORT: '3000'

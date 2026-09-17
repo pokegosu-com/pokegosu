@@ -3,3 +3,8 @@
 packages:
   - 'apps/*'
   - 'libs/ts/*'
+
+# pnpm blocks postinstall scripts unless listed. unrs-resolver ships a native
+# binary but falls back to JavaScript, and create-next-app declines it too.
+allowBuilds:
+  unrs-resolver: false

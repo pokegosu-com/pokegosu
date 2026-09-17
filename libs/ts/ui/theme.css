@@ -1,0 +1,29 @@
+/* Design tokens shared by every app. Imported after `@import "tailwindcss"`,
+   which turns each --color-* into utilities: bg-surface, text-ink, and so on.
+
+   The raw values live on :root so the dark variant can swap them; @theme inline
+   then points the Tailwind tokens at those variables rather than at fixed
+   colours. */
+
+:root {
+  --surface: oklch(1 0 0);
+  --ink: oklch(0.21 0 0);
+  --muted: oklch(0.55 0 0);
+  --accent: oklch(0.55 0.2 264);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: oklch(0.19 0 0);
+    --ink: oklch(0.97 0 0);
+    --muted: oklch(0.65 0 0);
+    --accent: oklch(0.7 0.16 264);
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+}

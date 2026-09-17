@@ -13,7 +13,12 @@ vcs:
   provider: 'github'
 
 hasher:
-  # moon excludes node_modules on its own, but nothing else — not even paths
-  # listed in .gitignore.
+  # moon does not read .gitignore, and its own node_modules exclusion misses
+  # the .bin shims. Everything that must not affect a cache key is listed here
+  # once, for every project.
   ignorePatterns:
+    - '**/node_modules/**'
     - '**/.moon/cache/**'
+    - '**/.next/**'
+    - '**/supabase/.branches/**'
+    - '**/supabase/.temp/**'

@@ -1,0 +1,51 @@
+# Inherited by every project tagged `nextjs`. Apps declare only what differs:
+# their port and their dependencies.
+inheritedBy:
+  tags: 'nextjs'
+
+fileGroups:
+  app:
+    - 'src/**/*'
+    - 'public/**/*'
+    - 'next.config.ts'
+    - 'postcss.config.mjs'
+    - 'tsconfig.json'
+    - 'eslint.config.mjs'
+    - 'package.json'
+
+tasks:
+  dev:
+    command: 'next dev'
+    preset: 'server'
+
+  build:
+    command: 'next build'
+    inputs:
+      - '@group(app)'
+      - '/libs/ts/config/tsconfig/base.json'
+      - '/libs/ts/config/tsconfig/next.json'
+      - '/libs/ts/ui/theme.css'
+    outputs:
+      - '.next/**/*'
+      - '!.next/cache/**/*'
+
+  start:
+    command: 'next start'
+    preset: 'server'
+    deps:
+      - 'build'
+
+  # Overrides the plain `tsc --noEmit` from node.yaml: PageProps and LayoutProps
+  # are generated into .next/types, so they do not exist until typegen has run.
+  typecheck:
+    script: 'next typegen && tsc --noEmit'
+    inputs:
+      - '@group(app)'
+      - '/libs/ts/config/tsconfig/base.json'
+      - '/libs/ts/config/tsconfig/next.json'
+
+  lint:
+    command: 'eslint'
+    inputs:
+      - '@group(app)'
+      - '/libs/ts/config/eslint/next.mjs'
