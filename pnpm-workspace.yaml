@@ -3,6 +3,7 @@
 packages:
   - 'apps/*'
   - 'libs/ts/*'
+  - 'supabase'
 
 # pnpm blocks postinstall scripts unless listed. unrs-resolver ships a native
 # binary but falls back to JavaScript, and create-next-app declines it too.
