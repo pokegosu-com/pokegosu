@@ -15,6 +15,12 @@ create table public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- New tables are not exposed to the Data API automatically, so privileges are
+-- written out here. `anon` and `service_role` get none: nothing signed out
+-- reads this table and no code path holds a secret key. INSERT keeps the
+-- matching policy reachable, though only the trigger below creates rows.
+grant select, insert, update on public.profiles to authenticated;
+
 -- auth.uid() is wrapped in a subquery so Postgres evaluates it once per
 -- statement rather than once per row.
 create policy "owners can read their profile"
