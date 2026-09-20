@@ -1,5 +1,9 @@
 # Inherited by every project tagged `nextjs`. Apps declare only what differs:
-# their port and their dependencies.
+# their dev port and their dependencies.
+#
+# These apps run on Cloudflare Workers through vinext, so `vinext build` is the
+# artifact and `next build` is not on the deploy path. `next dev` still works
+# from each app's own package.json script — vinext init left it alone.
 inheritedBy:
   tags: 'nextjs'
 
@@ -8,6 +12,8 @@ fileGroups:
     - 'src/**/*'
     - 'public/**/*'
     - 'next.config.ts'
+    - 'vite.config.ts'
+    - 'wrangler.jsonc'
     - 'postcss.config.mjs'
     - 'tsconfig.json'
     - 'eslint.config.mjs'
@@ -15,22 +21,23 @@ fileGroups:
 
 tasks:
   dev:
-    command: 'next dev'
+    command: 'vinext dev'
     preset: 'server'
 
   build:
-    command: 'next build'
+    command: 'vinext build'
     inputs:
       - '@group(app)'
       - '/libs/ts/config/tsconfig/base.json'
       - '/libs/ts/config/tsconfig/next.json'
       - '/libs/ts/ui/theme.css'
     outputs:
-      - '.next/**/*'
-      - '!.next/cache/**/*'
+      - 'dist/**/*'
 
+  # Runs the built Worker on the real Workers runtime rather than a Node
+  # server, so what is exercised locally is what Cloudflare executes.
   start:
-    command: 'next start'
+    command: 'wrangler dev --config dist/server/wrangler.json'
     preset: 'server'
     deps:
       - 'build'
@@ -49,3 +56,13 @@ tasks:
     inputs:
       - '@group(app)'
       - '/libs/ts/config/eslint/next.mjs'
+
+  # `utility` keeps this out of `moon check` and `moon ci`, so no automated run
+  # can reach Cloudflare. The deploy workflow invokes it explicitly, which
+  # `runInCI: false` does not block.
+  deploy:
+    description: 'Build and deploy this app to Cloudflare Workers'
+    command: 'vinext-cloudflare deploy --config dist/server/wrangler.json'
+    preset: 'utility'
+    deps:
+      - 'build'

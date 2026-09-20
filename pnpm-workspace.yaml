@@ -7,5 +7,9 @@ packages:
 
 # pnpm blocks postinstall scripts unless listed. unrs-resolver ships a native
 # binary but falls back to JavaScript, and create-next-app declines it too.
+# esbuild and workerd have no fallback: Vite bundles with the first, and
+# `wrangler dev` runs the Workers runtime out of the second.
 allowBuilds:
+  esbuild: true
   unrs-resolver: false
+  workerd: true

@@ -6,6 +6,10 @@ node_modules/
 
 # build output
 .next/
+# vinext build output and its local Workers state
+dist/
+.vinext/
+.wrangler/
 
 # rewritten by Next on every build, and differently by `next dev`
 next-env.d.ts
