@@ -13,3 +13,8 @@ dependsOn:
 
 env:
   PORT: '3001'
+
+tasks:
+  # vinext dev is Vite underneath and ignores PORT, so it is passed.
+  dev:
+    args: ['--port', '3001']
