@@ -1,12 +1,11 @@
 name: 'CD'
 
 # Pushing a version tag ships every app at that version, and the GitHub release
-# is published only once they are all live. To redeploy or roll back, run this
-# workflow by hand and pick an older tag under "Use workflow from".
+# is published only once they are all live. The `production` environment only
+# admits `v*` tags, so nothing else can reach its secrets.
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
-  workflow_dispatch:
 
 # One deploy at a time, and never cut one short halfway through.
 concurrency:
@@ -16,12 +15,8 @@ concurrency:
 jobs:
   # Every moon project tagged `nextjs` is a Worker, so a new app joins the
   # release by existing rather than by being listed here.
-  #
-  # A manual run can be started from a branch; only version tags ship, and
-  # every later job waits on this one.
   plan:
     name: 'Plan'
-    if: "startsWith(github.ref, 'refs/tags/v')"
     runs-on: 'ubuntu-latest'
     outputs:
       apps: '${{ steps.apps.outputs.apps }}'
@@ -107,12 +102,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
           NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
 
-  # A release exists only for a version that is live. A manual redeploy of an
-  # older tag already has one.
+  # A release exists only for a version that is live.
   release:
     name: 'Release'
     needs: 'deploy'
-    if: "github.event_name == 'push'"
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'write'
