@@ -1,7 +1,9 @@
+import { env } from '@/env'
+
 // Inlined at build time, so the page stays static. The account app decides what
 // to do with a visitor who is already signed in, which is why this link does
 // not need to know anything about the session.
-const accountUrl = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? 'http://localhost:3001'
+const accountUrl = env.NEXT_PUBLIC_ACCOUNT_URL
 
 export default function Home() {
   return (

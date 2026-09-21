@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/database.types.ts",
     "./client": "./src/client.ts",
+    "./env": "./src/env.ts",
     "./server": "./src/server.ts"
   },
   "devDependencies": {
@@ -14,6 +15,8 @@
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.116.0",
+    "@t3-oss/env-nextjs": "^0.13.11",
+    "zod": "^4.6.5"
   }
 }
