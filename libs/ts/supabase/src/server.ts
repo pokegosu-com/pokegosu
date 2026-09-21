@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 import type { Database } from './database.types'
-import { readSupabaseEnv, type SupabaseEnv } from './env'
+import { supabaseEnv as env } from './env'
 
 // Re-exported so apps can name Supabase's types without depending on
 // @supabase/supabase-js directly, which pnpm would reject as a phantom.
@@ -24,14 +24,15 @@ export type ServerClient = ReturnType<typeof createServerClient<Database>>
 
 /** Return type is written out: pnpm's isolated node_modules leaves the inferred
  *  Supabase types unnameable from a consuming package. */
-export function createClient(
-  cookies: CookieStore,
-  overrides: Partial<SupabaseEnv> = {},
-): ServerClient {
-  const env = readSupabaseEnv(overrides)
-
-  return createServerClient<Database>(env.url, env.publishableKey, {
-    cookies,
-    cookieOptions: env.cookieDomain ? { domain: env.cookieDomain } : undefined,
-  })
+export function createClient(cookies: CookieStore): ServerClient {
+  return createServerClient<Database>(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    {
+      cookies,
+      cookieOptions: env.NEXT_PUBLIC_COOKIE_DOMAIN
+        ? { domain: env.NEXT_PUBLIC_COOKIE_DOMAIN }
+        : undefined,
+    },
+  )
 }

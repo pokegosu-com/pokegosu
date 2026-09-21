@@ -25,4 +25,8 @@ jobs:
       # from .moon/toolchains.yaml.
       - uses: 'moonrepo/setup-toolchain@v0'
 
+      # Builds here only check the code, so they run without production
+      # NEXT_PUBLIC_* values. A deploy workflow must never set this.
       - run: 'moon ci'
+        env:
+          SKIP_ENV_VALIDATION: '1'
