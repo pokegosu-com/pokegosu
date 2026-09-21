@@ -1,0 +1,149 @@
+name: 'CD'
+
+# Pushing a version tag ships every app at that version, and the GitHub release
+# is published only once they are all live. To redeploy or roll back, run this
+# workflow by hand and pick an older tag under "Use workflow from".
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+
+# One deploy at a time, and never cut one short halfway through.
+concurrency:
+  group: 'cd'
+  cancel-in-progress: false
+
+jobs:
+  # Every moon project tagged `nextjs` is a Worker, so a new app joins the
+  # release by existing rather than by being listed here.
+  #
+  # A manual run can be started from a branch; only version tags ship, and
+  # every later job waits on this one.
+  plan:
+    name: 'Plan'
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    runs-on: 'ubuntu-latest'
+    outputs:
+      apps: '${{ steps.apps.outputs.apps }}'
+    steps:
+      - uses: 'actions/checkout@v7'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      - id: 'apps'
+        run: |
+          apps=$(moon query projects 'tag=nextjs' | jq -c '[.projects[] | {id, source}]')
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+
+  # One runner per app, so eight apps take as long as the slowest one. Each
+  # build validates the app's NEXT_PUBLIC_* schema with production values;
+  # there is no .env.local here, and SKIP_ENV_VALIDATION stays unset.
+  build:
+    name: 'Build ${{ matrix.app.id }}'
+    needs: 'plan'
+    runs-on: 'ubuntu-latest'
+    environment: 'production'
+    strategy:
+      matrix:
+        app: '${{ fromJSON(needs.plan.outputs.apps) }}'
+    steps:
+      - uses: 'actions/checkout@v7'
+        with:
+          # moon reads git history when it runs tasks; a shallow clone fails.
+          fetch-depth: 0
+          filter: 'blob:none'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      # Every app gets every variable; each schema reads only its own.
+      - run: 'moon run ${{ matrix.app.id }}:build'
+        env:
+          NEXT_PUBLIC_ACCOUNT_URL: '${{ vars.NEXT_PUBLIC_ACCOUNT_URL }}'
+          NEXT_PUBLIC_SUPABASE_URL: '${{ vars.NEXT_PUBLIC_SUPABASE_URL }}'
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
+          NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
+      - uses: 'actions/upload-artifact@v7'
+        with:
+          name: 'dist-${{ matrix.app.id }}'
+          path: '${{ matrix.app.source }}/dist'
+          if-no-files-found: 'error'
+          # dist/server/.vite holds the build manifest.
+          include-hidden-files: true
+
+  # Migrations must replay onto an empty database before a release can ship.
+  verify-supabase:
+    name: 'Verify migrations'
+    needs: 'plan'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: 'actions/checkout@v7'
+        with:
+          # moon reads git history when it runs tasks; a shallow clone fails.
+          fetch-depth: 0
+          filter: 'blob:none'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      - run: 'moon run supabase:verify'
+
+  # Starts only once every build has passed, so what remains to fail is an
+  # upload. If one does, the apps already shipped are rolled back, leaving
+  # every app on the previous release.
+  deploy:
+    name: 'Deploy'
+    needs: ['plan', 'build', 'verify-supabase']
+    runs-on: 'ubuntu-latest'
+    environment: 'production'
+    steps:
+      - uses: 'actions/checkout@v7'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      # moon installs the Node and pnpm from .moon/toolchains.yaml but keeps
+      # them off PATH; `moon bin` says where they are.
+      - run: |
+          moon setup
+          dirname "$(moon bin node)" >> "$GITHUB_PATH"
+          dirname "$(moon bin pnpm)" >> "$GITHUB_PATH"
+      - run: 'pnpm install --frozen-lockfile'
+      - uses: 'actions/download-artifact@v8'
+        with:
+          pattern: 'dist-*'
+      - name: 'Deploy every app'
+        run: |
+          deployed=()
+          rollback() {
+            for id in "${deployed[@]}"; do
+              echo "::warning::Rolling back ${id}"
+              source=$(jq -r --arg id "$id" '.[] | select(.id == $id) | .source' <<< "$APPS")
+              pnpm --dir "$source" exec wrangler rollback --name "$id" \
+                --message "${GITHUB_REF_NAME} did not finish deploying" --yes \
+                || echo "::error::Rolling back ${id} failed; it is still on ${GITHUB_REF_NAME}."
+            done
+          }
+          while read -r id source; do
+            rm -rf "${source}/dist"
+            mv "dist-${id}" "${source}/dist"
+            # The build above is what ships. vinext-cloudflare still prerenders
+            # here, which loads the env schema, so the variables come along.
+            if ! pnpm --dir "$source" run deploy:vinext --skip-build; then
+              echo "::error::${id} failed to deploy."
+              rollback
+              exit 1
+            fi
+            deployed+=("$id")
+          done < <(jq -r '.[] | "\(.id) \(.source)"' <<< "$APPS")
+        env:
+          APPS: '${{ needs.plan.outputs.apps }}'
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
+          NEXT_PUBLIC_ACCOUNT_URL: '${{ vars.NEXT_PUBLIC_ACCOUNT_URL }}'
+          NEXT_PUBLIC_SUPABASE_URL: '${{ vars.NEXT_PUBLIC_SUPABASE_URL }}'
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
+          NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
+
+  # A release exists only for a version that is live. A manual redeploy of an
+  # older tag already has one.
+  release:
+    name: 'Release'
+    needs: 'deploy'
+    if: "github.event_name == 'push'"
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'write'
+    steps:
+      - run: 'gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes'
+        env:
+          GH_TOKEN: '${{ github.token }}'
