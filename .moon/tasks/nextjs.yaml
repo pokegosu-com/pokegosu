@@ -31,6 +31,8 @@ tasks:
       - '/libs/ts/config/tsconfig/base.json'
       - '/libs/ts/config/tsconfig/next.json'
       - '/libs/ts/ui/theme.css'
+      - '/libs/ts/ui/src/**/*'
+      - '/libs/ts/config/version.ts'
     outputs:
       - 'dist/**/*'
 
