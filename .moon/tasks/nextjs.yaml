@@ -56,17 +56,3 @@ tasks:
     inputs:
       - '@group(app)'
       - '/libs/ts/config/eslint/next.mjs'
-
-  # There is deliberately no `deps: ['build']`. `vinext-cloudflare deploy`
-  # always runs its own build, so a moon build would be thrown away — and moon
-  # caches `build` on input files alone, so it could restore output inlined
-  # with another environment's NEXT_PUBLIC_* values. The deploy's own build
-  # validates them through each app's env schema.
-  #
-  # `utility` keeps this out of `moon check` and `moon ci`, so no automated run
-  # can reach Cloudflare. It also makes moon drop the task whenever `CI` is set,
-  # so a workflow runs `pnpm --filter <pkg> run deploy:vinext` instead.
-  deploy:
-    description: 'Build and deploy this app to Cloudflare Workers'
-    command: 'vinext-cloudflare deploy --config dist/server/wrangler.json'
-    preset: 'utility'
