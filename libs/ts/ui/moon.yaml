@@ -1,5 +1,5 @@
-# Design tokens only. Like ts-config it carries no tasks; apps pull theme.css in
-# through their own build inputs.
+# Design tokens and shared components. Like ts-config it carries no tasks; apps
+# pull these in through their own build inputs and typecheck them as imports.
 id: 'ts-ui'
 layer: 'library'
 language: 'typescript'

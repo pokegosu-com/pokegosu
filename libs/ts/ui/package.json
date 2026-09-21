@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    "./theme.css": "./theme.css"
+    "./theme.css": "./theme.css",
+    "./version-footer": "./src/version-footer.tsx"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0"
   }
 }

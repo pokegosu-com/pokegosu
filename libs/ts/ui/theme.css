@@ -5,6 +5,11 @@
    then points the Tailwind tokens at those variables rather than at fixed
    colours. */
 
+/* Points Tailwind at this package's components. Apps reach it through
+   node_modules, which Tailwind skips, and a plain './src' resolves through
+   that path too; spelling it from the repo root reaches the real directory. */
+@source '../../../libs/ts/ui/src';
+
 :root {
   --surface: oklch(1 0 0);
   --ink: oklch(0.21 0 0);

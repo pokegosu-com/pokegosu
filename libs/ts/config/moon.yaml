@@ -1,4 +1,5 @@
-# Configuration files only — nothing here is typechecked or built. It is a moon
+# Configuration files and the build-time version resolver — nothing here is
+# typechecked or built on its own. It is a moon
 # project so dependents rebuild when the shared settings change.
 id: 'ts-config'
 layer: 'library'
