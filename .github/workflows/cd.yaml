@@ -28,37 +28,9 @@ jobs:
           apps=$(moon query projects 'tag=nextjs' | jq -c '[.projects[] | {id, source}]')
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
 
-  # One runner per app, so eight apps take as long as the slowest one. Each
-  # build validates the app's NEXT_PUBLIC_* schema with production values;
-  # there is no .env.local here, and SKIP_ENV_VALIDATION stays unset. Nothing
-  # deploys until every app has built.
-  build:
-    name: 'Build ${{ matrix.app.id }}'
-    needs: 'plan'
-    runs-on: 'ubuntu-latest'
-    environment: 'production'
-    strategy:
-      matrix:
-        app: '${{ fromJSON(needs.plan.outputs.apps) }}'
-    steps:
-      - uses: 'actions/checkout@v7'
-        with:
-          # moon reads git history when it runs tasks; a shallow clone fails.
-          fetch-depth: 0
-          filter: 'blob:none'
-      - uses: 'moonrepo/setup-toolchain@v0'
-      # Every app gets every variable; each schema reads only its own.
-      - run: 'moon run ${{ matrix.app.id }}:build'
-        env:
-          NEXT_PUBLIC_ACCOUNT_URL: '${{ vars.NEXT_PUBLIC_ACCOUNT_URL }}'
-          NEXT_PUBLIC_SUPABASE_URL: '${{ vars.NEXT_PUBLIC_SUPABASE_URL }}'
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
-          NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
-
   # Migrations must replay onto an empty database before a release can ship.
   verify-supabase:
     name: 'Verify migrations'
-    needs: 'plan'
     runs-on: 'ubuntu-latest'
     steps:
       - uses: 'actions/checkout@v7'
@@ -69,14 +41,14 @@ jobs:
       - uses: 'moonrepo/setup-toolchain@v0'
       - run: 'moon run supabase:verify'
 
-  # Starts only once every build and the migration check have passed, so what
-  # remains to fail is an upload. Workers cannot be swapped together anyway, so
-  # each app deploys on its own runner, building afresh inside
-  # vinext-cloudflare. A failed app is retried by rerunning its job; the others
-  # are left to finish rather than cut off halfway.
+  # One runner per app, so eight apps take as long as the slowest one. Each
+  # deploy builds afresh inside vinext-cloudflare, which validates the app's
+  # NEXT_PUBLIC_* schema with production values; there is no .env.local here,
+  # and SKIP_ENV_VALIDATION stays unset. A failing app stops before its upload
+  # without holding the others back, and is retried by rerunning its job.
   deploy:
     name: 'Deploy ${{ matrix.app.id }}'
-    needs: ['plan', 'build', 'verify-supabase']
+    needs: ['plan', 'verify-supabase']
     runs-on: 'ubuntu-latest'
     environment: 'production'
     strategy:
@@ -93,6 +65,7 @@ jobs:
           dirname "$(moon bin node)" >> "$GITHUB_PATH"
           dirname "$(moon bin pnpm)" >> "$GITHUB_PATH"
       - run: 'pnpm install --frozen-lockfile'
+      # Every app gets every variable; each schema reads only its own.
       - run: 'pnpm --dir ${{ matrix.app.source }} run deploy:vinext'
         env:
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
