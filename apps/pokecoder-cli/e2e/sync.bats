@@ -10,6 +10,16 @@
 # Each test gets its own account, machine and settings file, so they can be
 # run in any order or one at a time.
 
+setup_file() {
+    load helpers/server
+    start_service
+}
+
+teardown_file() {
+    load helpers/server
+    stop_service
+}
+
 setup() {
     load helpers/server
     load helpers/client
@@ -26,7 +36,7 @@ setup() {
     USER_ID=$ACCOUNT_USER_ID
     SESSION=$ACCOUNT_SESSION
 
-    pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" \
+    pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
         --device-name sync-test > /dev/null
     DEVICE=$(setting device_id)
 }
@@ -93,7 +103,7 @@ sync_fixture() {
     first=$DEVICE
 
     use_settings "$BATS_TEST_TMPDIR/second.json"
-    pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" \
+    pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
         --device-name second > /dev/null
     second=$(setting device_id)
     [ "$second" != "$first" ]

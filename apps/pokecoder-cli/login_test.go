@@ -9,11 +9,35 @@ import (
 	"github.com/pokegosu-com/pokegosu/apps/pokecoder-cli/internal/config"
 )
 
-func TestSettingsNeedsAServer(t *testing.T) {
-	if _, err := settings(&config.Config{}, "", ""); err == nil {
-		t.Fatal("settings succeeded with no server given")
-	} else if !strings.Contains(err.Error(), "--url") {
-		t.Errorf("error %q does not say which flag is missing", err)
+func TestSettingsDefaultsToTheService(t *testing.T) {
+	got, err := settings(&config.Config{}, "", "laptop")
+	if err != nil {
+		t.Fatalf("settings: %v", err)
+	}
+	if got.URL != defaultURL {
+		t.Errorf("URL = %q, want the default %q", got.URL, defaultURL)
+	}
+}
+
+// The service a machine was enrolled with wins over the default, and --url
+// wins over both.
+func TestSettingsPrefersTheFlagThenTheStoredService(t *testing.T) {
+	stored := &config.Config{URL: "https://coder.self-hosted.example"}
+
+	got, err := settings(stored, "", "laptop")
+	if err != nil {
+		t.Fatalf("settings: %v", err)
+	}
+	if got.URL != stored.URL {
+		t.Errorf("URL = %q, want the stored service kept", got.URL)
+	}
+
+	got, err = settings(stored, "http://localhost:3002/", "laptop")
+	if err != nil {
+		t.Fatalf("settings: %v", err)
+	}
+	if got.URL != "http://localhost:3002" {
+		t.Errorf("URL = %q, want the flag, without its trailing slash", got.URL)
 	}
 }
 
@@ -21,7 +45,7 @@ func TestSettingsNeedsAServer(t *testing.T) {
 // still describe the same machine rather than a new one.
 func TestSettingsKeepsTheMachinesOwnId(t *testing.T) {
 	stored := &config.Config{
-		APIURL:     "https://example.supabase.co",
+		URL:        "https://coder.example.com",
 		DeviceID:   "550e8400-e29b-41d4-a716-446655440000",
 		DeviceName: "laptop",
 	}
@@ -33,8 +57,8 @@ func TestSettingsKeepsTheMachinesOwnId(t *testing.T) {
 	if got.DeviceID != stored.DeviceID {
 		t.Errorf("DeviceID = %q, want the stored id kept", got.DeviceID)
 	}
-	if got.APIURL != stored.APIURL {
-		t.Errorf("APIURL = %q, want the stored server kept", got.APIURL)
+	if got.URL != stored.URL {
+		t.Errorf("URL = %q, want the stored service kept", got.URL)
 	}
 	if got.DeviceName != "workstation" {
 		t.Errorf("DeviceName = %q, want the flag to win", got.DeviceName)
@@ -45,7 +69,7 @@ func TestSettingsKeepsTheMachinesOwnId(t *testing.T) {
 }
 
 func TestSettingsMakesAnIdWhenThereIsNone(t *testing.T) {
-	got, err := settings(&config.Config{}, "https://example.supabase.co", "laptop")
+	got, err := settings(&config.Config{}, "https://coder.example.com", "laptop")
 	if err != nil {
 		t.Fatalf("settings: %v", err)
 	}
@@ -60,7 +84,7 @@ func TestSettingsDefaultsTheNameToTheHostname(t *testing.T) {
 		t.Skip("no hostname to default to")
 	}
 
-	got, err := settings(&config.Config{}, "https://example.supabase.co", "")
+	got, err := settings(&config.Config{}, "https://coder.example.com", "")
 	if err != nil {
 		t.Fatalf("settings: %v", err)
 	}
@@ -84,6 +108,7 @@ func TestSettingsRejectsAURLWithoutAScheme(t *testing.T) {
 // a sync cannot run, and the machine is better off enrolling.
 func TestEnrolledNeedsEverything(t *testing.T) {
 	full := config.Config{
+		URL:      "https://coder.example.com",
 		APIURL:   "https://example.supabase.co",
 		APIKey:   "pkt_secret",
 		DeviceID: "550e8400-e29b-41d4-a716-446655440000",
@@ -93,9 +118,10 @@ func TestEnrolledNeedsEverything(t *testing.T) {
 	}
 
 	for name, blank := range map[string]func(*config.Config){
-		"no server": func(c *config.Config) { c.APIURL = "" },
-		"no key":    func(c *config.Config) { c.APIKey = "" },
-		"no id":     func(c *config.Config) { c.DeviceID = "" },
+		"no service": func(c *config.Config) { c.URL = "" },
+		"no API":     func(c *config.Config) { c.APIURL = "" },
+		"no key":     func(c *config.Config) { c.APIKey = "" },
+		"no id":      func(c *config.Config) { c.DeviceID = "" },
 	} {
 		partial := full
 		blank(&partial)

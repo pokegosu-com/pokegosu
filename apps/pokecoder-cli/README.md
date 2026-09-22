@@ -4,11 +4,19 @@ Collects coding agent token usage from every machine you work on, into one accou
 
 ## Using it
 
-Ask the web to add a machine, then run this on it and type in the code it shows:
+Open pokecoder on the web, choose "add a machine", then run this on the machine and type in the code it shows:
 
 ```sh
-pokecoder login --url https://<project>.supabase.co
+pokecoder login
 ```
+
+That enrols with the default service, `https://coder.pokegosu.com`. For any other deployment, give the address you sign in at; the web's "add a machine" page shows the command with it filled in:
+
+```sh
+pokecoder login --url https://coder.example.com
+```
+
+`login` asks that address where its API is (`/.well-known/pokecoder.json`), so the backend's own address never needs to be known or typed.
 
 Then let a scheduler run it. There is no daemon: one pass takes seconds.
 

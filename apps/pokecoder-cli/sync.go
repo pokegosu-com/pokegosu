@@ -121,7 +121,7 @@ func runSync(args []string) error {
 		return explainSync(sendErr)
 	}
 	if !*quiet {
-		fmt.Printf("sent %s to %s\n", count(len(sent), "bucket", "buckets"), cfg.APIURL)
+		fmt.Printf("sent %s to %s\n", count(len(sent), "bucket", "buckets"), cfg.URL)
 	}
 	return nil
 }

@@ -16,6 +16,10 @@ import (
 // in the repository shows. A plain go build says dev.
 var version = "dev"
 
+// defaultURL is the service login uses when told no other. Set at build time
+// for a build meant for another deployment; --url overrides it either way.
+var defaultURL = "https://coder.pokegosu.com"
+
 const usageText = `pokecoder collects coding agent token usage.
 
 usage:

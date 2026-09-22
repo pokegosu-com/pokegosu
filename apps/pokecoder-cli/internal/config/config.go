@@ -1,9 +1,9 @@
 // Package config stores what the client needs to reach the server.
 //
 // The file holds an API key, so it is written for the owner only and never
-// printed back out. Everything in it comes from the user at login: the server
-// address is not compiled in, so the same binary works against our service
-// and against someone's own deployment.
+// printed back out. Everything in it comes from login: the service address a
+// person gave (or the default), the API address that service pointed to, and
+// the key the machine traded its code for.
 package config
 
 import (
@@ -16,8 +16,13 @@ import (
 
 // Config is the on-disk settings file.
 type Config struct {
-	// APIURL is the Supabase project the client talks to, without a
-	// trailing slash: functions live under <APIURL>/functions/v1.
+	// URL is the service a person knows, the web address they sign in at,
+	// without a trailing slash. login asks it where the API is.
+	URL string `json:"url"`
+
+	// APIURL is where that service said its API is, without a trailing
+	// slash: functions live under <APIURL>/functions/v1. login looks it up
+	// again every time, so a service that moves its API is followed.
 	APIURL string `json:"api_url"`
 
 	// APIKey is this machine's credential: "pkt_" and 32 random bytes in

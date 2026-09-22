@@ -115,3 +115,25 @@ device_rollups() {
               tokens: Number(r.tokens),
             })) }));'
 }
+
+# start_service — serves the discovery document the CLI reads at login, and
+# sets SERVICE_URL, the address a person would type. Once per file, from
+# setup_file; stop_service in teardown_file.
+start_service() {
+    # fd 3 is closed so bats does not wait on the server to finish.
+    node "$BATS_TEST_DIRNAME/helpers/service.mjs" "$API_URL" > "$BATS_FILE_TMPDIR/service.port" 3>&- &
+    echo $! > "$BATS_FILE_TMPDIR/service.pid"
+
+    local i
+    for i in $(seq 1 50); do
+        [[ -s $BATS_FILE_TMPDIR/service.port ]] && break
+        sleep 0.1
+    done
+    [[ -s $BATS_FILE_TMPDIR/service.port ]] || { echo "the discovery service did not start" >&2; return 1; }
+    export SERVICE_URL="http://127.0.0.1:$(cat "$BATS_FILE_TMPDIR/service.port")"
+}
+
+stop_service() {
+    [[ -f $BATS_FILE_TMPDIR/service.pid ]] && kill "$(cat "$BATS_FILE_TMPDIR/service.pid")" 2> /dev/null
+    return 0
+}

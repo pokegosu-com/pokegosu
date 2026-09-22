@@ -14,16 +14,16 @@ import (
 	"github.com/pokegosu-com/pokegosu/apps/pokecoder-cli/internal/config"
 )
 
-const loginUsage = `usage: pokecoder login --url URL [flags]
+const loginUsage = `usage: pokecoder login [flags]
 
 Enrols this machine. Open the web, ask it to add a machine, and type in the
 code it shows you. The machine gets its own key that way — nothing secret is
 ever typed or pasted.
 
-required:
-  --url URL           the server, e.g. https://pokecoder.example.com
-
 flags:
+  --url URL           the service you sign in at, for a deployment other
+                      than the default. The web's "add a machine" page shows
+                      the command with it filled in
   --code CODE         the enrollment code, for a script that cannot be asked.
                       Left out, login asks for it.
   --device-name NAME  what this machine is called in the web UI.
@@ -41,7 +41,7 @@ func runLogin(args []string) error {
 	fs.SetOutput(io.Discard)
 
 	var (
-		url        = fs.String("url", "", "the server URL")
+		url        = fs.String("url", "", "the service URL")
 		code       = fs.String("code", "", "the enrollment code")
 		deviceName = fs.String("device-name", "", "what this machine is called")
 	)
@@ -65,7 +65,7 @@ func runLogin(args []string) error {
 	}
 	if enrolled(stored) {
 		fmt.Printf("%q is enrolled with %s; a new code enrols it again with a new key\n",
-			stored.DeviceName, stored.APIURL)
+			stored.DeviceName, stored.URL)
 	}
 
 	cfg, err := settings(stored, *url, *deviceName)
@@ -74,6 +74,13 @@ func runLogin(args []string) error {
 	}
 
 	typed, err := readCode(*code, os.Stdin, os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	// Asked every time rather than kept from last time: the service decides
+	// where its API is, and may have moved it.
+	cfg.APIURL, err = api.Discover(context.Background(), nil, cfg.URL)
 	if err != nil {
 		return err
 	}
@@ -92,7 +99,7 @@ func runLogin(args []string) error {
 		return err
 	}
 
-	fmt.Printf("enrolled %q with %s\n", cfg.DeviceName, cfg.APIURL)
+	fmt.Printf("enrolled %q with %s\n", cfg.DeviceName, cfg.URL)
 	fmt.Printf("settings saved to %s\n", path)
 	return nil
 }
@@ -103,7 +110,7 @@ func runLogin(args []string) error {
 // replaces its key rather than adding one, so the old key stops working.
 // login only says that it is happening.
 func enrolled(cfg *config.Config) bool {
-	return cfg != nil && cfg.APIURL != "" && cfg.APIKey != "" && cfg.DeviceID != ""
+	return cfg != nil && cfg.URL != "" && cfg.APIURL != "" && cfg.APIKey != "" && cfg.DeviceID != ""
 }
 
 // settings fills in everything enrolment needs except the key, reporting what
@@ -115,18 +122,22 @@ func settings(stored *config.Config, url, deviceName string) (*config.Config, er
 		cfg = *stored
 	}
 
-	if url != "" {
-		normalized, err := config.NormalizeURL(url)
-		if err != nil {
-			return nil, err
-		}
-		cfg.APIURL = normalized
+	// --url wins, then the service this machine was enrolled with, then the
+	// default.
+	if url == "" {
+		url = cfg.URL
 	}
+	if url == "" {
+		url = defaultURL
+	}
+	normalized, err := config.NormalizeURL(url)
+	if err != nil {
+		return nil, err
+	}
+	cfg.URL = normalized
+
 	if deviceName != "" {
 		cfg.DeviceName = deviceName
-	}
-	if cfg.APIURL == "" {
-		return nil, fmt.Errorf("missing --url")
 	}
 
 	// The id is the machine's own, made once and kept, so that a machine
@@ -188,7 +199,7 @@ func explain(err error) error {
 	case serverErr.Status == 401:
 		// Nothing of ours refused the code, so the request did not reach us.
 		return fmt.Errorf("the server rejected the request before it reached pokecoder "+
-			"(%s); check --url", serverErr.Error())
+			"(%s); check that --url is the pokecoder service", serverErr.Error())
 	default:
 		return err
 	}

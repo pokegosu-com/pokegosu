@@ -12,6 +12,16 @@
 # Every test gets its own account and its own settings file, so they can be
 # run in any order, one at a time.
 
+setup_file() {
+    load helpers/server
+    start_service
+}
+
+teardown_file() {
+    load helpers/server
+    stop_service
+}
+
 setup() {
     load helpers/server
     load helpers/client
@@ -36,7 +46,7 @@ teardown() {
 }
 
 @test "login enrols this machine under the name it was given" {
-    run pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -eq 0 ]
 
     device=$(setting device_id)
@@ -47,22 +57,32 @@ teardown() {
 # The key is the one thing the machine did not have and could not have made:
 # it comes back from the server and is what every later sync is checked by.
 @test "login saves a key it was never given" {
-    run pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -eq 0 ]
 
     [[ "$(setting api_key)" == pkt_* ]]
+    [ "$(setting url)" = "$SERVICE_URL" ]
+    [ "$(setting device_name)" = laptop ]
+}
+
+# A person types the service's address; where its API lives is the service's
+# to say, and login asks rather than being told.
+@test "login finds the API through the service it was pointed at" {
+    run pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    [ "$status" -eq 0 ]
+
     [ "$(setting api_url)" = "$API_URL" ]
     [ "$(setting device_name)" = laptop ]
 }
 
 @test "the settings file holds a secret and is readable only by its owner" {
-    pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
 
     [ "$(stat -c %a "$SETTINGS")" = 600 ]
 }
 
 @test "logging in again keeps the machine and replaces its key" {
-    pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     device=$(setting device_id)
     before=$(setting api_key)
 
@@ -79,17 +99,17 @@ teardown() {
 
 @test "a code works once" {
     code=$(enrollment_code "$SESSION")
-    pokecoder login --url "$API_URL" --code "$code" --device-name first
+    pokecoder login --url "$SERVICE_URL" --code "$code" --device-name first
 
     use_settings "$BATS_TEST_TMPDIR/second.json"
-    run pokecoder login --url "$API_URL" --code "$code" --device-name second
+    run pokecoder login --url "$SERVICE_URL" --code "$code" --device-name second
     [ "$status" -ne 0 ]
 
     [ ! -e "$SETTINGS" ]
 }
 
 @test "a code nobody issued leaves no settings behind" {
-    run pokecoder login --url "$API_URL" --code XPTQ-4F2K --device-name laptop
+    run pokecoder login --url "$SERVICE_URL" --code XPTQ-4F2K --device-name laptop
     [ "$status" -ne 0 ]
     [[ $output == *"not valid"* ]]
 
@@ -102,21 +122,21 @@ teardown() {
     code=$(enrollment_code "$SESSION")
     mangled=$(printf '%s' "$code" | tr 'A-Z' 'a-z' | tr -d -)
 
-    run pokecoder login --url "$API_URL" --code "$mangled" --device-name laptop
+    run pokecoder login --url "$SERVICE_URL" --code "$mangled" --device-name laptop
     [ "$status" -eq 0 ]
 }
 
 @test "the code can be typed in instead of passed as a flag" {
     code=$(enrollment_code "$SESSION")
 
-    run sh -c "printf '%s\n' '$code' | '$POKECODER_BIN' login --url '$API_URL' --device-name typed"
+    run sh -c "printf '%s\n' '$code' | '$POKECODER_BIN' login --url '$SERVICE_URL' --device-name typed"
     [ "$status" -eq 0 ]
 
     [ "$(known_as "$SESSION" "$(setting device_id)")" = typed ]
 }
 
 @test "another account cannot claim this machine" {
-    pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokecoder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     device=$(setting device_id)
 
     new_account
@@ -125,7 +145,7 @@ teardown() {
     # The stranger arrives already holding the id, the way a copied settings
     # file would leave them, but with a code from their own account.
     use_settings "$BATS_TEST_TMPDIR/stranger.json"
-    printf '{"api_url": "%s", "device_id": "%s", "device_name": "stolen"}' "$API_URL" "$device" > "$SETTINGS"
+    printf '{"url": "%s", "device_id": "%s", "device_name": "stolen"}' "$SERVICE_URL" "$device" > "$SETTINGS"
 
     run pokecoder login --code "$(enrollment_code "$ACCOUNT_SESSION")"
     [ "$status" -ne 0 ]
@@ -135,8 +155,12 @@ teardown() {
     [ -z "$(known_as "$ACCOUNT_SESSION" "$device")" ]
 }
 
-@test "login without a server says which flag is missing" {
-    run pokecoder login --code XPTQ-4F2K
+# The API's own address is not a service: it has no discovery document. A
+# person who pasted it gets told so before any code is spent.
+@test "an address that is not a pokecoder service is refused, and nothing is saved" {
+    run pokecoder login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -ne 0 ]
-    [[ $output == *--url* ]]
+    [[ $output == *"does not look like a pokecoder service"* ]]
+
+    [ ! -e "$SETTINGS" ]
 }
