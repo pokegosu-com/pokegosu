@@ -1,8 +1,8 @@
 -- pokecoder: coding agent token usage, collected from every machine a person
 -- works on. A machine enrols with a short code and uploads hourly totals; the
--- web reads them back. Every write goes through the functions in the `api`
--- schema (next migration), so nothing here is granted to a client role except
--- the reads the web makes with its own session.
+-- web reads them back. All of it goes through the pokecoder API app and the
+-- functions in the `pokecoder` schema (next migration), so nothing here is
+-- granted to a client role.
 
 create domain public.token_count as bigint check (value >= 0);
 
@@ -33,7 +33,7 @@ insert into public.providers (id, display_name) values
 -- What that buys is only half enforced here, and the halves are worth
 -- keeping straight. The schema stops a row from naming one account over
 -- another account's machine (see usage_rollups). It cannot stop a machine
--- from writing a SIBLING machine's rows — that holds only while api.ingest
+-- from writing a SIBLING machine's rows — that holds only while pokecoder.ingest
 -- takes device_id from this lookup and never from the request.
 --
 -- Only the hash is stored. The plaintext is shown once, at enrollment,
@@ -70,8 +70,9 @@ create index on public.devices (user_id);
 --
 -- Only the hash is stored, for the same reason the device key is.
 --
--- Two rules this table cannot keep on its own, and api.create_enrollment_code
--- and api.redeem_enrollment_code keep them:
+-- Two rules this table cannot keep on its own, and
+-- pokecoder.create_enrollment_code and pokecoder.redeem_enrollment_code keep
+-- them:
 --
 --   Minting reuses the slot. unique (user_id) holds an account to one
 --   ROW, not to one live code, and nothing sweeps a code that was minted
@@ -151,33 +152,21 @@ create index on public.usage_rollups (user_id, hour_bucket desc);
 -- ============================================================
 -- Access.
 --
--- auto_expose_new_tables is off, so these tables start with no grants to
--- anon or authenticated. RLS is enabled on all four anyway, so that a grant
--- added later by mistake still reaches only what a policy allows.
+-- No client role reads or writes these tables. Every request goes through the
+-- pokecoder API app, which checks it and then calls a function in the
+-- `pokecoder` schema (next migration); those functions run as their owner.
 --
--- The one thing granted is what the web reads with a person's session: their
--- machines and their rollups. api_key_hash is left out of the column grant,
--- because a digest is still not something a browser has any use for.
--- enrollment_codes and providers get nothing: only the api functions, which
--- run as their owner, touch them.
+-- auto_expose_new_tables being off is not quite "no grants": it still hands
+-- anon and authenticated TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on every
+-- new table. PostgREST never issues any of those, but RLS does not apply to
+-- TRUNCATE, so they are taken away here rather than trusted to stay out of
+-- reach. RLS is enabled with no policies as well, so that a grant added later
+-- by mistake still reaches nothing.
 -- ============================================================
+revoke all on public.providers, public.devices, public.enrollment_codes, public.usage_rollups
+  from anon, authenticated;
+
 alter table public.providers        enable row level security;
 alter table public.devices          enable row level security;
 alter table public.enrollment_codes enable row level security;
 alter table public.usage_rollups    enable row level security;
-
-grant select (id, name, revoked_at, last_sync_at, created_at)
-  on public.devices to authenticated;
-grant select on public.usage_rollups to authenticated;
-
--- auth.uid() is wrapped in a subquery so Postgres evaluates it once per
--- statement rather than once per row.
-create policy "owners can read their devices"
-  on public.devices for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "owners can read their rollups"
-  on public.usage_rollups for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
