@@ -2,15 +2,20 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@pokegosu/supabase/server'
 
-import { safeReturnTo } from '@/lib/return-to'
+import { env } from '@/env'
 
-/** Reachable without a session. */
-const PUBLIC_PREFIXES = ['/login', '/auth']
+/** Reachable without a session: the CLI reads the discovery document. */
+const PUBLIC_PREFIXES = ['/.well-known']
 
 export async function proxy(request: NextRequest) {
   // Replaced by setAll below whenever Supabase rotates the session cookies, so
   // the refreshed values reach the browser.
   let response = NextResponse.next({ request })
+
+  const { pathname } = request.nextUrl
+  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return response
+  }
 
   const supabase = createClient({
     getAll: () => request.cookies.getAll(),
@@ -31,27 +36,12 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-  const isPublic = PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
-
-  if (!user && !isPublic) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.search = ''
-    return NextResponse.redirect(url)
-  }
-
-  // Lets the landing page and other apps link to /login unconditionally:
-  // someone who already has a session goes straight to where they were
-  // headed, or to their account, instead of a sign-in form.
-  if (user && pathname === '/login') {
-    const returnTo = safeReturnTo(request.nextUrl.searchParams.get('next'))
-    if (returnTo) return NextResponse.redirect(returnTo)
-
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    url.search = ''
-    return NextResponse.redirect(url)
+  // Signing in is the account app's job. It sends the person back here once
+  // they have a session, which this app shares through the cookie domain.
+  if (!user) {
+    const login = new URL('/login', env.NEXT_PUBLIC_ACCOUNT_URL)
+    login.searchParams.set('next', request.url)
+    return NextResponse.redirect(login)
   }
 
   return response

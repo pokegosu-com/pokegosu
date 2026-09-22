@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import type { EmailOtpType } from '@pokegosu/supabase/server'
 
+import { RETURN_TO_COOKIE, safeReturnTo } from '@/lib/return-to'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -31,5 +32,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return NextResponse.redirect(new URL('/', origin))
+  // Back to the app that sent them here, if one did. Checked again rather
+  // than trusted: the cookie is only as good as whoever could write it.
+  const returnTo = safeReturnTo(
+    decodeURIComponent(request.cookies.get(RETURN_TO_COOKIE)?.value ?? ''),
+  )
+  const response = NextResponse.redirect(returnTo ?? new URL('/', origin))
+  response.cookies.delete(RETURN_TO_COOKIE)
+  return response
 }
