@@ -1,0 +1,34 @@
+# The conformance suite for libs/*/tokenusage: every implementation's driver
+# is run against the same fixtures by the same harness. See README.md.
+id: 'tests-tokenusage'
+layer: 'automation'
+toolchains:
+  default: 'node'
+
+workspace:
+  inheritedTasks:
+    include: []
+
+tasks:
+  build-driver-go:
+    description: 'Build the Go driver around libs/go/tokenusage'
+    command: 'go build -o dist/driver-go ./drivers/go'
+    toolchains: ['go']
+    inputs:
+      - 'drivers/go/**/*.go'
+      - '/libs/go/tokenusage/**/*.go'
+      - '/go.mod'
+    outputs:
+      - 'dist/driver-go'
+
+  conformance-go:
+    description: 'Run the scan cases against the Go driver'
+    command: 'bats scan.bats'
+    env:
+      TOKENUSAGE_DRIVER: '$projectRoot/dist/driver-go'
+    deps:
+      - '~:build-driver-go'
+    inputs:
+      - 'scan.bats'
+      - 'helpers/**/*'
+      - 'fixtures/**/*'

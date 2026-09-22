@@ -1,0 +1,14 @@
+{
+  "rollups": [
+    {
+      "provider": "claude_code",
+      "hour_bucket": "2025-05-12T09:00:00Z",
+      "tokens": 3333
+    },
+    {
+      "provider": "claude_code",
+      "hour_bucket": "2025-05-12T11:00:00Z",
+      "tokens": 1111
+    }
+  ]
+}

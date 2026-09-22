@@ -1,5 +1,5 @@
 # The single source of truth for language versions; moon installs them, so no
-# runtime is set up by hand. Go and Swift arrive with their apps.
+# runtime is set up by hand. Swift arrives with its app.
 javascript:
   packageManager: 'pnpm'
 
@@ -8,3 +8,8 @@ node:
 
 pnpm:
   version: '12.4.1'
+
+# One module for the whole repository, at the root: every Go project is a
+# package in it, so a single version tag covers them all.
+go:
+  version: '1.24.0'
