@@ -134,10 +134,11 @@ begin
   if range_end <= range_start then
     raise exception 'range_end must be after range_start' using errcode = '22023';
   end if;
-  -- A year of hourly buckets is already more than any screen wants, and the
-  -- cap keeps one request from walking a whole account's history.
-  if range_end - range_start > interval '400 days' then
-    raise exception 'the range is longer than 400 days' using errcode = '22023';
+  -- A month of hourly buckets is 720 rows per machine, which is what a screen
+  -- of hours can show. A longer view wants its hours summed into days first,
+  -- and that is a different function rather than a longer range of this one.
+  if range_end - range_start > interval '30 days' then
+    raise exception 'the range is longer than 30 days' using errcode = '22023';
   end if;
 
   return (

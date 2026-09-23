@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(14);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -129,6 +129,14 @@ select throws_ok(
 select throws_ok(
   $$ select public.usage('2026-09-12T00:30:00Z', '2026-09-13T00:00:00Z') $$,
   '22023', 'range_start and range_end must be on the hour in UTC', 'a range off the hour is refused');
+
+select lives_ok(
+  $$ select public.usage('2026-08-14T00:00:00Z', '2026-09-13T00:00:00Z') $$,
+  'thirty days is the longest range');
+
+select throws_ok(
+  $$ select public.usage('2026-08-13T23:00:00Z', '2026-09-13T00:00:00Z') $$,
+  '22023', 'the range is longer than 30 days', 'an hour past thirty days is refused');
 
 select * from finish();
 rollback;
