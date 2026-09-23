@@ -37,6 +37,8 @@ Then let a scheduler run the sync. There is no daemon: one pass takes seconds.
 - A machine is enrolled once. Its id lives in the settings, so a machine that was retired, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
+`pokegosu completion <shell>` prints a completion script for bash, zsh, fish or PowerShell; `pokegosu completion zsh --help` says where to put it.
+
 Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGOSU_CONFIG_HOME` puts them somewhere else. Each service keeps whatever else it needs beside them, such as coder's record of what it has already sent.
 
 ## Tests

@@ -5,60 +5,28 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"flag"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 	authapi "github.com/pokegosu-com/pokegosu/libs/go/auth"
 )
 
-const loginUsage = `usage: pokegosu auth login [flags]
-
-Enrols this machine. It shows a short code and an address; open that address,
-signed in, and approve the code you see here. Nothing secret is typed or
-pasted, and the machine's key is handed to this machine alone.
-
-flags:
-  --url URL           the deployment, for one other than the default
-  --device-name NAME  what this machine is called in the web.
-                      Defaults to the hostname
-
-Settings are written to ~/.config/pokegosu/config.json, readable only by you.
-
-A machine is enrolled once. Its id lives in those settings, so a machine that
-needs a new key — one that was retired, or that lost its settings — enrols as
-a new machine, and the old one keeps the history it earned.
-`
-
 // defaultURL is the service login uses when told no other. Set at build time
 // for a build meant for another deployment; --url overrides it either way.
 var defaultURL = "https://pokegosu.com"
 
-func runLogin(args []string) error {
-	fs := flag.NewFlagSet("login", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+// LoginOptions is what a person can tell login. Empty means "the default":
+// the service this machine was enrolled with, else the public one, and the
+// hostname for a name.
+type LoginOptions struct {
+	URL        string
+	DeviceName string
+}
 
-	var (
-		url        = fs.String("url", "", "the service URL")
-		deviceName = fs.String("device-name", "", "what this machine is called")
-	)
-
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			fmt.Print(loginUsage)
-			return nil
-		}
-		fmt.Fprint(os.Stderr, loginUsage)
-		return err
-	}
-	if fs.NArg() > 0 {
-		fmt.Fprint(os.Stderr, loginUsage)
-		return fmt.Errorf("unexpected argument %q", fs.Arg(0))
-	}
-
+// Login enrols this machine: asks to be let in, tells the person where to
+// approve it, and waits until they have.
+func Login(ctx context.Context, opts LoginOptions) error {
 	stored, err := config.Load()
 	if err != nil {
 		return err
@@ -72,12 +40,10 @@ func runLogin(args []string) error {
 		return nil
 	}
 
-	cfg, err := settings(stored, *url, *deviceName)
+	cfg, err := settings(stored, opts.URL, opts.DeviceName)
 	if err != nil {
 		return err
 	}
-
-	ctx := context.Background()
 
 	// Asked every time rather than kept from last time: the deployment
 	// decides where its parts are, and may have moved them.

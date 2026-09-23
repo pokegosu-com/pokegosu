@@ -2,10 +2,7 @@ package coder
 
 import (
 	"encoding/json"
-	"errors"
-	"flag"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -16,76 +13,57 @@ import (
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
 
-const scanUsage = `usage: pokegosu coder scan [flags]
+// ScanOptions is what a person can tell scan.
+type ScanOptions struct {
+	// Since, when set, is YYYY-MM-DD (UTC) or a full RFC3339 timestamp.
+	// Rounded down to the hour, so the hour containing it is printed whole.
+	Since string
 
-Parses the local agent logs and prints hourly token rollups. Nothing is sent
-anywhere.
+	// Format is "text" or "json". The json form is the body the ingest
+	// endpoint takes.
+	Format string
 
-flags:
-  --since DATE     only print hours at or after DATE: YYYY-MM-DD (UTC) or a
-                   full RFC3339 timestamp. Rounded down to the hour, so the
-                   hour containing DATE is printed whole
-  --path DIR       read DIR instead of the default log location. Repeatable
-  --provider ID    read only this provider's logs. Repeatable. Required
-                   alongside --path once more than one provider exists,
-                   since a log directory belongs to one agent
-  --format FORMAT  text (default) or json. The json form is the body the
-                   ingest endpoint takes
-`
+	// Paths read these directories instead of the default log locations.
+	Paths []string
 
-func runScan(args []string) error {
-	// flag prints its own messages; we print ours, so that an explicit -h
-	// goes to stdout and a mistake goes to stderr.
-	fs := flag.NewFlagSet("scan", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+	// Providers read only these agents' logs, by id. Needed alongside Paths
+	// once there is more than one provider, since a log directory belongs to
+	// one agent.
+	Providers []string
+}
 
-	var (
-		since     = fs.String("since", "", "only print hours at or after this date")
-		format    = fs.String("format", "text", "output format: text or json")
-		paths     pathList
-		providers pathList
-	)
-	fs.Var(&paths, "path", "log directory to read instead of the default")
-	fs.Var(&providers, "provider", "read only this provider's logs")
-
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			fmt.Print(scanUsage)
-			return nil
-		}
-		fmt.Fprint(os.Stderr, scanUsage)
-		return err
+// Scan parses the local agent logs and prints hourly token rollups. Nothing
+// is sent anywhere.
+func Scan(opts ScanOptions) error {
+	if opts.Format == "" {
+		opts.Format = "text"
 	}
-	if fs.NArg() > 0 {
-		fmt.Fprint(os.Stderr, scanUsage)
-		return fmt.Errorf("unexpected argument %q", fs.Arg(0))
-	}
-	if *format != "text" && *format != "json" {
-		return fmt.Errorf("unknown format %q: want text or json", *format)
+	if opts.Format != "text" && opts.Format != "json" {
+		return fmt.Errorf("unknown format %q: want text or json", opts.Format)
 	}
 
-	selected, err := selectProviders(providers)
+	selected, err := selectProviders(opts.Providers)
 	if err != nil {
 		return err
 	}
 
-	opts := scan.Options{Roots: paths, Providers: selected}
-	if *since != "" {
-		at, err := parseSince(*since)
+	scanOpts := scan.Options{Roots: opts.Paths, Providers: selected}
+	if opts.Since != "" {
+		at, err := parseSince(opts.Since)
 		if err != nil {
 			return err
 		}
-		opts.Since = at
+		scanOpts.Since = at
 	}
 
-	result, err := scan.Run(opts)
+	result, err := scan.Run(scanOpts)
 	if err != nil {
 		return err
 	}
 
-	warn(result, paths)
+	warn(result, opts.Paths)
 
-	if *format == "json" {
+	if opts.Format == "json" {
 		return printJSON(result.Rollups)
 	}
 	printText(result)
@@ -222,17 +200,4 @@ func count(n int, singular, plural string) string {
 		return "1 " + singular
 	}
 	return thousands(int64(n)) + " " + plural
-}
-
-// pathList collects a repeatable string flag.
-type pathList []string
-
-func (p *pathList) String() string { return strings.Join(*p, ", ") }
-
-func (p *pathList) Set(v string) error {
-	if v == "" {
-		return fmt.Errorf("empty path")
-	}
-	*p = append(*p, v)
-	return nil
 }

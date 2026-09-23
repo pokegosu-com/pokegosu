@@ -20,6 +20,7 @@ tasks:
       - '**/*.go'
       - '/libs/go/**/*.go'
       - '/go.mod'
+      - '/go.sum'
     outputs:
       - 'dist/pokegosu'
 
@@ -29,6 +30,7 @@ tasks:
       - '**/*.go'
       - '/libs/go/**/*.go'
       - '/go.mod'
+      - '/go.sum'
 
   test:
     command: 'go test ./...'
@@ -36,3 +38,4 @@ tasks:
       - '**/*.go'
       - '/libs/go/**/*.go'
       - '/go.mod'
+      - '/go.sum'

@@ -1,62 +1,65 @@
 // Command pokegosu is the command line to pokegosu's services. Each service
 // is a word of its own: `pokegosu coder sync` is coder's.
 //
-// The services themselves live in internal/, one package each, so a new one
-// is a package and a line here.
+// This package is only the shape of the command line — which words there
+// are, which flags they take, and what their help says. What each command
+// does lives in internal/, one package per service, as plain functions that
+// know nothing of cobra, so they are tested as functions.
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/auth"
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder"
+	"github.com/spf13/cobra"
 )
 
 // version is set at build time from the git tag, the same version every app
 // in the repository shows. A plain go build says dev.
 var version = "dev"
 
-const usageText = `pokegosu is the command line to pokegosu.
-
-usage:
-  pokegosu auth <command>    enrol this machine with your account
-  pokegosu coder <command>   coding agent token usage
-  pokegosu version           print this build's version
-
-A machine is enrolled once, with the account, and every service speaks with
-the key that enrolment leaves behind.
-
-run "pokegosu auth -h" or "pokegosu coder -h" for what each can do.
-`
-
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	// Ctrl-C cancels whatever is waiting, such as a login waiting for a
+	// person to approve it, rather than leaving it to be killed mid-write.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	if err := newRoot().ExecuteContext(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "pokegosu: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string) error {
-	if len(args) == 0 {
-		fmt.Fprint(os.Stderr, usageText)
-		return errors.New("no service given")
-	}
+func newRoot() *cobra.Command {
+	root := &cobra.Command{
+		Use:   "pokegosu",
+		Short: "The command line to pokegosu",
+		Long: `The command line to pokegosu.
 
-	switch name := args[0]; name {
-	case "auth":
-		return auth.Run(args[1:])
-	case "coder":
-		return coder.Run(args[1:])
-	case "version", "--version":
-		fmt.Println(version)
-		return nil
-	case "-h", "--help", "help":
-		fmt.Print(usageText)
-		return nil
-	default:
-		fmt.Fprint(os.Stderr, usageText)
-		return fmt.Errorf("unknown service %q", name)
+A machine is enrolled once, with the account, and every service speaks with
+the key that enrolment leaves behind.`,
+		Version: version,
+
+		// Errors are printed once, by main, in one shape; a mistake in the
+		// flags already says what was wrong without the whole usage after it.
+		SilenceErrors: true,
+		SilenceUsage:  true,
+	}
+	root.SetVersionTemplate("{{.Version}}\n")
+
+	root.AddCommand(newAuthCmd(), newCoderCmd(), newVersionCmd())
+	return root
+}
+
+func newVersionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print this build's version",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Fprintln(cmd.OutOrStdout(), version)
+		},
 	}
 }

@@ -2,10 +2,7 @@ package coder
 
 import (
 	"context"
-	"errors"
-	"flag"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -16,60 +13,29 @@ import (
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
 
-const syncUsage = `usage: pokegosu coder sync [flags]
-
-Reads the local agent logs and uploads the hourly rollups that have changed
-since the last run. One pass, then it exits: run it from cron, a systemd
-timer or launchd rather than leaving it resident.
-
-flags:
-  --all            upload every bucket, not only the changed ones. Use after
-                   the server has lost data, or to check a disagreement
-  --quiet          print nothing unless something went wrong, which is what a
-                   scheduled run wants
-  --path DIR       read DIR instead of the default log location. Repeatable
-  --provider ID    read only this provider's logs. Repeatable, and needed
-                   alongside --path once there is more than one provider
-
-A sync reports nothing from before this machine was enrolled: what the logs
-hold from before then is nobody's business but this machine's. The server
-ignores those hours whoever sends them; skipping them here only saves the
-request. The hour the enrolment fell in is reported whole.
-
-Run login first: sync needs the settings it writes.
-`
-
 // A first run can carry months of logs, and the server takes ten thousand
 // rollups per request. Rollups are absolute values, so splitting them across
 // requests lands on the same numbers.
 const maxPerRequest = 5000
 
-func runSync(args []string) error {
-	fs := flag.NewFlagSet("sync", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+// SyncOptions is what a person can tell sync.
+type SyncOptions struct {
+	// All uploads every bucket, not only the changed ones: after the server
+	// has lost data, or to check a disagreement.
+	All bool
 
-	var (
-		all       = fs.Bool("all", false, "upload every bucket")
-		quiet     = fs.Bool("quiet", false, "print nothing unless something went wrong")
-		paths     pathList
-		providers pathList
-	)
-	fs.Var(&paths, "path", "log directory to read instead of the default")
-	fs.Var(&providers, "provider", "read only this provider's logs")
+	// Quiet prints nothing unless something went wrong, which is what a
+	// scheduled run wants.
+	Quiet bool
 
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			fmt.Print(syncUsage)
-			return nil
-		}
-		fmt.Fprint(os.Stderr, syncUsage)
-		return err
-	}
-	if fs.NArg() > 0 {
-		fmt.Fprint(os.Stderr, syncUsage)
-		return fmt.Errorf("unexpected argument %q", fs.Arg(0))
-	}
+	// Paths and Providers are as for scan.
+	Paths     []string
+	Providers []string
+}
 
+// Sync reads the local agent logs and uploads the hourly rollups that have
+// changed since the last run. One pass, then it returns.
+func Sync(opts SyncOptions) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -78,18 +44,18 @@ func runSync(args []string) error {
 		return fmt.Errorf("not logged in: run pokegosu auth login first")
 	}
 
-	selected, err := selectProviders(providers)
+	selected, err := selectProviders(opts.Providers)
 	if err != nil {
 		return err
 	}
 
 	// The server ignores anything older anyway; this keeps a first run from
 	// carrying months of logs across the network to be dropped.
-	result, err := scan.Run(scan.Options{Roots: paths, Providers: selected, Since: cfg.EnrolledAt})
+	result, err := scan.Run(scan.Options{Roots: opts.Paths, Providers: selected, Since: cfg.EnrolledAt})
 	if err != nil {
 		return err
 	}
-	report(*quiet, result)
+	report(opts.Quiet, result)
 
 	settingsPath, err := config.Path()
 	if err != nil {
@@ -99,7 +65,7 @@ func runSync(args []string) error {
 	cache := state.Load(cachePath, cfg.APIURL, cfg.DeviceID)
 
 	pending := result.Rollups
-	if *all {
+	if opts.All {
 		// Restating the whole ledger starts from nothing known. Otherwise a
 		// run that fails half way records the batches that landed against a
 		// cache that already claimed them, and the rest is never sent again.
@@ -108,7 +74,7 @@ func runSync(args []string) error {
 		pending = cache.Changed(result.Rollups, time.Now())
 	}
 	if len(pending) == 0 {
-		if !*quiet {
+		if !opts.Quiet {
 			fmt.Println("nothing to send")
 		}
 		return nil
@@ -127,7 +93,7 @@ func runSync(args []string) error {
 	if sendErr != nil {
 		return explainSync(sendErr)
 	}
-	if !*quiet {
+	if !opts.Quiet {
 		fmt.Printf("sent %s to %s\n", count(len(sent), "bucket", "buckets"), cfg.URL)
 	}
 	return nil
