@@ -28,6 +28,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      companion_ribbons: {
+        Row: {
+          companion_id: string
+          received_at: string
+          ribbon_id: string
+        }
+        Insert: {
+          companion_id: string
+          received_at?: string
+          ribbon_id: string
+        }
+        Update: {
+          companion_id?: string
+          received_at?: string
+          ribbon_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'companion_ribbons_companion_id_fkey'
+            columns: ['companion_id']
+            isOneToOne: false
+            referencedRelation: 'companions'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'companion_ribbons_ribbon_id_fkey'
+            columns: ['ribbon_id']
+            isOneToOne: false
+            referencedRelation: 'ribbons'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      companions: {
+        Row: {
+          created_at: string
+          egg_received_at: string | null
+          exp: number
+          hatched_at: string | null
+          id: string
+          invested_tokens: number
+          is_shiny: boolean
+          level: number | null
+          markings: number
+          species_id: number
+          steps: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          egg_received_at?: string | null
+          exp?: number
+          hatched_at?: string | null
+          id?: string
+          invested_tokens?: number
+          is_shiny: boolean
+          level?: number | null
+          markings?: number
+          species_id: number
+          steps?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          egg_received_at?: string | null
+          exp?: number
+          hatched_at?: string | null
+          id?: string
+          invested_tokens?: number
+          is_shiny?: boolean
+          level?: number | null
+          markings?: number
+          species_id?: number
+          steps?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'companions_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       devices: {
         Row: {
           api_key_hash: string
@@ -91,6 +177,89 @@ export type Database = {
         }
         Relationships: []
       }
+      experience_levels: {
+        Row: {
+          exp: number
+          growth_rate: string
+          level: number
+        }
+        Insert: {
+          exp: number
+          growth_rate: string
+          level: number
+        }
+        Update: {
+          exp?: number
+          growth_rate?: string
+          level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'experience_levels_growth_rate_fkey'
+            columns: ['growth_rate']
+            isOneToOne: false
+            referencedRelation: 'growth_rates'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      game_settings: {
+        Row: {
+          claim_limit_tokens: number
+          id: boolean
+          shiny_odds: number
+          steps_per_cycle: number
+          tokens_per_exp: number
+          tokens_per_step: number
+          unowned_line_weight: number
+        }
+        Insert: {
+          claim_limit_tokens: number
+          id?: boolean
+          shiny_odds: number
+          steps_per_cycle: number
+          tokens_per_exp: number
+          tokens_per_step: number
+          unowned_line_weight: number
+        }
+        Update: {
+          claim_limit_tokens?: number
+          id?: boolean
+          shiny_odds?: number
+          steps_per_cycle?: number
+          tokens_per_exp?: number
+          tokens_per_step?: number
+          unowned_line_weight?: number
+        }
+        Relationships: []
+      }
+      growth_rates: {
+        Row: {
+          id: string
+        }
+        Insert: {
+          id: string
+        }
+        Update: {
+          id?: string
+        }
+        Relationships: []
+      }
+      pokemon_types: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           display_name: string | null
@@ -123,6 +292,128 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      ribbons: {
+        Row: {
+          description: string
+          id: string
+          name: string
+        }
+        Insert: {
+          description: string
+          id: string
+          name: string
+        }
+        Update: {
+          description?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      species: {
+        Row: {
+          capture_rate: number
+          evolution_level: number | null
+          evolves_from: number | null
+          growth_rate: string
+          hatch_counter: number
+          id: number
+          line_id: number
+          name: string
+          slug: string
+          type1: string
+          type2: string | null
+        }
+        Insert: {
+          capture_rate: number
+          evolution_level?: number | null
+          evolves_from?: number | null
+          growth_rate: string
+          hatch_counter: number
+          id: number
+          line_id: number
+          name: string
+          slug: string
+          type1: string
+          type2?: string | null
+        }
+        Update: {
+          capture_rate?: number
+          evolution_level?: number | null
+          evolves_from?: number | null
+          growth_rate?: string
+          hatch_counter?: number
+          id?: number
+          line_id?: number
+          name?: string
+          slug?: string
+          type1?: string
+          type2?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'species_evolves_from_fkey'
+            columns: ['evolves_from']
+            isOneToOne: false
+            referencedRelation: 'species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_growth_rate_fkey'
+            columns: ['growth_rate']
+            isOneToOne: false
+            referencedRelation: 'growth_rates'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_line_id_fkey'
+            columns: ['line_id']
+            isOneToOne: false
+            referencedRelation: 'species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_type1_fkey'
+            columns: ['type1']
+            isOneToOne: false
+            referencedRelation: 'pokemon_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_type2_fkey'
+            columns: ['type2']
+            isOneToOne: false
+            referencedRelation: 'pokemon_types'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      trainers: {
+        Row: {
+          created_at: string
+          main_companion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          main_companion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          main_companion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'trainers_main_companion_id_user_id_fkey'
+            columns: ['main_companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'companions'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
       }
       usage_rollups: {
         Row: {
@@ -172,13 +463,55 @@ export type Database = {
     }
     Functions: {
       approve_enrollment: { Args: { code: string }; Returns: Json }
+      box: { Args: never; Returns: Json }
+      claim: { Args: { companion_id: string }; Returns: Json }
       claim_enrollment: {
         Args: { api_key_hash: string; claim_hash: string }
         Returns: Json
       }
+      eligible_ribbons: {
+        Args: { pokemon: Database['public']['Tables']['companions']['Row'] }
+        Returns: string[]
+      }
+      evolve: { Args: { companion_id: string }; Returns: Json }
+      hatch: { Args: { companion_id: string }; Returns: Json }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
+      lock_companion: {
+        Args: { companion_id: string; owner: string }
+        Returns: {
+          created_at: string
+          egg_received_at: string | null
+          exp: number
+          hatched_at: string | null
+          id: string
+          invested_tokens: number
+          is_shiny: boolean
+          level: number | null
+          markings: number
+          species_id: number
+          steps: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'companions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       normalize_code: { Args: { typed: string }; Returns: string }
       pending_enrollment: { Args: { code: string }; Returns: Json }
+      receive_egg: { Args: { companion_id: string }; Returns: Json }
+      receive_ribbon: {
+        Args: { companion_id: string; ribbon_id: string }
+        Returns: Json
+      }
+      roll_egg: { Args: { owner: string }; Returns: string }
+      set_main: { Args: { companion_id: string }; Returns: Json }
+      set_markings: {
+        Args: { companion_id: string; markings: number }
+        Returns: Json
+      }
       start_enrollment: {
         Args: {
           claim_hash: string
@@ -189,6 +522,7 @@ export type Database = {
         }
         Returns: Json
       }
+      start_game: { Args: never; Returns: Json }
       usage: { Args: { range_end: string; range_start: string }; Returns: Json }
     }
     Enums: {

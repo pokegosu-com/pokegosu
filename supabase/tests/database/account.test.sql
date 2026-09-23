@@ -56,8 +56,10 @@ select is_empty($$ select name from pg_temp.callable where anon $$,
   'anon can call no function in public');
 
 select set_eq($$ select name from pg_temp.callable where authenticated $$,
-  array['pending_enrollment', 'approve_enrollment', 'usage'],
-  'a signed-in person can only look at a request, approve it, and read usage');
+  array['pending_enrollment', 'approve_enrollment', 'usage',
+        'start_game', 'box', 'claim', 'hatch', 'evolve', 'receive_egg', 'receive_ribbon',
+        'set_main', 'set_markings'],
+  'a signed-in person can look at a request, approve it, read usage, and play');
 
 select set_eq($$ select name from pg_temp.callable where service_role and not authenticated $$,
   array['start_enrollment', 'claim_enrollment', 'ingest'],
