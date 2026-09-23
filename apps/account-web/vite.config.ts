@@ -13,6 +13,9 @@ export default defineConfig({
   plugins: [
     vinext(),
     cloudflare({
+      // Every app's dev server would otherwise take workerd's inspector on
+      // 9229, so two could not run side by side. Paired with the dev port.
+      inspectorPort: 9231,
       viteEnvironment: {
         name: 'rsc',
         childEnvironments: ['ssr'],

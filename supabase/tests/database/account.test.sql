@@ -239,19 +239,8 @@ select throws_ok(
   $$ update public.devices set api_key_hash = '\x00' where id = '11111111-1111-1111-1111-111111111111' $$,
   '42501', null, 'a person cannot touch a machine''s key');
 
-select results_eq(
-  $$ update public.devices set revoked_at = '2099-01-01' where id = '11111111-1111-1111-1111-111111111111'
-     returning revoked_at <= now() $$,
-  $$ values (true) $$,
-  'retiring a machine stamps it now, whatever time was sent');
-
-select throws_like(
-  $$ update public.devices set revoked_at = null where id = '11111111-1111-1111-1111-111111111111' $$,
-  '%enrolling it again%', 'a retired machine cannot be brought back by clearing the column');
-
-
 -- ------------------------------------------------------------
--- Enrolling a retired machine again
+-- One id, one enrolment
 -- ------------------------------------------------------------
 select pg_temp.as_edge_function();
 select pg_temp.start('EFGH5678', 'claim-again', '11111111-1111-1111-1111-111111111111', 'laptop 2');
@@ -261,15 +250,32 @@ select public.approve_enrollment('EFGH-5678');
 
 select pg_temp.as_edge_function();
 select is(
-  public.claim_enrollment(pg_temp.h('claim-again'), pg_temp.h('key-a2')) - 'user_id' - 'enrolled_at',
-  '{"outcome": "registered", "device_name": "laptop 2"}'::jsonb,
-  'the account that owns a machine can enrol it again');
+  public.claim_enrollment(pg_temp.h('claim-again'), pg_temp.h('key-a2')),
+  '{"outcome": "device_taken"}'::jsonb,
+  'a machine id that is registered is not registered again, even by its owner');
 
 reset role;
 select results_eq(
-  $$ select name, api_key_hash, revoked_at from public.devices where id = '11111111-1111-1111-1111-111111111111' $$,
-  $$ values ('laptop 2', pg_temp.h('key-a2'), null::timestamptz) $$,
-  'enrolling again takes the new name and key, and brings the machine back');
+  $$ select name, api_key_hash from public.devices where id = '11111111-1111-1111-1111-111111111111' $$,
+  $$ values ('work laptop', pg_temp.h('key-a')) $$,
+  'the machine keeps the name and key it had');
+
+
+-- ------------------------------------------------------------
+-- Retiring ends it
+-- ------------------------------------------------------------
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+
+select results_eq(
+  $$ update public.devices set revoked_at = '2099-01-01' where id = '11111111-1111-1111-1111-111111111111'
+     returning revoked_at <= now() $$,
+  $$ values (true) $$,
+  'retiring a machine stamps it now, whatever time was sent');
+
+select throws_like(
+  $$ update public.devices set revoked_at = null where id = '11111111-1111-1111-1111-111111111111' $$,
+  '%retiring a machine is final%', 'and it cannot be undone by clearing the column');
+
 
 -- ------------------------------------------------------------
 -- When a machine was let in

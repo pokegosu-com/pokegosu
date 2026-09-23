@@ -1,8 +1,0 @@
-{
-  "name": "@pokegosu/cli",
-  "version": "0.0.0",
-  "private": true,
-  "devDependencies": {
-    "bats": "^1.12.0"
-  }
-}

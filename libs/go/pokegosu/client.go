@@ -1,11 +1,14 @@
-// Package api talks to the server's Edge Functions.
+// Package pokegosu is how a client in Go talks to a pokegosu deployment:
+// finding it, enrolling with it, and reporting to it. It is the protocol,
+// with no opinion about who is calling — a CLI, a menubar app, anything.
 //
 // One header carries a credential: x-api-key, this machine's key, which is
-// what the functions check. It is never logged.
+// what the Edge Functions check. It is never logged.
 //
-// Enrolment is the exception — it runs before there is a key, and the code it
-// carries is the whole credential.
-package api
+// Enrolling is the exception. It runs before there is a key: the machine asks
+// under a code it drew, and comes back for the key with the claim token the
+// server gave it.
+package pokegosu
 
 import (
 	"bytes"
@@ -156,29 +159,34 @@ func (c *Client) ClaimEnrollment(ctx context.Context, claimToken string) (Claim,
 	return Claim{APIKey: claimed.APIKey, DeviceName: claimed.DeviceName, EnrolledAt: enrolled}, nil
 }
 
-// Ingest records this machine's rollups and returns how many the server took.
+// Ingest records this machine's rollups, and says how many the server took
+// and how many it ignored as older than this machine's enrolment.
 //
 // Which machine they belong to comes from the key, so there is nothing to
 // say about it here.
 //
 // The rollups are absolute values, so a batch that is sent twice, or split
 // differently, lands on the same numbers.
-func (c *Client) Ingest(ctx context.Context, rollups []usage.Rollup) (int, error) {
+func (c *Client) Ingest(ctx context.Context, rollups []usage.Rollup) (accepted, ignored int, err error) {
 	body := struct {
 		Rollups []usage.Rollup `json:"rollups"`
 	}{Rollups: rollups}
 
-	var accepted struct {
+	var took struct {
 		Accepted int `json:"accepted"`
+		Ignored  int `json:"ignored"`
 	}
-	if err := c.post(ctx, "ingest", body, &accepted); err != nil {
-		return 0, err
+	if err := c.post(ctx, "ingest", body, &took); err != nil {
+		return 0, 0, err
 	}
-	if accepted.Accepted != len(rollups) {
-		return accepted.Accepted, fmt.Errorf(
-			"the server took %d of %d rollups", accepted.Accepted, len(rollups))
+	// Ignored rows are the server keeping its own rule, not a failure. Rows
+	// that are neither taken nor ignored went missing, which is one.
+	if took.Accepted+took.Ignored != len(rollups) {
+		return took.Accepted, took.Ignored, fmt.Errorf(
+			"the server took %d and ignored %d of %d rollups",
+			took.Accepted, took.Ignored, len(rollups))
 	}
-	return accepted.Accepted, nil
+	return took.Accepted, took.Ignored, nil
 }
 
 func (c *Client) post(ctx context.Context, function string, body, out any) error {

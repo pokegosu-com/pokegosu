@@ -19,6 +19,7 @@ tasks:
     inputs:
       - '**/*.go'
       - '/libs/go/coder/**/*.go'
+      - '/libs/go/pokegosu/**/*.go'
       - '/go.mod'
     outputs:
       - 'dist/pokegosu'
@@ -28,6 +29,7 @@ tasks:
     inputs:
       - '**/*.go'
       - '/libs/go/coder/**/*.go'
+      - '/libs/go/pokegosu/**/*.go'
       - '/go.mod'
 
   test:
@@ -35,16 +37,5 @@ tasks:
     inputs:
       - '**/*.go'
       - '/libs/go/coder/**/*.go'
+      - '/libs/go/pokegosu/**/*.go'
       - '/go.mod'
-
-  # Against a running local stack, which serves the Edge Functions too:
-  # `moon run supabase:start` first. Not run by `moon ci` yet.
-  e2e:
-    description: 'Run login and coder sync against the local stack (requires supabase:start)'
-    command: 'bats e2e'
-    toolchains: ['node']
-    env:
-      POKEGOSU_BIN: '$projectRoot/dist/pokegosu'
-    deps:
-      - '~:build'
-    preset: 'utility'

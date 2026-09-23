@@ -12,11 +12,14 @@
 //                    "hour_bucket": "2026-09-12T14:00:00Z",
 //                    "tokens": 3200000 } ] }
 //
-//   → 200 { "accepted": 1 }
+//   → 200 { "accepted": 1, "ignored": 0 }
 //
 // Everything about the body is checked here, before the database is asked
 // anything, so that a malformed request costs no query and a wrong row is
 // named. Which machine this is comes from the key, never from the body.
+//
+// Hours from before the machine was enrolled are ignored rather than refused,
+// and counted back so a client can say so if it wants to.
 
 import { call } from '../_shared/db.ts'
 import { digestOf } from '../_shared/digest.ts'
@@ -58,7 +61,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   switch (result.outcome) {
     case 'accepted':
-      return json({ accepted: result.accepted })
+      return json({ accepted: result.accepted, ignored: result.ignored })
 
     // A revoked key is treated exactly like an unknown one: the caller learns
     // that the key does not work, not why.

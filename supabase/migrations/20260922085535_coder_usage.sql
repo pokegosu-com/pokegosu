@@ -189,7 +189,7 @@ $$;
 --              "hour_bucket": "2026-09-12T14:00:00Z",
 --              "tokens": 3200000}]
 --
---   → {"outcome": "accepted", "accepted": 1}
+--   → {"outcome": "accepted", "accepted": 1, "ignored": 0}
 --   → {"outcome": "unauthorized"}    unknown or revoked key
 --   → {"outcome": "unknown_provider", "provider": "...", "known": [...]}
 --
@@ -198,6 +198,13 @@ $$;
 -- rows: a machine cannot write a sibling's rows because it cannot name one.
 --
 -- The rows are absolute hourly totals, so sending a bucket again replaces it.
+--
+-- Hours from before the machine was enrolled are ignored rather than refused.
+-- An agent that has been running for months leaves months of logs, and none
+-- of it is the account's: the account learned of this machine when it let it
+-- in. Ignoring rather than refusing keeps a client that sends them from
+-- failing over something it cannot fix, and keeps the rule the server's
+-- rather than every client's. The hour the enrolment fell in counts whole.
 -- ============================================================
 create function public.ingest(api_key_hash bytea, rollups jsonb)
 returns jsonb
@@ -212,7 +219,8 @@ declare
   accepted integer;
 begin
   -- A revoked key is treated exactly like an unknown one.
-  select d.id, d.user_id into machine
+  select d.id, d.user_id, date_trunc('hour', d.created_at, 'UTC') as enrolled_hour
+    into machine
     from public.devices d
    where d.api_key_hash = ingest.api_key_hash
      and d.revoked_at is null;
@@ -236,6 +244,7 @@ begin
   insert into public.usage_rollups (user_id, device_id, provider, hour_bucket, tokens, updated_at)
   select machine.user_id, machine.id, r.provider, r.hour_bucket, r.tokens, now()
     from jsonb_to_recordset(rollups) as r(provider text, hour_bucket timestamptz, tokens bigint)
+   where r.hour_bucket >= machine.enrolled_hour
   on conflict (user_id, device_id, provider, hour_bucket) do update
     set tokens = excluded.tokens,
         updated_at = excluded.updated_at;
@@ -243,7 +252,10 @@ begin
 
   update public.devices set last_sync_at = now() where id = machine.id;
 
-  return jsonb_build_object('outcome', 'accepted', 'accepted', accepted);
+  return jsonb_build_object(
+    'outcome', 'accepted',
+    'accepted', accepted,
+    'ignored', jsonb_array_length(rollups) - accepted);
 end;
 $$;
 

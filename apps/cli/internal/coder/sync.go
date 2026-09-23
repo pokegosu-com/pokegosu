@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/scan"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
+	"github.com/pokegosu-com/pokegosu/libs/go/pokegosu"
 )
 
 const syncUsage = `usage: pokegosu coder sync [flags]
@@ -23,9 +23,6 @@ since the last run. One pass, then it exits: run it from cron, a systemd
 timer or launchd rather than leaving it resident.
 
 flags:
-  --since DATE     read from DATE instead of from when this machine was
-                   enrolled: YYYY-MM-DD (UTC) or a full RFC3339 timestamp.
-                   Rounded down to the hour
   --all            upload every bucket, not only the changed ones. Use after
                    the server has lost data, or to check a disagreement
   --quiet          print nothing unless something went wrong, which is what a
@@ -34,9 +31,10 @@ flags:
   --provider ID    read only this provider's logs. Repeatable, and needed
                    alongside --path once there is more than one provider
 
-By default a sync reports nothing from before this machine was enrolled: what
-the logs hold from before then is nobody's business but this machine's. The
-hour the enrolment fell in is reported whole.
+A sync reports nothing from before this machine was enrolled: what the logs
+hold from before then is nobody's business but this machine's. The server
+ignores those hours whoever sends them; skipping them here only saves the
+request. The hour the enrolment fell in is reported whole.
 
 Run login first: sync needs the settings it writes.
 `
@@ -51,7 +49,6 @@ func runSync(args []string) error {
 	fs.SetOutput(io.Discard)
 
 	var (
-		since     = fs.String("since", "", "read from this date instead of from enrolment")
 		all       = fs.Bool("all", false, "upload every bucket")
 		quiet     = fs.Bool("quiet", false, "print nothing unless something went wrong")
 		paths     pathList
@@ -86,12 +83,9 @@ func runSync(args []string) error {
 		return err
 	}
 
-	from, err := readSince(*since, cfg.EnrolledAt)
-	if err != nil {
-		return err
-	}
-
-	result, err := scan.Run(scan.Options{Roots: paths, Providers: selected, Since: from})
+	// The server ignores anything older anyway; this keeps a first run from
+	// carrying months of logs across the network to be dropped.
+	result, err := scan.Run(scan.Options{Roots: paths, Providers: selected, Since: cfg.EnrolledAt})
 	if err != nil {
 		return err
 	}
@@ -120,7 +114,7 @@ func runSync(args []string) error {
 		return nil
 	}
 
-	client := &api.Client{BaseURL: cfg.APIURL, APIKey: cfg.APIKey}
+	client := &pokegosu.Client{BaseURL: cfg.APIURL, APIKey: cfg.APIKey}
 	sent, sendErr := send(client, pending)
 
 	// Whatever the server took, it holds — even if a later batch failed.
@@ -139,29 +133,16 @@ func runSync(args []string) error {
 	return nil
 }
 
-// readSince decides how far back this machine reports.
-//
-// Enrolment is the floor: usage from before an account claimed this machine
-// is not that account's, and a first sync that uploaded months of history
-// would say otherwise. --since is an explicit request and wins either way,
-// so a machine can still be told to report older logs, or fewer.
-func readSince(flagValue string, enrolledAt time.Time) (time.Time, error) {
-	if flagValue == "" {
-		return enrolledAt, nil
-	}
-	return parseSince(flagValue)
-}
-
 // send uploads in batches and returns everything the server accepted, which
 // on failure is the batches that landed before it.
-func send(client *api.Client, rollups []usage.Rollup) ([]usage.Rollup, error) {
+func send(client *pokegosu.Client, rollups []usage.Rollup) ([]usage.Rollup, error) {
 	var sent []usage.Rollup
 
 	for start := 0; start < len(rollups); start += maxPerRequest {
 		end := min(start+maxPerRequest, len(rollups))
 		batch := rollups[start:end]
 
-		if _, err := client.Ingest(context.Background(), batch); err != nil {
+		if _, _, err := client.Ingest(context.Background(), batch); err != nil {
 			return sent, err
 		}
 		sent = append(sent, batch...)
@@ -199,17 +180,18 @@ func report(quiet bool, result scan.Result) {
 
 // explainSync turns a server refusal into the thing to do about it.
 func explainSync(err error) error {
-	var serverErr *api.Error
+	var serverErr *pokegosu.Error
 	if !errors.As(err, &serverErr) {
 		return err
 	}
 	switch {
 	case serverErr.KeyRefused():
 		// A key the server does not know and a machine somebody retired read
-		// the same from here, and the way out of both is the same: login
-		// again, which keeps this machine's id and so its history.
+		// the same from here, and the way out of both is the same: a machine
+		// is enrolled once, so this one starts again as a new machine.
 		return fmt.Errorf("the server refused this machine's key: %s; "+
-			"it may have been retired in the web. Ask the web for a new code and run pokegosu auth login again",
+			"it may have been retired in the web. Delete this machine's settings "+
+			"and run pokegosu auth login to enrol it as a new machine",
 			serverErr.Message)
 	case serverErr.Status == 401:
 		return fmt.Errorf("the server rejected the request before it reached coder (%s); "+

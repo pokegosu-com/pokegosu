@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
+	"github.com/pokegosu-com/pokegosu/libs/go/pokegosu"
 )
 
 func rollups(t *testing.T, count int) []usage.Rollup {
@@ -33,7 +33,7 @@ func rollups(t *testing.T, count int) []usage.Rollup {
 }
 
 // acceptingUntil answers like ingest for the first n requests and fails after.
-func acceptingUntil(t *testing.T, n int) (*api.Client, func() int) {
+func acceptingUntil(t *testing.T, n int) (*pokegosu.Client, func() int) {
 	t.Helper()
 
 	requests := 0
@@ -55,7 +55,7 @@ func acceptingUntil(t *testing.T, n int) (*api.Client, func() int) {
 	}))
 	t.Cleanup(server.Close)
 
-	return &api.Client{BaseURL: server.URL, APIKey: "pgt_key"},
+	return &pokegosu.Client{BaseURL: server.URL, APIKey: "pgt_key"},
 		func() int { return requests }
 }
 
@@ -159,7 +159,7 @@ func TestExplainSyncSeparatesTheTwoRefusals(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := &api.Client{BaseURL: server.URL, APIKey: "pgt_key"}
+			client := &pokegosu.Client{BaseURL: server.URL, APIKey: "pgt_key"}
 			_, err := send(client, rollups(t, 1))
 			if err == nil {
 				t.Fatal("send succeeded although the server refused")

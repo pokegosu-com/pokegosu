@@ -1,4 +1,4 @@
-package api
+package pokegosu
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func TestIngestSendsOnlyTheMachinesKey(t *testing.T) {
 	}))
 	defer server.Close()
 
-	if _, err := client(server.URL).Ingest(context.Background(), oneRollup()); err != nil {
+	if _, _, err := client(server.URL).Ingest(context.Background(), oneRollup()); err != nil {
 		t.Fatalf("Ingest: %v", err)
 	}
 
@@ -135,7 +135,7 @@ func TestRedirectsAreNotFollowed(t *testing.T) {
 	}))
 	defer origin.Close()
 
-	_, err := client(origin.URL).Ingest(context.Background(), oneRollup())
+	_, _, err := client(origin.URL).Ingest(context.Background(), oneRollup())
 	if err == nil {
 		t.Fatal("Ingest followed a redirect")
 	}
@@ -207,7 +207,7 @@ func TestGatewayErrorsKeepTheirMessage(t *testing.T) {
 			w.Write([]byte(body))
 		}))
 
-		_, err := client(server.URL).Ingest(context.Background(), oneRollup())
+		_, _, err := client(server.URL).Ingest(context.Background(), oneRollup())
 		serverErr, ok := err.(*Error)
 		if !ok {
 			t.Fatalf("%s: err = %T, want *Error", body, err)
@@ -231,7 +231,7 @@ func TestOurUnauthorizedIsAKeyRefusal(t *testing.T) {
 	defer server.Close()
 
 	fresh := client(server.URL)
-	_, err := fresh.Ingest(context.Background(), oneRollup())
+	_, _, err := fresh.Ingest(context.Background(), oneRollup())
 	serverErr, ok := err.(*Error)
 	if !ok {
 		t.Fatalf("err = %T, want *Error", err)
@@ -248,7 +248,7 @@ func TestANonJSONFailureStillReports(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := client(server.URL).Ingest(context.Background(), oneRollup())
+	_, _, err := client(server.URL).Ingest(context.Background(), oneRollup())
 	if err == nil {
 		t.Fatal("a 502 was accepted")
 	}
@@ -275,7 +275,7 @@ func TestAnInjectedTransportStillRefusesRedirects(t *testing.T) {
 	c := client(origin.URL)
 	c.HTTP = &http.Client{} // no CheckRedirect: follows by default
 
-	if _, err := c.Ingest(context.Background(), oneRollup()); err == nil {
+	if _, _, err := c.Ingest(context.Background(), oneRollup()); err == nil {
 		t.Fatal("Ingest followed a redirect")
 	}
 	if leaked != "" {

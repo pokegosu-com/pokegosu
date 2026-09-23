@@ -143,18 +143,16 @@ create policy "owners can rename or retire their devices"
 
 
 -- ============================================================
--- Retiring a machine is one way, for the person doing it.
+-- Retiring a machine is final.
 --
--- Setting revoked_at through the API retires a machine; clearing it would
--- bring back a key the person meant to kill, and a timestamp in the future
--- would read as retired while meaning nothing. So the column takes now()
--- when set, and cannot be cleared or moved afterwards. RLS cannot say this —
--- an UPDATE policy's WITH CHECK never sees the old row — so it takes a
--- trigger, the same way profiles keeps a username.
+-- Setting revoked_at retires a machine; clearing it would bring back a key
+-- the person meant to kill, and a timestamp in the future would read as
+-- retired while meaning nothing. So the column takes now() when set, and
+-- cannot be cleared or moved afterwards, by anyone: retiring is final, and a
+-- machine that comes back after it is a new machine with an id of its own.
 --
--- Enrolling the machine again, with a fresh code, is how it comes back.
--- claim_enrollment does that as the table's owner, which is why the
--- rule applies to authenticated alone.
+-- RLS cannot say this — an UPDATE policy's WITH CHECK never sees the old
+-- row — so it takes a trigger, the same way profiles keeps a username.
 -- ============================================================
 create function public.enforce_device_retirement()
 returns trigger
@@ -162,12 +160,8 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if current_user <> 'authenticated' then
-    return new;
-  end if;
-
   if old.revoked_at is not null and new.revoked_at is distinct from old.revoked_at then
-    raise exception 'a retired machine comes back by enrolling it again, not by clearing revoked_at';
+    raise exception 'retiring a machine is final; enrol a new machine instead';
   end if;
   if old.revoked_at is null and new.revoked_at is not null then
     new.revoked_at := now();
@@ -176,7 +170,7 @@ begin
 end;
 $$;
 
-create trigger devices_retirement_is_one_way
+create trigger devices_retirement_is_final
   before update on public.devices
   for each row execute function public.enforce_device_retirement();
 
@@ -344,13 +338,12 @@ $$;
 --      "enrolled_at": "..."}
 --   → {"outcome": "waiting"}      nobody has approved it yet
 --   → {"outcome": "not_found"}    expired, or already collected
---   → {"outcome": "device_taken"} that machine belongs to another account
+--   → {"outcome": "device_taken"} that machine id is already registered
 --
--- A machine the same account already registered is enrolled again with the
--- new key, which is how a retired machine, or one that lost its settings but
--- kept its id, comes back. It keeps its id, and so its history — and
--- enrolled_at stays the first time it was let in, which is what a service
--- reads to know how far back this machine's usage is its own to report.
+-- A machine id is enrolled once and never again. The id is the machine's own,
+-- kept in its settings, so a machine that needs a new key — one that was
+-- retired, or that lost its key — becomes a new machine by starting from new
+-- settings, and the old row keeps the history it earned.
 -- ============================================================
 create function public.claim_enrollment(claim_hash bytea, api_key_hash bytea)
 returns jsonb
@@ -375,21 +368,17 @@ begin
     return jsonb_build_object('outcome', 'waiting');
   end if;
 
-  insert into public.devices as d (id, user_id, name, api_key_hash)
-  values (request.device_id, request.user_id, request.device_name, claim_enrollment.api_key_hash)
-  on conflict (id) do update
-    set name = excluded.name,
-        api_key_hash = excluded.api_key_hash,
-        revoked_at = null
-    where d.user_id = excluded.user_id
-  returning d.id, d.created_at into registered;
-
-  -- Nothing came back: the id is taken, and not by this account. The request
-  -- stays, so a person can see it is still waiting rather than having it
-  -- vanish; it expires on its own.
-  if registered.id is null then
+  begin
+    insert into public.devices (id, user_id, name, api_key_hash)
+    values (request.device_id, request.user_id, request.device_name, claim_enrollment.api_key_hash)
+    returning id, created_at into registered;
+  exception when unique_violation then
+    -- The id is the machine's own invention, so one that is already
+    -- registered is a collision beyond reckoning, somebody trying it on, or
+    -- a machine asking twice. None of them gets to learn whose it is, and
+    -- none of them takes it.
     return jsonb_build_object('outcome', 'device_taken');
-  end if;
+  end;
 
   -- Collected once: the claim token is spent along with the request.
   delete from public.enrollments e where e.code_hash = request.code_hash;

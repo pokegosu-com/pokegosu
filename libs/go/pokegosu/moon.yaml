@@ -1,0 +1,21 @@
+# How a client in Go talks to a pokegosu deployment: finding it, enrolling
+# with it, and reporting to it. The protocol, with no opinion about who is
+# calling — the CLI today, a menubar app tomorrow.
+id: 'go-pokegosu'
+layer: 'library'
+language: 'go'
+toolchains:
+  default: 'go'
+
+tasks:
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - '/go.mod'
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+      - '/go.mod'

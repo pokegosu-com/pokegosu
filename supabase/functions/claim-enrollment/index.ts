@@ -79,11 +79,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       )
 
     case 'device_taken':
-      return fail(
-        409,
-        'device_owned_by_another_account',
-        'that machine is already registered to another account',
-      )
+      return fail(409, 'device_owned_by_another_account', 'that machine id is already registered')
 
     default:
       console.error('claim_enrollment answered', result)

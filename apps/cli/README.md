@@ -32,19 +32,17 @@ Then let a scheduler run the sync. There is no daemon: one pass takes seconds.
 */15 * * * * /usr/local/bin/pokegosu coder sync --quiet
 ```
 
-- A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and a first run would otherwise upload months of history. `--since` asks for a different starting point, further back or less far.
+- A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and the server ignores those hours whoever sends them.
 - `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
-- Running `pokegosu auth login` again on an enrolled machine enrols it again with a new key. It keeps its id and history. That is also how a machine retired in the web comes back.
+- A machine is enrolled once. Its id lives in the settings, so a machine that was retired, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
 Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGOSU_CONFIG_HOME` puts them somewhere else. Each service keeps whatever else it needs beside them, such as coder's record of what it has already sent.
 
 ## Tests
 
-| What                                       | How                                                |
-| ------------------------------------------ | -------------------------------------------------- |
-| Unit tests                                 | `moon run cli:test`                                |
-| The parser, against the shared fixtures    | `moon run tests-coder:conformance-go`              |
-| login and coder sync against a local stack | `moon run supabase:start`, then `moon run cli:e2e` |
-
-The e2e suites make their own accounts and enrollment codes the way the web does, so nothing has to be set up by hand.
+| What                                    | How                                   |
+| --------------------------------------- | ------------------------------------- |
+| Unit tests                              | `moon run cli:test`                   |
+| The protocol this speaks                | `moon run go-pokegosu:test`           |
+| The parser, against the shared fixtures | `moon run tests-coder:conformance-go` |
