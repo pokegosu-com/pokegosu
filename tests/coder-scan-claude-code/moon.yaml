@@ -10,7 +10,7 @@ workspace:
     include: []
 
 tasks:
-  build-driver-go:
+  build-go:
     description: 'Build the Go driver around libs/go/coder'
     command: 'go build -o dist/driver-go ./drivers/go'
     toolchains: ['go']
@@ -21,13 +21,13 @@ tasks:
     outputs:
       - 'dist/driver-go'
 
-  conformance-go:
+  go:
     description: 'Run the scan cases against the Go driver'
     command: 'bats scan.bats'
     env:
       CODER_SCAN_DRIVER: '$projectRoot/dist/driver-go'
     deps:
-      - '~:build-driver-go'
+      - '~:build-go'
     inputs:
       - 'scan.bats'
       - 'helpers/**/*'

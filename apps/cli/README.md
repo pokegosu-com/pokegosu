@@ -43,8 +43,8 @@ Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGO
 
 ## Tests
 
-| What                                 | How                                              |
-| ------------------------------------ | ------------------------------------------------ |
-| Unit tests                           | `moon run cli:test`                              |
-| The libraries it is built from       | `moon run go-auth:test go-coder:test`            |
-| The parser, against the shared cases | `moon run coder-scan-claude-code:conformance-go` |
+| What                                 | How                                   |
+| ------------------------------------ | ------------------------------------- |
+| Unit tests                           | `moon run cli:test`                   |
+| The libraries it is built from       | `moon run go-auth:test go-coder:test` |
+| The parser, against the shared cases | `moon run coder-scan-claude-code:go`  |

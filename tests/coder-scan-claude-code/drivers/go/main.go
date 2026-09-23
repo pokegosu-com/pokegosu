@@ -1,9 +1,9 @@
-// Command driver is the Go implementation of this suite's conformance
-// driver: the smallest program that puts libs/go/coder behind the protocol
-// in the README beside it, so the shared harness can check it.
+// Command driver puts libs/go/coder behind this suite's protocol: given a
+// directory of Claude Code logs, print the hourly rollups a Go client would
+// send for them.
 //
-// It holds no logic of its own. It calls the same entry points a Go client
-// calls, and only turns arguments into options and the result into JSON.
+// It holds no logic of its own. It calls what a Go client calls, and only
+// turns the result into JSON.
 package main
 
 import (
@@ -12,28 +12,24 @@ import (
 	"os"
 
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
+	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider/claudecode"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/scan"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
 
 func main() {
-	if len(os.Args) != 4 || os.Args[1] != "scan" {
-		fmt.Fprintln(os.Stderr, "usage: driver scan <provider> <logs directory>")
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: driver <logs directory>")
 		os.Exit(2)
 	}
 
-	p := find(os.Args[2])
-	if p == nil {
-		fail("unknown_provider")
-	}
-
 	result, err := scan.Run(scan.Options{
-		Providers: []provider.Provider{p},
-		Roots:     []string{os.Args[3]},
+		Providers: []provider.Provider{claudecode.New()},
+		Roots:     []string{os.Args[1]},
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		fail("scan_failed")
+		os.Exit(1)
 	}
 
 	rollups := result.Rollups
@@ -44,20 +40,4 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func find(id string) provider.Provider {
-	for _, p := range scan.Providers() {
-		if p.ID() == id {
-			return p
-		}
-	}
-	return nil
-}
-
-// fail reports a failure the way the protocol asks: a kind, not a message,
-// so that implementations in different languages can agree on it.
-func fail(kind string) {
-	_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"error": map[string]string{"kind": kind}})
-	os.Exit(1)
 }

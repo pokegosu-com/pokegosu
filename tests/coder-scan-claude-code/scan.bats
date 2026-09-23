@@ -2,7 +2,7 @@
 #
 # What every implementation has to make of Claude Code's logs.
 #
-#   moon run coder-scan-claude-code:conformance-go
+#   moon run coder-scan-claude-code:go
 #
 # or, with any driver built:
 #
@@ -30,22 +30,12 @@ assert_case() {
     local logs expected actual
     logs=$(case_logs "$1") || return 1
     expected=$(case_expected "$1") || return 1
-    actual=$(driver scan claude_code "$logs") || { echo "scan failed on $1: $actual" >&2; return 1; }
+    actual=$(driver "$logs") || { echo "scan failed on $1: $actual" >&2; return 1; }
 
     assert_same_json "$expected" "$actual" || {
         echo "^ $1" >&2
         return 1
     }
-}
-
-# --- the protocol -----------------------------------------------------------
-
-@test "an unknown provider is reported by kind, not by message" {
-    run driver scan no-such-agent "$BATS_TEST_TMPDIR"
-    [[ $status -ne 0 ]]
-
-    printf '%s' '{"error": {"kind": "unknown_provider"}}' > "$BATS_TEST_TMPDIR/expected.json"
-    assert_same_json "$BATS_TEST_TMPDIR/expected.json" "$output"
 }
 
 # --- the shape of a scan ----------------------------------------------------
