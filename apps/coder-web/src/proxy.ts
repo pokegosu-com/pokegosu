@@ -4,18 +4,10 @@ import { createClient } from '@pokegosu/supabase/server'
 
 import { env } from '@/env'
 
-/** Reachable without a session: the CLI reads the discovery document. */
-const PUBLIC_PREFIXES = ['/.well-known']
-
 export async function proxy(request: NextRequest) {
   // Replaced by setAll below whenever Supabase rotates the session cookies, so
   // the refreshed values reach the browser.
   let response = NextResponse.next({ request })
-
-  const { pathname } = request.nextUrl
-  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return response
-  }
 
   const supabase = createClient({
     getAll: () => request.cookies.getAll(),

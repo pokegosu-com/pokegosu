@@ -1,5 +1,6 @@
-// Package coder is the coder service's side of the command line: enrolling a
-// machine, reading its agents' logs, and uploading hourly totals.
+// Package coder is the coder service's side of the command line: reading this
+// machine's agent logs and uploading hourly totals. Enrolling the machine is
+// the account's, in internal/account.
 //
 // The parsing itself lives in libs/go/coder, which clients in other languages
 // match through tests/coder. What is here is the part only a CLI has: flags,
@@ -12,14 +13,9 @@ import (
 	"os"
 )
 
-// defaultURL is the service login uses when told no other. Set at build time
-// for a build meant for another deployment; --url overrides it either way.
-var defaultURL = "https://coder.pokegosu.com"
-
 const usageText = `pokegosu coder collects coding agent token usage.
 
 usage:
-  pokegosu coder login [flags]   save settings and register this machine
   pokegosu coder scan [flags]    parse local logs and print hourly rollups
   pokegosu coder sync [flags]    upload what has changed since the last run
 
@@ -34,8 +30,6 @@ func Run(args []string) error {
 	}
 
 	switch cmd := args[0]; cmd {
-	case "login":
-		return runLogin(args[1:])
 	case "scan":
 		return runScan(args[1:])
 	case "sync":

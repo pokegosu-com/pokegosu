@@ -4,8 +4,9 @@ import { createClient } from '@pokegosu/supabase/server'
 
 import { safeReturnTo } from '@/lib/return-to'
 
-/** Reachable without a session. */
-const PUBLIC_PREFIXES = ['/login', '/auth']
+/** Reachable without a session: signing in, and the discovery document the
+ *  CLI reads before it has anything to sign in with. */
+const PUBLIC_PREFIXES = ['/login', '/auth', '/.well-known']
 
 export async function proxy(request: NextRequest) {
   // Replaced by setAll below whenever Supabase rotates the session cookies, so

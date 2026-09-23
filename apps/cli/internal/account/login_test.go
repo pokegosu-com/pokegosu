@@ -1,4 +1,4 @@
-package coder
+package account
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/config"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 )
 
 func TestSettingsDefaultsToTheService(t *testing.T) {

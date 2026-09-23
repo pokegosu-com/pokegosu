@@ -39,7 +39,7 @@ func TestDiscoverRefusesWhatIsNotAService(t *testing.T) {
 		_, err := Discover(context.Background(), srv.Client(), srv.URL)
 		srv.Close()
 
-		if err == nil || !strings.Contains(err.Error(), "does not look like a coder service") {
+		if err == nil || !strings.Contains(err.Error(), "does not look like a pokegosu service") {
 			t.Errorf("%s: err = %v", name, err)
 		}
 	}

@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// DiscoveryPath is where a coder service says where its API is.
-const DiscoveryPath = "/.well-known/coder.json"
+// DiscoveryPath is where a pokegosu service says where its API is.
+const DiscoveryPath = "/.well-known/pokegosu.json"
 
 // Discover asks the service a person knows — the web address they sign in
 // at — where the API behind it lives. People only ever type that address;
@@ -32,7 +32,7 @@ func Discover(ctx context.Context, client *http.Client, serviceURL string) (stri
 	}
 	defer resp.Body.Close()
 
-	notService := fmt.Errorf("%s does not look like a coder service: %s did not describe one", serviceURL, url)
+	notService := fmt.Errorf("%s does not look like a pokegosu service: %s did not describe one", serviceURL, url)
 	if resp.StatusCode != http.StatusOK {
 		return "", notService
 	}

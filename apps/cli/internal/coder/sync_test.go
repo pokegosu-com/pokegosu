@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/api"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )

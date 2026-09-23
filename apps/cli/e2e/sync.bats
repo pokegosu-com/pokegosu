@@ -36,7 +36,7 @@ setup() {
     USER_ID=$ACCOUNT_USER_ID
     SESSION=$ACCOUNT_SESSION
 
-    pokegosu coder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
+    pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
         --device-name sync-test > /dev/null
     DEVICE=$(setting device_id)
 }
@@ -103,7 +103,7 @@ sync_fixture() {
     first=$DEVICE
 
     use_config_home "$BATS_TEST_TMPDIR/second"
-    pokegosu coder login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
+    pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
         --device-name second > /dev/null
     second=$(setting device_id)
     [ "$second" != "$first" ]
@@ -148,7 +148,7 @@ sync_fixture() {
     sync_fixture claude_code truncated-last-line
     retire "$SESSION" "$DEVICE"
 
-    pokegosu coder login --code "$(enrollment_code "$SESSION")" > /dev/null
+    pokegosu login --code "$(enrollment_code "$SESSION")" > /dev/null
     [ "$(setting device_id)" = "$DEVICE" ]
 
     run sync_fixture claude_code normal-session

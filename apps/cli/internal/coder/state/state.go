@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
@@ -34,15 +33,14 @@ type State struct {
 	Sent []usage.Rollup `json:"sent"`
 }
 
-// Path returns the cache file, which sits beside the settings and is named
-// after them.
+// Path returns the cache file, which sits beside the settings enrolment
+// wrote, in the same config directory.
 //
-// Named after them because two settings files in one directory — a second
-// account, or a test — would otherwise share one cache and evict each other
-// on every run, turning every sync into a full upload.
+// Named for coder rather than for the settings: the settings belong to the
+// account and every service reads them, while this is one service's memory of
+// what it has already sent.
 func Path(settingsPath string) string {
-	name := strings.TrimSuffix(filepath.Base(settingsPath), filepath.Ext(settingsPath))
-	return filepath.Join(filepath.Dir(settingsPath), name+".sent-rollups.json")
+	return filepath.Join(filepath.Dir(settingsPath), "coder.sent-rollups.json")
 }
 
 // Load reads what was sent to this server for this device.

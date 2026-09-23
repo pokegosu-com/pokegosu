@@ -1,4 +1,6 @@
-// Package config stores what the client needs to reach the server.
+// Package config stores what enrolling this machine left behind: the service
+// it was enrolled with, the API that service pointed to, this machine's id,
+// and the key it speaks with. Every service reads the same file.
 //
 // The file holds an API key, so it is written for the owner only and never
 // printed back out. Everything in it comes from login: the service address a
@@ -14,8 +16,10 @@ import (
 	"strings"
 )
 
-// settingsFile is coder's own file under the pokegosu config directory.
-const settingsFile = "coder.json"
+// settingsFile holds what enrolment left behind. It belongs to the account
+// rather than to any one service, so there is one of it; a service that needs
+// a file of its own keeps it beside this one.
+const settingsFile = "config.json"
 
 // Config is the on-disk settings file.
 type Config struct {

@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/api"
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/config"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/scan"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
@@ -70,7 +70,7 @@ func runSync(args []string) error {
 		return err
 	}
 	if cfg == nil || cfg.APIKey == "" || cfg.APIURL == "" || cfg.DeviceID == "" {
-		return fmt.Errorf("not logged in: run pokegosu coder login first")
+		return fmt.Errorf("not logged in: run pokegosu login first")
 	}
 
 	selected, err := selectProviders(providers)
@@ -183,7 +183,7 @@ func explainSync(err error) error {
 		// the same from here, and the way out of both is the same: login
 		// again, which keeps this machine's id and so its history.
 		return fmt.Errorf("the server refused this machine's key: %s; "+
-			"it may have been retired in the web. Ask the web for a new code and run pokegosu coder login again",
+			"it may have been retired in the web. Ask the web for a new code and run pokegosu login again",
 			serverErr.Message)
 	case serverErr.Status == 401:
 		return fmt.Errorf("the server rejected the request before it reached coder (%s); "+

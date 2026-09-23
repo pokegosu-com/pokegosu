@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 
+import { env } from '@/env'
 import { compactTokens, exactTokens } from '@/lib/format'
 
 /** What the usage function answers with. */
@@ -104,9 +104,10 @@ export function Dashboard() {
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold tracking-tight">아직 기록이 없습니다</h1>
         <p className="text-muted text-sm">
-          <Link href="/devices/new" className="text-accent underline">
+          계정에서{' '}
+          <a href={`${env.NEXT_PUBLIC_ACCOUNT_URL}/devices/new`} className="text-accent underline">
             기기를 추가
-          </Link>
+          </a>
           하고 그 기기에서 <code>pokegosu coder sync</code> 를 실행하세요.
         </p>
       </section>

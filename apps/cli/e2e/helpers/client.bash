@@ -25,7 +25,7 @@ require_client() {
 # write a test account's API key into the developer's own settings.
 use_config_home() {
     export POKEGOSU_CONFIG_HOME=$1
-    SETTINGS=$1/coder.json
+    SETTINGS=$1/config.json
     mkdir -p "$1"
 }
 

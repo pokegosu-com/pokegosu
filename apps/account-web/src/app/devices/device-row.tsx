@@ -125,7 +125,7 @@ export function DeviceRow({ device }: { device: Device }) {
 
       {retired && (
         <p className="text-muted text-xs">
-          이 기기에서 새 코드로 <code>pokegosu coder login</code> 을 다시 하면 기록을 그대로 둔 채
+          이 기기에서 새 코드로 <code>pokegosu login</code> 을 다시 하면 기록을 그대로 둔 채
           되살아납니다.
         </p>
       )}

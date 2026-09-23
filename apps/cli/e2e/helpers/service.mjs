@@ -1,11 +1,11 @@
-// service <api url> — stands in for coder-web's one job the CLI needs:
+// service <api url> — stands in for account-web's one job the CLI needs:
 // saying where the API is. Prints the port it took.
 import { createServer } from 'node:http'
 
 const apiURL = process.argv[2]
 
 const server = createServer((req, res) => {
-  if (req.url === '/.well-known/coder.json') {
+  if (req.url === '/.well-known/pokegosu.json') {
     res.setHeader('content-type', 'application/json')
     res.end(JSON.stringify({ api_url: apiURL }))
     return

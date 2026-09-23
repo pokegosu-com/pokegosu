@@ -40,7 +40,7 @@ tasks:
   # Against a running local stack, which serves the Edge Functions too:
   # `moon run supabase:start` first. Not run by `moon ci` yet.
   e2e:
-    description: 'Run coder login and sync against the local stack (requires supabase:start)'
+    description: 'Run login and coder sync against the local stack (requires supabase:start)'
     command: 'bats e2e'
     toolchains: ['node']
     env:

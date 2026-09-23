@@ -215,16 +215,17 @@ func TestForget(t *testing.T) {
 	}
 }
 
-// Two settings files in one directory would otherwise share one cache and
-// evict each other, turning every sync into a full upload.
-func TestPathIsNamedAfterTheSettings(t *testing.T) {
-	first := Path("/home/someone/.config/coder/config.json")
-	second := Path("/home/someone/.config/coder/work.json")
+// The settings belong to the account and every service reads them; this
+// cache is coder's own memory, and sits beside them.
+func TestPathIsCodersOwnFileBesideTheSettings(t *testing.T) {
+	got := Path("/home/someone/.config/pokegosu/config.json")
 
-	if first == second {
-		t.Errorf("both settings share the cache %q", first)
+	if want := "/home/someone/.config/pokegosu/coder.sent-rollups.json"; got != want {
+		t.Errorf("Path() = %q, want %q", got, want)
 	}
-	if filepath.Dir(first) != "/home/someone/.config/coder" {
-		t.Errorf("Path() = %q, want it beside the settings", first)
+
+	// A second config directory — another account, or a test — keeps its own.
+	if other := Path("/tmp/elsewhere/config.json"); other == got {
+		t.Errorf("two config directories share the cache %q", got)
 	}
 }

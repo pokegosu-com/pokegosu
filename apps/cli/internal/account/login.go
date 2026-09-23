@@ -1,4 +1,8 @@
-package coder
+// Package account is the part of the command line that is not any one
+// service's: enrolling this machine with a pokegosu account, and the settings
+// that enrolment leaves behind. Every service speaks with the key it gets
+// here.
+package account
 
 import (
 	"bufio"
@@ -10,11 +14,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/api"
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/config"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 )
 
-const loginUsage = `usage: pokegosu coder login [flags]
+const loginUsage = `usage: pokegosu login [flags]
 
 Enrols this machine. Open the web, ask it to add a machine, and type in the
 code it shows you. The machine gets its own key that way — nothing secret is
@@ -36,7 +40,12 @@ keeps its id, and so its history, and gets a new key. That is how a machine
 retired in the web comes back.
 `
 
-func runLogin(args []string) error {
+// defaultURL is the service login uses when told no other. Set at build time
+// for a build meant for another deployment; --url overrides it either way.
+var defaultURL = "https://account.pokegosu.com"
+
+// Login enrols this machine with an account.
+func Login(args []string) error {
 	fs := flag.NewFlagSet("login", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 

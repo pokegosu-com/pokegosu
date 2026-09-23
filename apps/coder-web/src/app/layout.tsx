@@ -21,12 +21,12 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
             <Link href="/" className="font-semibold tracking-tight">
               coder
             </Link>
-            <Link href="/devices" className="text-muted hover:text-ink">
+            <a
+              href={`${env.NEXT_PUBLIC_ACCOUNT_URL}/devices`}
+              className="text-muted hover:text-ink"
+            >
               기기
-            </Link>
-            <Link href="/devices/new" className="text-muted hover:text-ink">
-              기기 추가
-            </Link>
+            </a>
             <a href={env.NEXT_PUBLIC_ACCOUNT_URL} className="text-muted hover:text-ink ml-auto">
               계정
             </a>
