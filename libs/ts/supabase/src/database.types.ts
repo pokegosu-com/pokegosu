@@ -58,24 +58,36 @@ export type Database = {
         }
         Relationships: []
       }
-      enrollment_codes: {
+      enrollments: {
         Row: {
+          approved_at: string | null
+          claim_hash: string
           code_hash: string
           created_at: string
+          device_id: string
+          device_name: string
           expires_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          approved_at?: string | null
+          claim_hash: string
           code_hash: string
           created_at?: string
+          device_id: string
+          device_name: string
           expires_at: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          approved_at?: string | null
+          claim_hash?: string
           code_hash?: string
           created_at?: string
+          device_id?: string
+          device_name?: string
           expires_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -159,14 +171,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_enrollment_code: { Args: never; Returns: Json }
+      approve_enrollment: { Args: { code: string }; Returns: Json }
+      claim_enrollment: {
+        Args: { api_key_hash: string; claim_hash: string }
+        Returns: Json
+      }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
-      redeem_enrollment_code: {
+      normalize_code: { Args: { typed: string }; Returns: string }
+      pending_enrollment: { Args: { code: string }; Returns: Json }
+      start_enrollment: {
         Args: {
-          api_key_hash: string
+          claim_hash: string
           code_hash: string
           device_id: string
           device_name: string
+          lifetime: string
         }
         Returns: Json
       }

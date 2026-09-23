@@ -9,13 +9,24 @@ import (
 	"strings"
 )
 
-// DiscoveryPath is where a pokegosu service says where its API is.
+// DiscoveryPath is where a deployment says what it is made of.
 const DiscoveryPath = "/.well-known/pokegosu.json"
 
-// Discover asks the service a person knows — the web address they sign in
-// at — where the API behind it lives. People only ever type that address;
-// the API's is the service's business, and it can move without a release.
-func Discover(ctx context.Context, client *http.Client, serviceURL string) (string, error) {
+// Service is what a deployment says about itself.
+type Service struct {
+	// APIURL is where the Edge Functions are, without a trailing slash.
+	APIURL string
+
+	// AccountURL is where a person signs in and approves a machine. login
+	// prints it, so nobody is left looking for it.
+	AccountURL string
+}
+
+// Discover asks the deployment a person knows — the address they were given,
+// or the default — what it is made of. People only ever type that address;
+// where its parts live is the deployment's business, and they can move
+// without a CLI release.
+func Discover(ctx context.Context, client *http.Client, serviceURL string) (Service, error) {
 	if client == nil {
 		client = (&Client{}).http()
 	}
@@ -23,34 +34,42 @@ func Discover(ctx context.Context, client *http.Client, serviceURL string) (stri
 	url := serviceURL + DiscoveryPath
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", fmt.Errorf("building the request: %w", err)
+		return Service{}, fmt.Errorf("building the request: %w", err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("reaching %s: %w", serviceURL, err)
+		return Service{}, fmt.Errorf("reaching %s: %w", serviceURL, err)
 	}
 	defer resp.Body.Close()
 
 	notService := fmt.Errorf("%s does not look like a pokegosu service: %s did not describe one", serviceURL, url)
 	if resp.StatusCode != http.StatusOK {
-		return "", notService
+		return Service{}, notService
 	}
 
 	var doc struct {
-		APIURL string `json:"api_url"`
+		APIURL     string `json:"api_url"`
+		AccountURL string `json:"account_url"`
 	}
 	payload, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", url, err)
+		return Service{}, fmt.Errorf("reading %s: %w", url, err)
 	}
 	if json.Unmarshal(payload, &doc) != nil {
-		return "", notService
+		return Service{}, notService
 	}
 
-	api := strings.TrimRight(doc.APIURL, "/")
-	if !strings.HasPrefix(api, "https://") && !strings.HasPrefix(api, "http://") {
-		return "", notService
+	service := Service{
+		APIURL:     strings.TrimRight(doc.APIURL, "/"),
+		AccountURL: strings.TrimRight(doc.AccountURL, "/"),
 	}
-	return api, nil
+	if !isWebURL(service.APIURL) || !isWebURL(service.AccountURL) {
+		return Service{}, notService
+	}
+	return service, nil
+}
+
+func isWebURL(value string) bool {
+	return strings.HasPrefix(value, "https://") || strings.HasPrefix(value, "http://")
 }

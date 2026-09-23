@@ -36,12 +36,12 @@ setup() {
     USER_ID=$ACCOUNT_USER_ID
     SESSION=$ACCOUNT_SESSION
 
-    pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
-        --device-name sync-test > /dev/null
+    enrol "$SESSION" sync-test
     DEVICE=$(setting device_id)
 }
 
 teardown() {
+    kill "${LOGIN_PID:-}" 2> /dev/null
     delete_account "${USER_ID:-}"
 }
 
@@ -103,8 +103,7 @@ sync_fixture() {
     first=$DEVICE
 
     use_config_home "$BATS_TEST_TMPDIR/second"
-    pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" \
-        --device-name second > /dev/null
+    enrol "$SESSION" second
     second=$(setting device_id)
     [ "$second" != "$first" ]
 
@@ -148,7 +147,7 @@ sync_fixture() {
     sync_fixture claude_code truncated-last-line
     retire "$SESSION" "$DEVICE"
 
-    pokegosu auth login --code "$(enrollment_code "$SESSION")" > /dev/null
+    enrol "$SESSION"
     [ "$(setting device_id)" = "$DEVICE" ]
 
     run sync_fixture claude_code normal-session

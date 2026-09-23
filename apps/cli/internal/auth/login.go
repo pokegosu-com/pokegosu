@@ -4,7 +4,6 @@
 package auth
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -12,6 +11,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/api"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
@@ -19,25 +19,33 @@ import (
 
 const loginUsage = `usage: pokegosu auth login [flags]
 
-Enrols this machine. Open the web, ask it to add a machine, and type in the
-code it shows you. The machine gets its own key that way — nothing secret is
-ever typed or pasted.
+Enrols this machine. It shows a short code and an address; open that address,
+signed in, and approve the code you see here. Nothing secret is typed or
+pasted, and the machine's key is handed to this machine alone.
 
 flags:
-  --url URL           the service you sign in at, for a deployment other
-                      than the default. The web's "add a machine" page shows
-                      the command with it filled in
-  --code CODE         the enrollment code, for a script that cannot be asked.
-                      Left out, login asks for it.
-  --device-name NAME  what this machine is called in the web UI.
+  --url URL           the deployment, for one other than the default
+  --device-name NAME  what this machine is called in the web.
                       Defaults to the hostname
+  --code CODE         ask under this code instead of drawing one, for a
+                      script that has to know it in advance
 
-Settings are written to ~/.config/coder/config.json, readable only by you.
+Settings are written to ~/.config/pokegosu/config.json, readable only by you.
 
-A machine that is already enrolled is enrolled again with the new code: it
-keeps its id, and so its history, and gets a new key. That is how a machine
-retired in the web comes back.
+A machine that is already enrolled is enrolled again: it keeps its id, and so
+its history, and gets a new key. That is how a machine retired in the web
+comes back.
 `
+
+// pollInterval is how often the machine asks whether it has been let in.
+// Short enough that approving feels immediate, long enough that ten minutes
+// of waiting is a few hundred requests.
+var pollInterval = 2 * time.Second
+
+// attempts is how many times a drawn code may collide with one already being
+// waited on before login gives up. One collision is a one in a trillion
+// event; three is not worth a retry loop that never ends.
+const attempts = 3
 
 // defaultURL is the service login uses when told no other. Set at build time
 // for a build meant for another deployment; --url overrides it either way.
@@ -49,7 +57,7 @@ func runLogin(args []string) error {
 
 	var (
 		url        = fs.String("url", "", "the service URL")
-		code       = fs.String("code", "", "the enrollment code")
+		givenCode  = fs.String("code", "", "ask under this code instead of drawing one")
 		deviceName = fs.String("device-name", "", "what this machine is called")
 	)
 
@@ -71,7 +79,7 @@ func runLogin(args []string) error {
 		return err
 	}
 	if enrolled(stored) {
-		fmt.Printf("%q is enrolled with %s; a new code enrols it again with a new key\n",
+		fmt.Printf("%q is enrolled with %s; approving again gives it a new key\n",
 			stored.DeviceName, stored.URL)
 	}
 
@@ -80,27 +88,36 @@ func runLogin(args []string) error {
 		return err
 	}
 
-	typed, err := readCode(*code, os.Stdin, os.Stdout)
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
 
-	// Asked every time rather than kept from last time: the service decides
-	// where its API is, and may have moved it.
-	cfg.APIURL, err = api.Discover(context.Background(), nil, cfg.URL)
+	// Asked every time rather than kept from last time: the deployment
+	// decides where its parts are, and may have moved them.
+	service, err := api.Discover(ctx, nil, cfg.URL)
 	if err != nil {
 		return err
 	}
+	cfg.APIURL = service.APIURL
 
 	client := &api.Client{BaseURL: cfg.APIURL}
-	key, err := client.Enrol(context.Background(), typed, cfg.DeviceID, cfg.DeviceName)
+	code, started, err := ask(ctx, client, cfg, *givenCode)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\nopen %s/devices/add/%s\n", service.AccountURL, format(code))
+	fmt.Printf("and approve this machine. The code is %s.\n\n", format(code))
+
+	claim, err := wait(ctx, client, started, os.Stdout)
 	if err != nil {
 		return explain(err)
 	}
-	cfg.APIKey = key
+	cfg.APIKey = claim.APIKey
+	if claim.DeviceName != "" {
+		cfg.DeviceName = claim.DeviceName
+	}
 
-	// Saved only after the server accepted them: settings on disk should mean
-	// settings that work.
+	// Saved only after the server handed over a key: settings on disk should
+	// mean settings that work.
 	path, err := config.Save(cfg)
 	if err != nil {
 		return err
@@ -109,6 +126,67 @@ func runLogin(args []string) error {
 	fmt.Printf("enrolled %q with %s\n", cfg.DeviceName, cfg.URL)
 	fmt.Printf("settings saved to %s\n", path)
 	return nil
+}
+
+// ask starts an enrolment, drawing a code unless one was given.
+//
+// A code already being waited on is not a failure: the machine draws another.
+// A code from --code is the caller's, so a collision there is reported rather
+// than worked around.
+func ask(ctx context.Context, client *api.Client, cfg *config.Config, given string) (string, api.Enrollment, error) {
+	if given != "" {
+		code := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(given), "-", ""))
+		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
+		return code, started, err
+	}
+
+	for range attempts {
+		code, err := newCode()
+		if err != nil {
+			return "", api.Enrollment{}, err
+		}
+
+		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
+		if err == nil {
+			return code, started, nil
+		}
+
+		var serverErr *api.Error
+		if !errors.As(err, &serverErr) || !serverErr.CodeTaken() {
+			return "", api.Enrollment{}, err
+		}
+	}
+	return "", api.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
+}
+
+// wait asks until a person approves, or the request runs out.
+func wait(ctx context.Context, client *api.Client, started api.Enrollment, progress io.Writer) (api.Claim, error) {
+	fmt.Fprint(progress, "waiting for approval… ")
+
+	for {
+		claim, err := client.ClaimEnrollment(ctx, started.ClaimToken)
+		if err != nil {
+			fmt.Fprintln(progress)
+			return api.Claim{}, err
+		}
+		if !claim.Waiting {
+			fmt.Fprintln(progress, "approved")
+			return claim, nil
+		}
+
+		if time.Now().After(started.ExpiresAt) {
+			fmt.Fprintln(progress)
+			return api.Claim{}, fmt.Errorf(
+				"nobody approved this machine in time; run pokegosu auth login again")
+		}
+
+		select {
+		case <-ctx.Done():
+			fmt.Fprintln(progress)
+			return api.Claim{}, ctx.Err()
+		case <-time.After(pollInterval):
+		}
+	}
 }
 
 // enrolled reports whether this machine already has everything it needs.
@@ -166,29 +244,6 @@ func settings(stored *config.Config, url, deviceName string) (*config.Config, er
 	return &cfg, nil
 }
 
-// readCode resolves where the enrollment code comes from.
-//
-// Asking is the normal way: a code on the command line is readable by anyone
-// who can run ps and is kept in shell history. That matters less than it did
-// for a long-lived key — this one dies in minutes and works once — but the
-// flag is still there for a script that has nobody to ask.
-func readCode(flagValue string, in io.Reader, prompt io.Writer) (string, error) {
-	if flagValue != "" {
-		return strings.TrimSpace(flagValue), nil
-	}
-
-	fmt.Fprint(prompt, "enrollment code: ")
-	line, err := bufio.NewReader(in).ReadString('\n')
-	typed := strings.TrimSpace(line)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return "", fmt.Errorf("reading the enrollment code: %w", err)
-	}
-	if typed == "" {
-		return "", fmt.Errorf("no enrollment code given; the web shows one under \"add a machine\"")
-	}
-	return typed, nil
-}
-
 // explain turns a server refusal into the thing to do about it.
 func explain(err error) error {
 	var serverErr *api.Error
@@ -196,7 +251,7 @@ func explain(err error) error {
 		return err
 	}
 	switch {
-	case serverErr.CodeRefused():
+	case serverErr.RequestGone():
 		return fmt.Errorf("%s", serverErr.Message)
 	case serverErr.DeviceTaken():
 		// The server's wording covers the what; this adds the how. The id is
@@ -204,9 +259,9 @@ func explain(err error) error {
 		return fmt.Errorf("this machine is enrolled with another account; " +
 			"delete this machine's settings file to enrol it as a new machine")
 	case serverErr.Status == 401:
-		// Nothing of ours refused the code, so the request did not reach us.
-		return fmt.Errorf("the server rejected the request before it reached coder "+
-			"(%s); check that --url is the coder service", serverErr.Error())
+		// Nothing of ours refused anything, so the request did not reach us.
+		return fmt.Errorf("the server rejected the request before it reached pokegosu "+
+			"(%s); check that --url is the deployment's address", serverErr.Error())
 	default:
 		return err
 	}

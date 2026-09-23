@@ -6,29 +6,35 @@ Today there is one service: `pokegosu coder`, which collects coding agent token 
 
 ## Using it
 
-In the web, under your account, choose "기기 추가", then run this on the machine and type in the code it shows:
+Run this on the machine:
 
 ```sh
 pokegosu auth login
 ```
 
-That enrols with the default service, `https://pokegosu.com`. For any other deployment, give the address you sign in at; the "add a machine" page shows the command with it filled in:
+It shows a code and an address. Open that address, signed in, check that the code matches the one on the machine, and approve it. The machine collects its own key and is enrolled.
 
-```sh
-pokegosu auth login --url https://pokegosu.example.com
+```
+open https://account.pokegosu.com/devices/add/XPTQ-4F2K
+and approve this machine. The code is XPTQ-4F2K.
+
+waiting for approval… approved
+enrolled "laptop" with https://pokegosu.com
 ```
 
-`pokegosu auth login` asks that address where its API is (`/.well-known/pokegosu.json`), so the backend's own address never needs to be known or typed.
+Nothing secret is typed or pasted. The code is worth little — ten minutes, one use, and only a signed-in person can approve it — and the key is handed to the machine that asked, never through the browser.
 
-Then let a scheduler run it. There is no daemon: one pass takes seconds.
+For a deployment other than the default, give its address: `pokegosu auth login --url https://pokegosu.example.com`. The CLI reads `/.well-known/pokegosu.json` there to find the rest, so no backend address has to be known or typed.
+
+Then let a scheduler run the sync. There is no daemon: one pass takes seconds.
 
 ```
 */15 * * * * /usr/local/bin/pokegosu coder sync --quiet
 ```
 
 - `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
-- Each machine gets its own key by trading in the code; nothing secret is typed or pasted.
 - Running `pokegosu auth login` again on an enrolled machine enrols it again with a new key. It keeps its id and history. That is also how a machine retired in the web comes back.
+- A machine with no browser can be approved from anywhere: the code is all a person carries.
 
 Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGOSU_CONFIG_HOME` puts them somewhere else. Each service keeps whatever else it needs beside them, such as coder's record of what it has already sent.
 

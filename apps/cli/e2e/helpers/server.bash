@@ -79,13 +79,29 @@ delete_account() {
     admin DELETE "/auth/v1/admin/users/$1" > /dev/null
 }
 
-# enrollment_code <session> — prints the code the web would show, which is
-# the only thing a person carries to a machine.
-enrollment_code() {
-    local code
-    code=$(as_person "$1" POST /rest/v1/rpc/create_enrollment_code '{}' | json get code)
-    [[ -n $code ]] || { echo "could not get an enrollment code" >&2; return 1; }
-    printf '%s' "$code"
+# random_code — a code of the shape a machine draws, for tests that need to
+# know it in advance.
+random_code() {
+    od -An -N8 -tu1 /dev/urandom | tr -s ' ' '\n' | awk '
+        BEGIN { split("0123456789ABCDEFGHJKMNPQRSTVWXYZ", a, "") }
+        NF { printf "%s", a[($1 % 32) + 1] }'
+}
+
+# approve <session> <code> — what a person does in the web, once they have
+# read the code off the machine asking.
+#
+# Retried: the machine may not have asked yet when a test gets here, and the
+# request appears the moment it does.
+approve() {
+    local session=$1 code=$2 outcome i
+    for i in $(seq 1 100); do
+        outcome=$(as_person "$session" POST /rest/v1/rpc/approve_enrollment \
+            "{\"code\": \"$code\"}" | json get outcome)
+        [[ $outcome == approved ]] && return 0
+        sleep 0.1
+    done
+    echo "could not approve $code; the machine never asked" >&2
+    return 1
 }
 
 # known_as <session> <device id> — the name the account sees for a machine,
