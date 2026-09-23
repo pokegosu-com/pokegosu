@@ -1,6 +1,6 @@
-// Command driver is the Go implementation of the tokenusage conformance
-// driver: the smallest program that puts libs/go/coder behind the
-// protocol in tests/coder/README.md, so the shared harness can check it.
+// Command driver is the Go implementation of this suite's conformance
+// driver: the smallest program that puts libs/go/coder behind the protocol
+// in the README beside it, so the shared harness can check it.
 //
 // It holds no logic of its own. It calls the same entry points a Go client
 // calls, and only turns arguments into options and the result into JSON.

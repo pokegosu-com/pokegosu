@@ -1,6 +1,6 @@
-# The conformance suite for libs/*/tokenusage: every implementation's driver
-# is run against the same fixtures by the same harness. See README.md.
-id: 'tests-coder'
+# How every implementation must read Claude Code's logs into hourly token
+# totals: one harness, one set of cases, a driver per language. See README.md.
+id: 'coder-scan-claude-code'
 layer: 'automation'
 toolchains:
   default: 'node'
@@ -25,10 +25,10 @@ tasks:
     description: 'Run the scan cases against the Go driver'
     command: 'bats scan.bats'
     env:
-      CODER_DRIVER: '$projectRoot/dist/driver-go'
+      CODER_SCAN_DRIVER: '$projectRoot/dist/driver-go'
     deps:
       - '~:build-driver-go'
     inputs:
       - 'scan.bats'
       - 'helpers/**/*'
-      - 'fixtures/**/*'
+      - 'cases/**/*'

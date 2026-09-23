@@ -1,19 +1,21 @@
-# tokenusage conformance
+# coder: reading Claude Code's logs
 
-Every coder client reads the same agent logs into the same hourly totals, whatever language it is written in. The cases here are how that is checked: one harness, one set of fixtures, and a small driver per language.
+Every client reads the same agent logs into the same hourly totals, whatever language it is written in. The cases here are how that is checked, for one agent: one harness, one set of cases, and a small driver per language.
 
-The rules the fixtures encode came from [ccusage](https://github.com/ccusage/ccusage), not from first principles.
+The rules they encode came from [ccusage](https://github.com/ccusage/ccusage), not from first principles.
+
+Another agent gets a suite of its own — `coder-scan-<agent>` — because its logs, its cases and the rules for reading them are its own. What they share is the shape of the answer and the driver protocol below.
 
 ## Running
 
 ```sh
-moon run tests-coder:conformance-go
+moon run coder-scan-claude-code:conformance-go
 ```
 
 That builds the Go driver and runs `scan.bats` against it. Any other driver runs the same way:
 
 ```sh
-CODER_DRIVER=path/to/driver bats tests/coder/scan.bats
+CODER_SCAN_DRIVER=path/to/driver bats tests/coder-scan-claude-code/scan.bats
 ```
 
 ## The driver protocol
@@ -29,6 +31,6 @@ driver scan <provider> <logs directory>
 
 Output is compared as JSON values, so key order and whitespace do not matter. Anything written to stderr is ignored.
 
-## Fixtures
+## Cases
 
-`fixtures/<provider>/<case>/` holds `logs/`, the directory handed to the driver, and `expected-rollups.json`. Every case must be named in `scan.bats`; a test fails if one is not, so a new fixture cannot be added without the case that runs it.
+`cases/<name>/` holds `logs/`, the directory handed to the driver, and `expected-rollups.json`. Every case must be named by a test in `scan.bats`; a test fails if one is not, so a new case cannot be added without the test that runs it.

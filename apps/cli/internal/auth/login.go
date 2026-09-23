@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
-	"github.com/pokegosu-com/pokegosu/libs/go/account"
+	authapi "github.com/pokegosu-com/pokegosu/libs/go/auth"
 )
 
 const loginUsage = `usage: pokegosu auth login [flags]
@@ -96,13 +96,13 @@ func runLogin(args []string) error {
 
 	// Asked every time rather than kept from last time: the deployment
 	// decides where its parts are, and may have moved them.
-	service, err := account.Discover(ctx, nil, cfg.URL)
+	service, err := authapi.Discover(ctx, nil, cfg.URL)
 	if err != nil {
 		return err
 	}
 	cfg.APIURL = service.APIURL
 
-	client := account.New(cfg.APIURL)
+	client := authapi.New(cfg.APIURL)
 	code, started, err := ask(ctx, client, cfg, *givenCode)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func runLogin(args []string) error {
 // A code already being waited on is not a failure: the machine draws another.
 // A code from --code is the caller's, so a collision there is reported rather
 // than worked around.
-func ask(ctx context.Context, client *account.Client, cfg *config.Config, given string) (string, account.Enrollment, error) {
+func ask(ctx context.Context, client *authapi.Client, cfg *config.Config, given string) (string, authapi.Enrollment, error) {
 	if given != "" {
 		code := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(given), "-", ""))
 		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
@@ -148,7 +148,7 @@ func ask(ctx context.Context, client *account.Client, cfg *config.Config, given 
 	for range attempts {
 		code, err := newCode()
 		if err != nil {
-			return "", account.Enrollment{}, err
+			return "", authapi.Enrollment{}, err
 		}
 
 		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
@@ -156,22 +156,22 @@ func ask(ctx context.Context, client *account.Client, cfg *config.Config, given 
 			return code, started, nil
 		}
 
-		if !account.CodeTaken(err) {
-			return "", account.Enrollment{}, err
+		if !authapi.CodeTaken(err) {
+			return "", authapi.Enrollment{}, err
 		}
 	}
-	return "", account.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
+	return "", authapi.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
 }
 
 // wait asks until a person approves, or the request runs out.
-func wait(ctx context.Context, client *account.Client, started account.Enrollment, progress io.Writer) (account.Claim, error) {
+func wait(ctx context.Context, client *authapi.Client, started authapi.Enrollment, progress io.Writer) (authapi.Claim, error) {
 	fmt.Fprint(progress, "waiting for approval… ")
 
 	for {
 		claim, err := client.ClaimEnrollment(ctx, started.ClaimToken)
 		if err != nil {
 			fmt.Fprintln(progress)
-			return account.Claim{}, err
+			return authapi.Claim{}, err
 		}
 		if !claim.Waiting {
 			fmt.Fprintln(progress, "approved")
@@ -180,14 +180,14 @@ func wait(ctx context.Context, client *account.Client, started account.Enrollmen
 
 		if time.Now().After(started.ExpiresAt) {
 			fmt.Fprintln(progress)
-			return account.Claim{}, fmt.Errorf(
+			return authapi.Claim{}, fmt.Errorf(
 				"nobody approved this machine in time; run pokegosu auth login again")
 		}
 
 		select {
 		case <-ctx.Done():
 			fmt.Fprintln(progress)
-			return account.Claim{}, ctx.Err()
+			return authapi.Claim{}, ctx.Err()
 		case <-time.After(pollInterval):
 		}
 	}
@@ -251,14 +251,14 @@ func settings(stored *config.Config, url, deviceName string) (*config.Config, er
 // explain turns a server refusal into the thing to do about it.
 func explain(err error) error {
 	switch {
-	case account.RequestGone(err):
+	case authapi.RequestGone(err):
 		return err
-	case account.DeviceTaken(err):
+	case authapi.DeviceTaken(err):
 		// The server's wording covers the what; this adds the how. The id is
 		// in the settings file, so new settings are a new machine.
 		return fmt.Errorf("this machine's id is already registered; " +
 			"delete this machine's settings file to enrol it as a new machine")
-	case account.GatewayRefused(err):
+	case authapi.GatewayRefused(err):
 		// Nothing of ours refused anything, so the request did not reach us.
 		return fmt.Errorf("the server rejected the request before it reached pokegosu "+
 			"(%s); check that --url is the deployment's address", err)

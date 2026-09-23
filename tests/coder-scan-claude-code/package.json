@@ -1,5 +1,5 @@
 {
-  "name": "@pokegosu/tests-coder",
+  "name": "@pokegosu/tests-coder-scan-claude-code",
   "version": "0.0.0",
   "private": true,
   "devDependencies": {

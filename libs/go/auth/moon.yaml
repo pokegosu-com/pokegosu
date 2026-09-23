@@ -1,8 +1,8 @@
-# How a client in Go joins an account: finding the deployment it was pointed
-# at, and enrolling this machine with it. Enrolling belongs here rather than
-# to any one service, because a machine is enrolled once and every service
-# speaks with the key that leaves behind.
-id: 'go-account'
+# How a machine comes to hold a device token: finding the deployment, asking
+# to be let in under a code it drew, and collecting the key once a person has
+# approved it. No one service's; a machine is enrolled once, and every service
+# speaks with what that leaves behind.
+id: 'go-auth'
 layer: 'library'
 language: 'go'
 toolchains:

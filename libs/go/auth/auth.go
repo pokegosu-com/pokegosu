@@ -8,7 +8,7 @@
 // Neither call carries a key. They are what happens before there is one: the
 // machine asks under a code it drew, a person approves it in the web, and the
 // machine comes back for the key with the claim token the server gave it.
-package account
+package auth
 
 import (
 	"net/http"
