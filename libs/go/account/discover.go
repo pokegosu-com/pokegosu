@@ -1,4 +1,4 @@
-package pokegosu
+package account
 
 import (
 	"context"
@@ -28,7 +28,7 @@ type Service struct {
 // without a CLI release.
 func Discover(ctx context.Context, client *http.Client, serviceURL string) (Service, error) {
 	if client == nil {
-		client = (&Client{}).http()
+		client = http.DefaultClient
 	}
 
 	url := serviceURL + DiscoveryPath

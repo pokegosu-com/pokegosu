@@ -11,9 +11,9 @@ import (
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
+	coderapi "github.com/pokegosu-com/pokegosu/libs/go/coder"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/scan"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
-	"github.com/pokegosu-com/pokegosu/libs/go/pokegosu"
 )
 
 const syncUsage = `usage: pokegosu coder sync [flags]
@@ -114,7 +114,7 @@ func runSync(args []string) error {
 		return nil
 	}
 
-	client := &pokegosu.Client{BaseURL: cfg.APIURL, APIKey: cfg.APIKey}
+	client := coderapi.New(cfg.APIURL, cfg.APIKey)
 	sent, sendErr := send(client, pending)
 
 	// Whatever the server took, it holds — even if a later batch failed.
@@ -135,7 +135,7 @@ func runSync(args []string) error {
 
 // send uploads in batches and returns everything the server accepted, which
 // on failure is the batches that landed before it.
-func send(client *pokegosu.Client, rollups []usage.Rollup) ([]usage.Rollup, error) {
+func send(client *coderapi.Client, rollups []usage.Rollup) ([]usage.Rollup, error) {
 	var sent []usage.Rollup
 
 	for start := 0; start < len(rollups); start += maxPerRequest {
@@ -180,22 +180,18 @@ func report(quiet bool, result scan.Result) {
 
 // explainSync turns a server refusal into the thing to do about it.
 func explainSync(err error) error {
-	var serverErr *pokegosu.Error
-	if !errors.As(err, &serverErr) {
-		return err
-	}
 	switch {
-	case serverErr.KeyRefused():
+	case coderapi.KeyRefused(err):
 		// A key the server does not know and a machine somebody retired read
 		// the same from here, and the way out of both is the same: a machine
 		// is enrolled once, so this one starts again as a new machine.
 		return fmt.Errorf("the server refused this machine's key: %s; "+
 			"it may have been retired in the web. Delete this machine's settings "+
 			"and run pokegosu auth login to enrol it as a new machine",
-			serverErr.Message)
-	case serverErr.Status == 401:
+			err)
+	case coderapi.GatewayRefused(err):
 		return fmt.Errorf("the server rejected the request before it reached coder (%s); "+
-			"check the settings login wrote", serverErr.Error())
+			"check the settings login wrote", err)
 	default:
 		return err
 	}

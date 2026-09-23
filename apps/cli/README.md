@@ -41,8 +41,8 @@ Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGO
 
 ## Tests
 
-| What                                    | How                                   |
-| --------------------------------------- | ------------------------------------- |
-| Unit tests                              | `moon run cli:test`                   |
-| The protocol this speaks                | `moon run go-pokegosu:test`           |
-| The parser, against the shared fixtures | `moon run tests-coder:conformance-go` |
+| What                                    | How                                      |
+| --------------------------------------- | ---------------------------------------- |
+| Unit tests                              | `moon run cli:test`                      |
+| The libraries it is built from          | `moon run go-account:test go-coder:test` |
+| The parser, against the shared fixtures | `moon run tests-coder:conformance-go`    |

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
-	"github.com/pokegosu-com/pokegosu/libs/go/pokegosu"
+	"github.com/pokegosu-com/pokegosu/libs/go/account"
 )
 
 func TestSettingsDefaultsToTheService(t *testing.T) {
@@ -157,8 +157,8 @@ func TestWaitGivesUpWhenTheRequestRunsOut(t *testing.T) {
 	var progress bytes.Buffer
 	_, err := wait(
 		context.Background(),
-		&pokegosu.Client{BaseURL: server.URL},
-		pokegosu.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(5 * time.Millisecond)},
+		account.New(server.URL),
+		account.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(5 * time.Millisecond)},
 		&progress,
 	)
 	if err == nil {
@@ -191,8 +191,8 @@ func TestWaitStopsAsWellAsAsking(t *testing.T) {
 	var progress bytes.Buffer
 	claim, err := wait(
 		context.Background(),
-		&pokegosu.Client{BaseURL: server.URL},
-		pokegosu.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(time.Minute)},
+		account.New(server.URL),
+		account.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(time.Minute)},
 		&progress,
 	)
 	if err != nil {

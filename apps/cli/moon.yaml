@@ -18,8 +18,7 @@ tasks:
       -o dist/pokegosu ./cmd/pokegosu
     inputs:
       - '**/*.go'
-      - '/libs/go/coder/**/*.go'
-      - '/libs/go/pokegosu/**/*.go'
+      - '/libs/go/**/*.go'
       - '/go.mod'
     outputs:
       - 'dist/pokegosu'
@@ -28,14 +27,12 @@ tasks:
     command: 'go vet ./...'
     inputs:
       - '**/*.go'
-      - '/libs/go/coder/**/*.go'
-      - '/libs/go/pokegosu/**/*.go'
+      - '/libs/go/**/*.go'
       - '/go.mod'
 
   test:
     command: 'go test ./...'
     inputs:
       - '**/*.go'
-      - '/libs/go/coder/**/*.go'
-      - '/libs/go/pokegosu/**/*.go'
+      - '/libs/go/**/*.go'
       - '/go.mod'

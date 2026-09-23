@@ -1,7 +1,9 @@
-# Reading coding agents' logs into hourly token totals: the parsers, the
-# deduplication rules, and the scan that ties them together. Every client in
-# Go uses it; clients in other languages implement the same rules, and
-# tests/coder checks that they agree.
+# What a coder client needs: reading coding agents' logs into hourly token
+# totals — the parsers, the deduplication rules, the scan that ties them
+# together — and handing those totals to the server.
+#
+# Clients in other languages implement the same rules, and tests/coder checks
+# that they agree.
 id: 'go-coder'
 layer: 'library'
 language: 'go'
@@ -13,10 +15,12 @@ tasks:
     command: 'go vet ./...'
     inputs:
       - '**/*.go'
+      - '/libs/go/internal/**/*.go'
       - '/go.mod'
 
   test:
     command: 'go test ./...'
     inputs:
       - '**/*.go'
+      - '/libs/go/internal/**/*.go'
       - '/go.mod'

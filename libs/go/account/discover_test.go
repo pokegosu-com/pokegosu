@@ -1,4 +1,4 @@
-package pokegosu
+package account
 
 import (
 	"context"

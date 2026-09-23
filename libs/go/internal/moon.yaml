@@ -1,7 +1,7 @@
-# How a client in Go talks to a pokegosu deployment: finding it, enrolling
-# with it, and reporting to it. The protocol, with no opinion about who is
-# calling — the CLI today, a menubar app tomorrow.
-id: 'go-pokegosu'
+# What the Go libraries share and an app may not reach: Go's `internal` rule
+# keeps these importable from libs/go/* alone. Today that is the HTTP the
+# account and coder clients are built out of.
+id: 'go-internal'
 layer: 'library'
 language: 'go'
 toolchains:

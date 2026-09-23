@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
-	"github.com/pokegosu-com/pokegosu/libs/go/pokegosu"
+	"github.com/pokegosu-com/pokegosu/libs/go/account"
 )
 
 const loginUsage = `usage: pokegosu auth login [flags]
@@ -96,13 +96,13 @@ func runLogin(args []string) error {
 
 	// Asked every time rather than kept from last time: the deployment
 	// decides where its parts are, and may have moved them.
-	service, err := pokegosu.Discover(ctx, nil, cfg.URL)
+	service, err := account.Discover(ctx, nil, cfg.URL)
 	if err != nil {
 		return err
 	}
 	cfg.APIURL = service.APIURL
 
-	client := &pokegosu.Client{BaseURL: cfg.APIURL}
+	client := account.New(cfg.APIURL)
 	code, started, err := ask(ctx, client, cfg, *givenCode)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func runLogin(args []string) error {
 // A code already being waited on is not a failure: the machine draws another.
 // A code from --code is the caller's, so a collision there is reported rather
 // than worked around.
-func ask(ctx context.Context, client *pokegosu.Client, cfg *config.Config, given string) (string, pokegosu.Enrollment, error) {
+func ask(ctx context.Context, client *account.Client, cfg *config.Config, given string) (string, account.Enrollment, error) {
 	if given != "" {
 		code := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(given), "-", ""))
 		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
@@ -148,7 +148,7 @@ func ask(ctx context.Context, client *pokegosu.Client, cfg *config.Config, given
 	for range attempts {
 		code, err := newCode()
 		if err != nil {
-			return "", pokegosu.Enrollment{}, err
+			return "", account.Enrollment{}, err
 		}
 
 		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
@@ -156,23 +156,22 @@ func ask(ctx context.Context, client *pokegosu.Client, cfg *config.Config, given
 			return code, started, nil
 		}
 
-		var serverErr *pokegosu.Error
-		if !errors.As(err, &serverErr) || !serverErr.CodeTaken() {
-			return "", pokegosu.Enrollment{}, err
+		if !account.CodeTaken(err) {
+			return "", account.Enrollment{}, err
 		}
 	}
-	return "", pokegosu.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
+	return "", account.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
 }
 
 // wait asks until a person approves, or the request runs out.
-func wait(ctx context.Context, client *pokegosu.Client, started pokegosu.Enrollment, progress io.Writer) (pokegosu.Claim, error) {
+func wait(ctx context.Context, client *account.Client, started account.Enrollment, progress io.Writer) (account.Claim, error) {
 	fmt.Fprint(progress, "waiting for approval… ")
 
 	for {
 		claim, err := client.ClaimEnrollment(ctx, started.ClaimToken)
 		if err != nil {
 			fmt.Fprintln(progress)
-			return pokegosu.Claim{}, err
+			return account.Claim{}, err
 		}
 		if !claim.Waiting {
 			fmt.Fprintln(progress, "approved")
@@ -181,14 +180,14 @@ func wait(ctx context.Context, client *pokegosu.Client, started pokegosu.Enrollm
 
 		if time.Now().After(started.ExpiresAt) {
 			fmt.Fprintln(progress)
-			return pokegosu.Claim{}, fmt.Errorf(
+			return account.Claim{}, fmt.Errorf(
 				"nobody approved this machine in time; run pokegosu auth login again")
 		}
 
 		select {
 		case <-ctx.Done():
 			fmt.Fprintln(progress)
-			return pokegosu.Claim{}, ctx.Err()
+			return account.Claim{}, ctx.Err()
 		case <-time.After(pollInterval):
 		}
 	}
@@ -251,22 +250,18 @@ func settings(stored *config.Config, url, deviceName string) (*config.Config, er
 
 // explain turns a server refusal into the thing to do about it.
 func explain(err error) error {
-	var serverErr *pokegosu.Error
-	if !errors.As(err, &serverErr) {
-		return err
-	}
 	switch {
-	case serverErr.RequestGone():
-		return fmt.Errorf("%s", serverErr.Message)
-	case serverErr.DeviceTaken():
+	case account.RequestGone(err):
+		return err
+	case account.DeviceTaken(err):
 		// The server's wording covers the what; this adds the how. The id is
 		// in the settings file, so new settings are a new machine.
 		return fmt.Errorf("this machine's id is already registered; " +
 			"delete this machine's settings file to enrol it as a new machine")
-	case serverErr.Status == 401:
+	case account.GatewayRefused(err):
 		// Nothing of ours refused anything, so the request did not reach us.
 		return fmt.Errorf("the server rejected the request before it reached pokegosu "+
-			"(%s); check that --url is the deployment's address", serverErr.Error())
+			"(%s); check that --url is the deployment's address", err)
 	default:
 		return err
 	}

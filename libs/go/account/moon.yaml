@@ -1,0 +1,24 @@
+# How a client in Go joins an account: finding the deployment it was pointed
+# at, and enrolling this machine with it. Enrolling belongs here rather than
+# to any one service, because a machine is enrolled once and every service
+# speaks with the key that leaves behind.
+id: 'go-account'
+layer: 'library'
+language: 'go'
+toolchains:
+  default: 'go'
+
+tasks:
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/internal/**/*.go'
+      - '/go.mod'
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/internal/**/*.go'
+      - '/go.mod'
