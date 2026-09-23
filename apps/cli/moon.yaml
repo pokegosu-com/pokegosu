@@ -1,0 +1,50 @@
+# The pokegosu command line. One binary, a word per service: `pokegosu coder`
+# enrols a machine, reads its agents' logs through libs/go/coder, and uploads
+# hourly totals to the Edge Functions.
+id: 'cli'
+layer: 'application'
+language: 'go'
+toolchains:
+  default: 'go'
+
+tasks:
+  build:
+    description: 'Build the pokegosu binary into dist/'
+    # The version is the tag this build is on, the way the web apps show
+    # theirs; a build off a tag says how far past it is.
+    script: >-
+      go build
+      -ldflags "-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+      -o dist/pokegosu ./cmd/pokegosu
+    inputs:
+      - '**/*.go'
+      - '/libs/go/coder/**/*.go'
+      - '/go.mod'
+    outputs:
+      - 'dist/pokegosu'
+
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/coder/**/*.go'
+      - '/go.mod'
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/coder/**/*.go'
+      - '/go.mod'
+
+  # Against a running local stack, which serves the Edge Functions too:
+  # `moon run supabase:start` first. Not run by `moon ci` yet.
+  e2e:
+    description: 'Run coder login and sync against the local stack (requires supabase:start)'
+    command: 'bats e2e'
+    toolchains: ['node']
+    env:
+      POKEGOSU_BIN: '$projectRoot/dist/pokegosu'
+    deps:
+      - '~:build'
+    preset: 'utility'

@@ -6,7 +6,7 @@
 //     "device_id": "<uuid the machine made up>",
 //     "device_name": "laptop" }
 //
-//   → 201 { "api_key": "pkt_...", "device_id": "...", "device_name": "laptop" }
+//   → 201 { "api_key": "pgt_...", "device_id": "...", "device_name": "laptop" }
 //
 // Nothing authenticates this call, because the code IS the credential and a
 // machine has nothing else yet. That is the whole reason the code is short
@@ -29,7 +29,7 @@ const MAX_NAME_LENGTH = 100
 
 /** The prefix makes a leaked key recognisable in logs and to secret scanners;
  * the 32 random bytes are what make it a credential. */
-const KEY_PREFIX = 'pkt_'
+const KEY_PREFIX = 'pgt_'
 
 function mintKey(): string {
   const bytes = new Uint8Array(32)

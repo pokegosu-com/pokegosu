@@ -240,8 +240,17 @@ importers:
         specifier: ^4.135.0
         version: 4.135.0(@types/node@24.13.5)
 
-  apps/landing-web:
+  apps/cli:
+    devDependencies:
+      bats:
+        specifier: ^1.12.0
+        version: 1.13.0
+
+  apps/coder-web:
     dependencies:
+      '@pokegosu/supabase':
+        specifier: workspace:*
+        version: link:../../libs/ts/supabase
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.6.5)
@@ -307,17 +316,8 @@ importers:
         specifier: ^4.135.0
         version: 4.135.0(@types/node@24.13.5)
 
-  apps/pokecoder-cli:
-    devDependencies:
-      bats:
-        specifier: ^1.12.0
-        version: 1.13.0
-
-  apps/pokecoder-web:
+  apps/landing-web:
     dependencies:
-      '@pokegosu/supabase':
-        specifier: workspace:*
-        version: link:../../libs/ts/supabase
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.6.5)
@@ -430,7 +430,7 @@ importers:
         specifier: ^2.117.0
         version: 2.117.0
 
-  tests/tokenusage:
+  tests/coder:
     devDependencies:
       bats:
         specifier: ^1.12.0

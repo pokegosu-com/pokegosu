@@ -6,7 +6,7 @@
 // on the truth without the server reasoning about what it has already seen.
 //
 //   POST /functions/v1/ingest
-//   x-api-key: pkt_...
+//   x-api-key: pgt_...
 //
 //   { "rollups": [ { "provider": "claude_code",
 //                    "hour_bucket": "2026-09-12T14:00:00Z",
