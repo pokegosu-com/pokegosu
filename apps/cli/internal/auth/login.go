@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 	authapi "github.com/pokegosu-com/pokegosu/libs/go/auth"
@@ -27,8 +25,6 @@ flags:
   --url URL           the deployment, for one other than the default
   --device-name NAME  what this machine is called in the web.
                       Defaults to the hostname
-  --code CODE         ask under this code instead of drawing one, for a
-                      script that has to know it in advance
 
 Settings are written to ~/.config/pokegosu/config.json, readable only by you.
 
@@ -36,16 +32,6 @@ A machine is enrolled once. Its id lives in those settings, so a machine that
 needs a new key — one that was retired, or that lost its settings — enrols as
 a new machine, and the old one keeps the history it earned.
 `
-
-// pollInterval is how often the machine asks whether it has been let in.
-// Short enough that approving feels immediate, long enough that ten minutes
-// of waiting is a few hundred requests.
-var pollInterval = 2 * time.Second
-
-// attempts is how many times a drawn code may collide with one already being
-// waited on before login gives up. One collision is a one in a trillion
-// event; three is not worth a retry loop that never ends.
-const attempts = 3
 
 // defaultURL is the service login uses when told no other. Set at build time
 // for a build meant for another deployment; --url overrides it either way.
@@ -57,7 +43,6 @@ func runLogin(args []string) error {
 
 	var (
 		url        = fs.String("url", "", "the service URL")
-		givenCode  = fs.String("code", "", "ask under this code instead of drawing one")
 		deviceName = fs.String("device-name", "", "what this machine is called")
 	)
 
@@ -103,18 +88,22 @@ func runLogin(args []string) error {
 	cfg.APIURL = service.APIURL
 
 	client := authapi.New(cfg.APIURL)
-	code, started, err := ask(ctx, client, cfg, *givenCode)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("\nopen %s/devices/add/%s\n", service.AccountURL, format(code))
-	fmt.Printf("and approve this machine. The code is %s.\n\n", format(code))
-
-	claim, err := wait(ctx, client, started, os.Stdout)
+	begun, err := client.Begin(ctx, service, cfg.DeviceID, cfg.DeviceName)
 	if err != nil {
 		return explain(err)
 	}
+
+	fmt.Printf("\nopen %s\n", begun.ApproveURL)
+	fmt.Printf("and approve this machine. The code is %s.\n\n", begun.Code)
+	fmt.Print("waiting for approval… ")
+
+	claim, err := client.Wait(ctx, begun)
+	if err != nil {
+		fmt.Println()
+		return explain(err)
+	}
+	fmt.Println("approved")
+
 	cfg.APIKey = claim.APIKey
 	if claim.DeviceName != "" {
 		cfg.DeviceName = claim.DeviceName
@@ -131,66 +120,6 @@ func runLogin(args []string) error {
 	fmt.Printf("enrolled %q with %s\n", cfg.DeviceName, cfg.URL)
 	fmt.Printf("settings saved to %s\n", path)
 	return nil
-}
-
-// ask starts an enrolment, drawing a code unless one was given.
-//
-// A code already being waited on is not a failure: the machine draws another.
-// A code from --code is the caller's, so a collision there is reported rather
-// than worked around.
-func ask(ctx context.Context, client *authapi.Client, cfg *config.Config, given string) (string, authapi.Enrollment, error) {
-	if given != "" {
-		code := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(given), "-", ""))
-		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
-		return code, started, err
-	}
-
-	for range attempts {
-		code, err := newCode()
-		if err != nil {
-			return "", authapi.Enrollment{}, err
-		}
-
-		started, err := client.StartEnrollment(ctx, code, cfg.DeviceID, cfg.DeviceName)
-		if err == nil {
-			return code, started, nil
-		}
-
-		if !authapi.CodeTaken(err) {
-			return "", authapi.Enrollment{}, err
-		}
-	}
-	return "", authapi.Enrollment{}, fmt.Errorf("could not find a free enrollment code; try again")
-}
-
-// wait asks until a person approves, or the request runs out.
-func wait(ctx context.Context, client *authapi.Client, started authapi.Enrollment, progress io.Writer) (authapi.Claim, error) {
-	fmt.Fprint(progress, "waiting for approval… ")
-
-	for {
-		claim, err := client.ClaimEnrollment(ctx, started.ClaimToken)
-		if err != nil {
-			fmt.Fprintln(progress)
-			return authapi.Claim{}, err
-		}
-		if !claim.Waiting {
-			fmt.Fprintln(progress, "approved")
-			return claim, nil
-		}
-
-		if time.Now().After(started.ExpiresAt) {
-			fmt.Fprintln(progress)
-			return authapi.Claim{}, fmt.Errorf(
-				"nobody approved this machine in time; run pokegosu auth login again")
-		}
-
-		select {
-		case <-ctx.Done():
-			fmt.Fprintln(progress)
-			return authapi.Claim{}, ctx.Err()
-		case <-time.After(pollInterval):
-		}
-	}
 }
 
 // enrolled reports whether this machine already has everything it needs.
@@ -252,7 +181,7 @@ func settings(stored *config.Config, url, deviceName string) (*config.Config, er
 func explain(err error) error {
 	switch {
 	case authapi.RequestGone(err):
-		return err
+		return fmt.Errorf("%w; run pokegosu auth login again", err)
 	case authapi.DeviceTaken(err):
 		// The server's wording covers the what; this adds the how. The id is
 		// in the settings file, so new settings are a new machine.

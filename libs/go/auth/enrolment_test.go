@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestStartEnrollmentAsksUnderTheMachinesOwnCode(t *testing.T) {
@@ -121,3 +122,115 @@ func TestErrorFromOurFunctions(t *testing.T) {
 // The gateway answers before the function does, in its own shape, and its
 // "code" is a number in some replies and a string in others. Declaring either
 // type made the whole body fail to decode and cost us the message too.
+
+// A machine that is told to wait forever is a machine nobody will notice has
+// stopped. The deadline the server gave is the end of it.
+func TestWaitGivesUpWhenTheRequestRunsOut(t *testing.T) {
+	asked := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asked++
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte(`{"status":"waiting"}`))
+	}))
+	defer server.Close()
+
+	pollInterval = time.Millisecond
+	defer func() { pollInterval = 2 * time.Second }()
+
+	_, err := New(server.URL).Wait(
+		context.Background(),
+		Begun{claimToken: "pge_token", ExpiresAt: time.Now().Add(5 * time.Millisecond)},
+	)
+	if err == nil {
+		t.Fatal("Wait returned without a key and without an error")
+	}
+	if !strings.Contains(err.Error(), "in time") {
+		t.Errorf("error = %q, want it to say the request ran out", err)
+	}
+	if asked == 0 {
+		t.Error("Wait never asked")
+	}
+}
+
+func TestWaitStopsAsWellAsAsking(t *testing.T) {
+	approved := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !approved {
+			approved = true
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte(`{"status":"waiting"}`))
+			return
+		}
+		w.Write([]byte(`{"api_key":"pgt_minted","device_name":"laptop"}`))
+	}))
+	defer server.Close()
+
+	pollInterval = time.Millisecond
+	defer func() { pollInterval = 2 * time.Second }()
+
+	claim, err := New(server.URL).Wait(
+		context.Background(),
+		Begun{claimToken: "pge_token", ExpiresAt: time.Now().Add(time.Minute)},
+	)
+	if err != nil {
+		t.Fatalf("Wait: %v", err)
+	}
+	if claim.APIKey != "pgt_minted" {
+		t.Errorf("key = %q, want the one the server handed over", claim.APIKey)
+	}
+}
+
+// A code another machine is waiting on is not a failure: the machine draws
+// another and asks again, which is why nobody has to think about collisions.
+func TestBeginDrawsAgainWhenACodeIsTaken(t *testing.T) {
+	var codes []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := make([]byte, r.ContentLength)
+		r.Body.Read(body)
+		codes = append(codes, string(body))
+
+		if len(codes) < 3 {
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(`{"error":{"code":"enrollment_code_taken","message":"that code is in use"}}`))
+			return
+		}
+		w.Write([]byte(`{"claim_token":"pge_token","expires_at":"2026-09-23T10:00:00Z"}`))
+	}))
+	defer server.Close()
+
+	begun, err := New(server.URL).Begin(
+		context.Background(),
+		Service{AccountURL: "https://account.example.com"},
+		"11111111-1111-4111-8111-111111111111", "laptop")
+	if err != nil {
+		t.Fatalf("Begin: %v", err)
+	}
+	if len(codes) != 3 {
+		t.Errorf("asked %d times, want it to have drawn again twice", len(codes))
+	}
+	if codes[0] == codes[1] {
+		t.Error("drew the same code again")
+	}
+
+	// What the person is told to open, and what they will compare against.
+	if want := "https://account.example.com/devices/add/" + begun.Code; begun.ApproveURL != want {
+		t.Errorf("ApproveURL = %q, want %q", begun.ApproveURL, want)
+	}
+	if len(begun.Code) != codeLength+1 {
+		t.Errorf("Code = %q, want it split in half", begun.Code)
+	}
+}
+
+// Past three, something is wrong that drawing again will not fix.
+func TestBeginGivesUpOnCollisions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(`{"error":{"code":"enrollment_code_taken","message":"that code is in use"}}`))
+	}))
+	defer server.Close()
+
+	_, err := New(server.URL).Begin(context.Background(), Service{}, "d1", "laptop")
+	if err == nil {
+		t.Fatal("Begin kept drawing for ever")
+	}
+}

@@ -89,3 +89,85 @@ func (c *Client) ClaimEnrollment(ctx context.Context, claimToken string) (Claim,
 	enrolled, _ := time.Parse(time.RFC3339, claimed.EnrolledAt)
 	return Claim{APIKey: claimed.APIKey, DeviceName: claimed.DeviceName, EnrolledAt: enrolled}, nil
 }
+
+// attempts is how many times a drawn code may collide with one already being
+// waited on before Begin gives up. One collision is a one in a trillion
+// event; three is not worth a retry loop that never ends.
+const attempts = 3
+
+// pollInterval is how often Wait asks whether a person has approved. Short
+// enough that approving feels immediate, long enough that ten minutes of
+// waiting is a few hundred requests.
+var pollInterval = 2 * time.Second
+
+// Begun is an enrolment waiting for a person.
+type Begun struct {
+	// Code is what the machine drew and what the person will approve. Show
+	// it: they are meant to check that it matches what the web says.
+	Code string
+
+	// ApproveURL is where the person goes to approve it, spelled out so a
+	// caller does not have to know how the web arranges its pages.
+	ApproveURL string
+
+	// ExpiresAt is when the request stops being approvable.
+	ExpiresAt time.Time
+
+	claimToken string
+}
+
+// Begin asks to be let in, drawing a code to be approved under.
+//
+// The code is drawn here rather than taken from the caller so that every
+// client draws from the same alphabet, which is the one the server folds
+// mistyped characters back into. A code already being waited on is not a
+// failure: it draws another.
+func (c *Client) Begin(ctx context.Context, service Service, deviceID, deviceName string) (Begun, error) {
+	for range attempts {
+		code, err := newCode()
+		if err != nil {
+			return Begun{}, err
+		}
+
+		started, err := c.StartEnrollment(ctx, code, deviceID, deviceName)
+		if err == nil {
+			return Begun{
+				Code:       Format(code),
+				ApproveURL: service.AccountURL + "/devices/add/" + Format(code),
+				ExpiresAt:  started.ExpiresAt,
+				claimToken: started.ClaimToken,
+			}, nil
+		}
+		if !CodeTaken(err) {
+			return Begun{}, err
+		}
+	}
+	return Begun{}, fmt.Errorf("could not find a free enrollment code; try again")
+}
+
+// Wait asks until a person approves, or the request runs out.
+//
+// It is the machine's half of the conversation: the person is somewhere else,
+// reading the code off this machine's screen, and this keeps asking until
+// they have said yes.
+func (c *Client) Wait(ctx context.Context, begun Begun) (Claim, error) {
+	for {
+		claim, err := c.ClaimEnrollment(ctx, begun.claimToken)
+		if err != nil {
+			return Claim{}, err
+		}
+		if !claim.Waiting {
+			return claim, nil
+		}
+
+		if time.Now().After(begun.ExpiresAt) {
+			return Claim{}, fmt.Errorf("nobody approved this machine in time")
+		}
+
+		select {
+		case <-ctx.Done():
+			return Claim{}, ctx.Err()
+		case <-time.After(pollInterval):
+		}
+	}
+}

@@ -39,9 +39,9 @@ func newCode() (string, error) {
 	return string(code), nil
 }
 
-// format is how a code is shown: split in half, because eight characters in a
+// Format is how a code is shown: split in half, because eight characters in a
 // row are hard to keep your place in. The server reads either.
-func format(code string) string {
+func Format(code string) string {
 	if len(code) != codeLength {
 		return code
 	}

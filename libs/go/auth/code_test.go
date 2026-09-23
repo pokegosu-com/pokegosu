@@ -32,11 +32,11 @@ func TestNewCodeIsDrawnFromTheUnambiguousAlphabet(t *testing.T) {
 }
 
 func TestFormatSplitsTheCodeInHalf(t *testing.T) {
-	if got := format("XPTQ4F2K"); got != "XPTQ-4F2K" {
-		t.Errorf("format() = %q, want %q", got, "XPTQ-4F2K")
+	if got := Format("XPTQ4F2K"); got != "XPTQ-4F2K" {
+		t.Errorf("Format() = %q, want %q", got, "XPTQ-4F2K")
 	}
 	// Whatever a --code flag carried is shown as it is rather than mangled.
-	if got := format("xptq-4f2k"); got != "xptq-4f2k" {
-		t.Errorf("format() = %q, want it left alone", got)
+	if got := Format("xptq-4f2k"); got != "xptq-4f2k" {
+		t.Errorf("Format() = %q, want it left alone", got)
 	}
 }

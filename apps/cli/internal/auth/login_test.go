@@ -1,17 +1,11 @@
 package auth
 
 import (
-	"bytes"
-	"context"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
-	authapi "github.com/pokegosu-com/pokegosu/libs/go/auth"
 )
 
 func TestSettingsDefaultsToTheService(t *testing.T) {
@@ -137,72 +131,5 @@ func TestEnrolledNeedsEverything(t *testing.T) {
 
 	if enrolled(nil) {
 		t.Error("enrolled(nil) = true")
-	}
-}
-
-// A machine that is told to wait forever is a machine nobody will notice has
-// stopped. The deadline the server gave is the end of it.
-func TestWaitGivesUpWhenTheRequestRunsOut(t *testing.T) {
-	asked := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		asked++
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte(`{"status":"waiting"}`))
-	}))
-	defer server.Close()
-
-	pollInterval = time.Millisecond
-	defer func() { pollInterval = 2 * time.Second }()
-
-	var progress bytes.Buffer
-	_, err := wait(
-		context.Background(),
-		authapi.New(server.URL),
-		authapi.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(5 * time.Millisecond)},
-		&progress,
-	)
-	if err == nil {
-		t.Fatal("wait returned without a key and without an error")
-	}
-	if !strings.Contains(err.Error(), "login again") {
-		t.Errorf("error = %q, want it to say what to do", err)
-	}
-	if asked == 0 {
-		t.Error("wait never asked")
-	}
-}
-
-func TestWaitStopsAsWellAsAsking(t *testing.T) {
-	approved := false
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !approved {
-			approved = true
-			w.WriteHeader(http.StatusAccepted)
-			w.Write([]byte(`{"status":"waiting"}`))
-			return
-		}
-		w.Write([]byte(`{"api_key":"pgt_minted","device_name":"laptop"}`))
-	}))
-	defer server.Close()
-
-	pollInterval = time.Millisecond
-	defer func() { pollInterval = 2 * time.Second }()
-
-	var progress bytes.Buffer
-	claim, err := wait(
-		context.Background(),
-		authapi.New(server.URL),
-		authapi.Enrollment{ClaimToken: "pge_token", ExpiresAt: time.Now().Add(time.Minute)},
-		&progress,
-	)
-	if err != nil {
-		t.Fatalf("wait: %v", err)
-	}
-	if claim.APIKey != "pgt_minted" {
-		t.Errorf("key = %q, want the one the server handed over", claim.APIKey)
-	}
-	// Somebody is watching this screen while they walk to their browser.
-	if progress.Len() == 0 {
-		t.Error("wait said nothing while it waited")
 	}
 }
