@@ -1,0 +1,42 @@
+# Serves what pokegosu takes from PokéAPI to every other app: the sprites, from
+# public/sprites, and the script that writes the game's reference data into a
+# migration. It is an app rather than a library so it deploys on its own host
+# and every app reads the same files from it.
+id: 'pokedex-web'
+layer: 'application'
+language: 'typescript'
+stack: 'frontend'
+toolchains:
+  default: 'node'
+tags:
+  - 'nextjs'
+dependsOn:
+  - 'ts-config'
+  - 'ts-ui'
+
+env:
+  PORT: '3003'
+
+tasks:
+  # The sprites are not committed; sprites.json says which bytes they are.
+  sprites:
+    command: 'node scripts/fetch-sprites.ts'
+    inputs:
+      - 'sprites.json'
+      - 'scripts/fetch-sprites.ts'
+    outputs:
+      - 'public/sprites/**/*'
+
+  # Reads PokéAPI and rewrites sprites.json and the species migration. Run by
+  # hand when what is included changes; never by CI.
+  generate:
+    command: 'node scripts/generate.ts'
+    preset: 'utility'
+
+  build:
+    deps: ['sprites']
+
+  # vinext dev is Vite underneath and ignores PORT, so it is passed.
+  dev:
+    args: ['--port', '3003']
+    deps: ['sprites']

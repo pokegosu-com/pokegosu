@@ -1,0 +1,9 @@
+# Read by Workers static assets. Other apps show these with <img>, which needs
+# no CORS; the header is for one that draws them onto a canvas.
+#
+# A path keeps its bytes while sprites.json pins one commit, so a day fresh and
+# a week stale is safe. Moving the pin changes bytes under the same path, and
+# that is the most anyone would see an old sprite for.
+/sprites/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Access-Control-Allow-Origin: *
