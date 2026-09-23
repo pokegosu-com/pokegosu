@@ -4,6 +4,7 @@ projects:
   globs:
     - 'apps/*'
     - 'libs/*/*'
+    - 'tests/*'
   sources:
     root: '.'
     supabase: 'supabase'

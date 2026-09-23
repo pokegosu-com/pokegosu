@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@pokegosu/supabase/server'
 
+import { safeReturnTo } from '@/lib/return-to'
+
 /** Reachable without a session. */
 const PUBLIC_PREFIXES = ['/login', '/auth']
 
@@ -39,9 +41,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Lets the landing page link to /login unconditionally: someone who already
-  // has a session lands on their account instead of a sign-in form.
+  // Lets the landing page and other apps link to /login unconditionally:
+  // someone who already has a session goes straight to where they were
+  // headed, or to their account, instead of a sign-in form.
   if (user && pathname === '/login') {
+    const returnTo = safeReturnTo(request.nextUrl.searchParams.get('next'))
+    if (returnTo) return NextResponse.redirect(returnTo)
+
     const url = request.nextUrl.clone()
     url.pathname = '/'
     url.search = ''

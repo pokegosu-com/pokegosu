@@ -35,20 +35,28 @@ tasks:
     command: 'supabase db diff'
     preset: 'utility'
 
+  test:
+    description: 'Run the pgTAP tests in tests/ against the running local stack'
+    command: 'supabase test db'
+    preset: 'utility'
+
   # Deploys replay every migration against an empty database; a local one got
-  # its state incrementally and can diverge. This walks the deploy path.
+  # its state incrementally and can diverge. This walks the deploy path, then
+  # runs the tests against what it built.
   #
   # CI only: it ends in `db reset`, which would wipe a developer's local data.
   # `moon ci` still skips it unless a migration changed, so a PR that touches
   # nothing here pulls no images. Starting only the four services the schema
   # needs costs 2GB instead of 8.5GB.
   verify:
-    description: 'Apply every migration to a clean database (CI only)'
+    description: 'Apply every migration to a clean database and test it (CI only)'
     script: >-
       supabase start -x studio,edge-runtime,logflare,vector,imgproxy,realtime,storage-api,postgres-meta,mailpit,supavisor
       && supabase db reset
+      && supabase test db
     inputs:
       - 'migrations/**/*.sql'
+      - 'tests/**/*.sql'
       - 'config.toml'
     options:
       runInCI: 'only'

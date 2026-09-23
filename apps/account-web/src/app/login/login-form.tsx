@@ -4,15 +4,24 @@ import { useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 
+import { RETURN_TO_COOKIE, RETURN_TO_MAX_AGE } from '@/lib/return-to'
+
 type Status = { kind: 'idle' | 'sending' | 'sent' | 'error'; message?: string }
 
-export function LoginForm() {
+/** returnTo is already checked by the page; it is only carried from here. */
+export function LoginForm({ returnTo }: { returnTo: string | null }) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setStatus({ kind: 'sending' })
+
+    // Read back by /auth/callback once the emailed link is opened.
+    const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+    document.cookie = returnTo
+      ? `${RETURN_TO_COOKIE}=${encodeURIComponent(returnTo)}; Path=/; Max-Age=${RETURN_TO_MAX_AGE}; SameSite=Lax${secure}`
+      : `${RETURN_TO_COOKIE}=; Path=/; Max-Age=0`
 
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithOtp({

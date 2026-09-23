@@ -28,6 +28,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      devices: {
+        Row: {
+          api_key_hash: string
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          name: string
+          revoked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key_hash: string
+          created_at?: string
+          id: string
+          last_sync_at?: string | null
+          name: string
+          revoked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key_hash?: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          approved_at: string | null
+          claim_hash: string
+          code_hash: string
+          created_at: string
+          device_id: string
+          device_name: string
+          expires_at: string
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          claim_hash: string
+          code_hash: string
+          created_at?: string
+          device_id: string
+          device_name: string
+          expires_at: string
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          claim_hash?: string
+          code_hash?: string
+          created_at?: string
+          device_id?: string
+          device_name?: string
+          expires_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           display_name: string | null
@@ -46,12 +109,87 @@ export type Database = {
         }
         Relationships: []
       }
+      providers: {
+        Row: {
+          display_name: string
+          id: string
+        }
+        Insert: {
+          display_name: string
+          id: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      usage_rollups: {
+        Row: {
+          device_id: string
+          hour_bucket: string
+          provider: string
+          tokens: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          device_id: string
+          hour_bucket: string
+          provider: string
+          tokens: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          device_id?: string
+          hour_bucket?: string
+          provider?: string
+          tokens?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'usage_rollups_device_id_user_id_fkey'
+            columns: ['device_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'devices'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'usage_rollups_provider_fkey'
+            columns: ['provider']
+            isOneToOne: false
+            referencedRelation: 'providers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      approve_enrollment: { Args: { code: string }; Returns: Json }
+      claim_enrollment: {
+        Args: { api_key_hash: string; claim_hash: string }
+        Returns: Json
+      }
+      ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
+      normalize_code: { Args: { typed: string }; Returns: string }
+      pending_enrollment: { Args: { code: string }; Returns: Json }
+      start_enrollment: {
+        Args: {
+          claim_hash: string
+          code_hash: string
+          device_id: string
+          device_name: string
+          lifetime: string
+        }
+        Returns: Json
+      }
+      usage: { Args: { range_end: string; range_start: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

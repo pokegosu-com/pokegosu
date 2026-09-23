@@ -9,9 +9,12 @@ export const env = createEnv({
   client: {
     /** Where the account app lives. Inlined at build time. */
     NEXT_PUBLIC_ACCOUNT_URL: z.url(),
+    /** Where the API lives, for the discovery document the CLI reads. */
+    NEXT_PUBLIC_SUPABASE_URL: z.url(),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_ACCOUNT_URL: process.env.NEXT_PUBLIC_ACCOUNT_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   },
   emptyStringAsUndefined: true,
   // For builds that only check the code, such as `moon ci`. A deploy must

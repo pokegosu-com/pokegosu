@@ -418,3 +418,16 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Machines call these with nothing but what enrolling gave them — a code they
+# drew, then the claim token the server gave back — or with their own API key.
+# Never a Supabase session, so the gateway must not demand a JWT. Each
+# function checks its own caller.
+[functions.start-enrollment]
+verify_jwt = false
+
+[functions.claim-enrollment]
+verify_jwt = false
+
+[functions.ingest]
+verify_jwt = false

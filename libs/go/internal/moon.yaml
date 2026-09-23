@@ -1,0 +1,21 @@
+# What the Go libraries share and an app may not reach: Go's `internal` rule
+# keeps these importable from libs/go/* alone. Today that is the HTTP the
+# account and coder clients are built out of.
+id: 'go-internal'
+layer: 'library'
+language: 'go'
+toolchains:
+  default: 'go'
+
+tasks:
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - '/go.mod'
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+      - '/go.mod'

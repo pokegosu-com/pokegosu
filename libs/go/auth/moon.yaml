@@ -1,0 +1,24 @@
+# How a machine comes to hold a device token: finding the deployment, asking
+# to be let in under a code it drew, and collecting the key once a person has
+# approved it. No one service's; a machine is enrolled once, and every service
+# speaks with what that leaves behind.
+id: 'go-auth'
+layer: 'library'
+language: 'go'
+toolchains:
+  default: 'go'
+
+tasks:
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/internal/**/*.go'
+      - '/go.mod'
+
+  test:
+    command: 'go test ./...'
+    inputs:
+      - '**/*.go'
+      - '/libs/go/internal/**/*.go'
+      - '/go.mod'
