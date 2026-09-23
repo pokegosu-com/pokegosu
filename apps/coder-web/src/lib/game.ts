@@ -20,29 +20,41 @@ export type Egg = {
   markings: number
 }
 
+/** A name or text in every language the pokedex keeps, keyed like "ko" or "zh-Hans". */
+export type Names = Record<string, string>
+
 export type Pokemon = {
   id: string
-  species_id: number
-  name: string
-  types: { id: string; name: string }[]
+  pokedex_id: number
+  dex_no: number
+  names: Names
+  sprites: { animated?: string; animated_shiny?: string }
+  types: { id: string; names: Names }[]
   is_shiny: boolean
   level: number
   exp: number
   level_exp: number
   next_level_exp: number | null
-  evolves_to: { id: number; name: string; level: number } | null
+  evolves_to: { pokedex_id: number; names: Names; level: number } | null
   can_evolve: boolean
   can_receive_egg: boolean
-  ribbons: { id: string; name: string; received_at: string }[]
-  ribbons_waiting: { id: string; name: string }[]
+  ribbons: { id: string; names: Names; received_at: string }[]
+  ribbons_waiting: { id: string; names: Names }[]
   created_at: string
   hatched_at: string
   is_main: boolean
   markings: number
 }
 
-export function spriteUrl(speciesId: number, shiny: boolean): string {
-  return `${env.NEXT_PUBLIC_POKEDEX_URL}/sprites/pokemon/${shiny ? 'shiny/' : ''}${speciesId}.gif`
+/** This app is in Korean; English stands in for a text the pokedex lacks in it. */
+export function ko(names: Names): string {
+  return names.ko ?? names.en ?? ''
+}
+
+/** The pokedex keeps sprite paths; pokedex-web serves them. */
+export function spriteUrl(pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>): string | undefined {
+  const path = pokemon.is_shiny ? pokemon.sprites.animated_shiny : pokemon.sprites.animated
+  return path && `${env.NEXT_PUBLIC_POKEDEX_URL}${path}`
 }
 
 export const eggSpriteUrl = `${env.NEXT_PUBLIC_POKEDEX_URL}/sprites/egg.png`

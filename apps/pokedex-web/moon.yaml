@@ -12,6 +12,7 @@ tags:
   - 'nextjs'
 dependsOn:
   - 'ts-config'
+  - 'ts-supabase'
   - 'ts-ui'
 
 env:
