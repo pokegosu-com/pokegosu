@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 
-import { when } from '@/lib/format'
+import { When } from '@/lib/when'
 
 type Device = {
   id: string
@@ -103,16 +103,22 @@ export function DeviceRow({ device }: { device: Device }) {
       <dl className="text-muted flex flex-wrap gap-x-6 gap-y-1 text-xs">
         <div className="flex gap-1">
           <dt>마지막 동기화</dt>
-          <dd>{when(device.last_sync_at)}</dd>
+          <dd>
+            <When at={device.last_sync_at} />
+          </dd>
         </div>
         <div className="flex gap-1">
           <dt>등록</dt>
-          <dd>{when(device.created_at)}</dd>
+          <dd>
+            <When at={device.created_at} />
+          </dd>
         </div>
         {retired && (
           <div className="flex gap-1">
             <dt>폐기</dt>
-            <dd>{when(device.revoked_at)}</dd>
+            <dd>
+              <When at={device.revoked_at} />
+            </dd>
           </div>
         )}
       </dl>
