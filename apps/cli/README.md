@@ -9,16 +9,16 @@ Today there is one service: `pokegosu coder`, which collects coding agent token 
 In the web, under your account, choose "기기 추가", then run this on the machine and type in the code it shows:
 
 ```sh
-pokegosu login
+pokegosu auth login
 ```
 
 That enrols with the default service, `https://account.pokegosu.com`. For any other deployment, give the address you sign in at; the "add a machine" page shows the command with it filled in:
 
 ```sh
-pokegosu login --url https://account.example.com
+pokegosu auth login --url https://account.example.com
 ```
 
-`pokegosu login` asks that address where its API is (`/.well-known/pokegosu.json`), so the backend's own address never needs to be known or typed.
+`pokegosu auth login` asks that address where its API is (`/.well-known/pokegosu.json`), so the backend's own address never needs to be known or typed.
 
 Then let a scheduler run it. There is no daemon: one pass takes seconds.
 
@@ -28,7 +28,7 @@ Then let a scheduler run it. There is no daemon: one pass takes seconds.
 
 - `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
 - Each machine gets its own key by trading in the code; nothing secret is typed or pasted.
-- Running `pokegosu login` again on an enrolled machine enrols it again with a new key. It keeps its id and history. That is also how a machine retired in the web comes back.
+- Running `pokegosu auth login` again on an enrolled machine enrols it again with a new key. It keeps its id and history. That is also how a machine retired in the web comes back.
 
 Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGOSU_CONFIG_HOME` puts them somewhere else. Each service keeps whatever else it needs beside them, such as coder's record of what it has already sent.
 

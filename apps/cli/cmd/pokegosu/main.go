@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pokegosu-com/pokegosu/apps/cli/internal/account"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/auth"
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder"
 )
 
@@ -21,14 +21,14 @@ var version = "dev"
 const usageText = `pokegosu is the command line to pokegosu.
 
 usage:
-  pokegosu login [flags]     enrol this machine with your account
+  pokegosu auth <command>    enrol this machine with your account
   pokegosu coder <command>   coding agent token usage
   pokegosu version           print this build's version
 
 A machine is enrolled once, with the account, and every service speaks with
 the key that enrolment leaves behind.
 
-run "pokegosu coder -h" for what coder can do.
+run "pokegosu auth -h" or "pokegosu coder -h" for what each can do.
 `
 
 func main() {
@@ -45,8 +45,8 @@ func run(args []string) error {
 	}
 
 	switch name := args[0]; name {
-	case "login":
-		return account.Login(args[1:])
+	case "auth":
+		return auth.Run(args[1:])
 	case "coder":
 		return coder.Run(args[1:])
 	case "version", "--version":

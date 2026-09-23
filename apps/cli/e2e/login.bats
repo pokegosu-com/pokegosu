@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# What "pokegosu login" claims, and whether the server agrees.
+# What "pokegosu auth login" claims, and whether the server agrees.
 #
 #   moon run supabase:start
 #   moon run cli:e2e
@@ -46,7 +46,7 @@ teardown() {
 }
 
 @test "login enrols this machine under the name it was given" {
-    run pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -eq 0 ]
 
     device=$(setting device_id)
@@ -57,7 +57,7 @@ teardown() {
 # The key is the one thing the machine did not have and could not have made:
 # it comes back from the server and is what every later sync is checked by.
 @test "login saves a key it was never given" {
-    run pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -eq 0 ]
 
     [[ "$(setting api_key)" == pgt_* ]]
@@ -68,7 +68,7 @@ teardown() {
 # A person types the service's address; where its API lives is the service's
 # to say, and login asks rather than being told.
 @test "login finds the API through the service it was pointed at" {
-    run pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -eq 0 ]
 
     [ "$(setting api_url)" = "$API_URL" ]
@@ -76,17 +76,17 @@ teardown() {
 }
 
 @test "the settings file holds a secret and is readable only by its owner" {
-    pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
 
     [ "$(stat -c %a "$SETTINGS")" = 600 ]
 }
 
 @test "logging in again keeps the machine and replaces its key" {
-    pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     device=$(setting device_id)
     before=$(setting api_key)
 
-    run pokegosu login --code "$(enrollment_code "$SESSION")"
+    run pokegosu auth login --code "$(enrollment_code "$SESSION")"
     [ "$status" -eq 0 ]
     [[ $output == *"enrols it again"* ]]
 
@@ -99,17 +99,17 @@ teardown() {
 
 @test "a code works once" {
     code=$(enrollment_code "$SESSION")
-    pokegosu login --url "$SERVICE_URL" --code "$code" --device-name first
+    pokegosu auth login --url "$SERVICE_URL" --code "$code" --device-name first
 
     use_config_home "$BATS_TEST_TMPDIR/second"
-    run pokegosu login --url "$SERVICE_URL" --code "$code" --device-name second
+    run pokegosu auth login --url "$SERVICE_URL" --code "$code" --device-name second
     [ "$status" -ne 0 ]
 
     [ ! -e "$SETTINGS" ]
 }
 
 @test "a code nobody issued leaves no settings behind" {
-    run pokegosu login --url "$SERVICE_URL" --code XPTQ-4F2K --device-name laptop
+    run pokegosu auth login --url "$SERVICE_URL" --code XPTQ-4F2K --device-name laptop
     [ "$status" -ne 0 ]
     [[ $output == *"not valid"* ]]
 
@@ -122,21 +122,21 @@ teardown() {
     code=$(enrollment_code "$SESSION")
     mangled=$(printf '%s' "$code" | tr 'A-Z' 'a-z' | tr -d -)
 
-    run pokegosu login --url "$SERVICE_URL" --code "$mangled" --device-name laptop
+    run pokegosu auth login --url "$SERVICE_URL" --code "$mangled" --device-name laptop
     [ "$status" -eq 0 ]
 }
 
 @test "the code can be typed in instead of passed as a flag" {
     code=$(enrollment_code "$SESSION")
 
-    run sh -c "printf '%s\n' '$code' | '$POKEGOSU_BIN' login --url '$SERVICE_URL' --device-name typed"
+    run sh -c "printf '%s\n' '$code' | '$POKEGOSU_BIN' auth login --url '$SERVICE_URL' --device-name typed"
     [ "$status" -eq 0 ]
 
     [ "$(known_as "$SESSION" "$(setting device_id)")" = typed ]
 }
 
 @test "another account cannot claim this machine" {
-    pokegosu login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    pokegosu auth login --url "$SERVICE_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     device=$(setting device_id)
 
     new_account
@@ -147,7 +147,7 @@ teardown() {
     use_config_home "$BATS_TEST_TMPDIR/stranger"
     printf '{"url": "%s", "device_id": "%s", "device_name": "stolen"}' "$SERVICE_URL" "$device" > "$SETTINGS"
 
-    run pokegosu login --code "$(enrollment_code "$ACCOUNT_SESSION")"
+    run pokegosu auth login --code "$(enrollment_code "$ACCOUNT_SESSION")"
     [ "$status" -ne 0 ]
     [[ $output == *"another account"* ]]
 
@@ -158,7 +158,7 @@ teardown() {
 # The API's own address is not a service: it has no discovery document. A
 # person who pasted it gets told so before any code is spent.
 @test "an address that is not a pokegosu service is refused, and nothing is saved" {
-    run pokegosu login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
+    run pokegosu auth login --url "$API_URL" --code "$(enrollment_code "$SESSION")" --device-name laptop
     [ "$status" -ne 0 ]
     [[ $output == *"does not look like a pokegosu service"* ]]
 

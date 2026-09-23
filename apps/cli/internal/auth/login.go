@@ -1,8 +1,7 @@
-// Package account is the part of the command line that is not any one
-// service's: enrolling this machine with a pokegosu account, and the settings
-// that enrolment leaves behind. Every service speaks with the key it gets
-// here.
-package account
+// Package auth is the part of the command line that is not any one service's:
+// enrolling this machine with a pokegosu account, and the settings that
+// enrolment leaves behind. Every service speaks with the key it gets here.
+package auth
 
 import (
 	"bufio"
@@ -18,7 +17,7 @@ import (
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 )
 
-const loginUsage = `usage: pokegosu login [flags]
+const loginUsage = `usage: pokegosu auth login [flags]
 
 Enrols this machine. Open the web, ask it to add a machine, and type in the
 code it shows you. The machine gets its own key that way — nothing secret is
@@ -44,8 +43,7 @@ retired in the web comes back.
 // for a build meant for another deployment; --url overrides it either way.
 var defaultURL = "https://account.pokegosu.com"
 
-// Login enrols this machine with an account.
-func Login(args []string) error {
+func runLogin(args []string) error {
 	fs := flag.NewFlagSet("login", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 

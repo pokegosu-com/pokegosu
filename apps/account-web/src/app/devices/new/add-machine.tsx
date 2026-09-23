@@ -45,7 +45,7 @@ export function AddMachine({ origin }: { origin: string }) {
   return (
     <div className="space-y-6">
       <pre className="bg-muted/10 overflow-x-auto rounded-md px-4 py-3 text-sm">
-        pokegosu login --url {origin}
+        pokegosu auth login --url {origin}
       </pre>
 
       {issued && !expired && (

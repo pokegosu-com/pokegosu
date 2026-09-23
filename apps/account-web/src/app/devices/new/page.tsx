@@ -14,8 +14,8 @@ export default async function AddMachinePage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">기기 추가</h1>
         <p className="text-muted text-sm">
-          기기에서 <code>pokegosu login</code> 을 실행하고 아래 코드를 입력하세요. 기기는 이 코드를
-          자기만의 키로 바꿔 갖기 때문에, 비밀값을 복사해 붙여넣을 일이 없습니다.
+          기기에서 <code>pokegosu auth login</code> 을 실행하고 아래 코드를 입력하세요. 기기는 이
+          코드를 자기만의 키로 바꿔 갖기 때문에, 비밀값을 복사해 붙여넣을 일이 없습니다.
         </p>
       </div>
       <AddMachine origin={origin} />
