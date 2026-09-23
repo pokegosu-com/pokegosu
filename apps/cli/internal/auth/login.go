@@ -41,7 +41,7 @@ retired in the web comes back.
 
 // defaultURL is the service login uses when told no other. Set at build time
 // for a build meant for another deployment; --url overrides it either way.
-var defaultURL = "https://account.pokegosu.com"
+var defaultURL = "https://pokegosu.com"
 
 func runLogin(args []string) error {
 	fs := flag.NewFlagSet("login", flag.ContinueOnError)

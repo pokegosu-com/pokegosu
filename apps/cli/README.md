@@ -12,10 +12,10 @@ In the web, under your account, choose "기기 추가", then run this on the mac
 pokegosu auth login
 ```
 
-That enrols with the default service, `https://account.pokegosu.com`. For any other deployment, give the address you sign in at; the "add a machine" page shows the command with it filled in:
+That enrols with the default service, `https://pokegosu.com`. For any other deployment, give the address you sign in at; the "add a machine" page shows the command with it filled in:
 
 ```sh
-pokegosu auth login --url https://account.example.com
+pokegosu auth login --url https://pokegosu.example.com
 ```
 
 `pokegosu auth login` asks that address where its API is (`/.well-known/pokegosu.json`), so the backend's own address never needs to be known or typed.
