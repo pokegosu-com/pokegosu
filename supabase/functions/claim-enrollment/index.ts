@@ -4,7 +4,8 @@
 //
 //   { "claim_token": "pge_..." }
 //
-//   → 200 { "api_key": "pgt_...", "device_name": "laptop" }   approved
+//   → 200 { "api_key": "pgt_...", "device_name": "laptop",
+//           "enrolled_at": "..." }                             approved
 //   → 202 { "status": "waiting" }                             not yet
 //
 // The key is minted here, on the call that hands it over, so it exists only
@@ -56,7 +57,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
   switch (result.outcome) {
     case 'registered':
       // The only time the plaintext exists anywhere but in the caller's hands.
-      return json({ api_key: apiKey, device_name: result.device_name })
+      return json({
+        api_key: apiKey,
+        device_name: result.device_name,
+        // When this machine was first let in. A service reads it to know how
+        // far back the logs it finds are this machine's to report.
+        enrolled_at: result.enrolled_at,
+      })
 
     // Nobody has approved it yet. Not an error: the machine is meant to ask
     // again, which is why this is a status rather than a failure.

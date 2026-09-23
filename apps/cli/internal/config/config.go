@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // settingsFile holds what enrolment left behind. It belongs to the account
@@ -44,6 +45,12 @@ type Config struct {
 
 	// DeviceName is what a person sees in the web UI.
 	DeviceName string `json:"device_name"`
+
+	// EnrolledAt is when the account first let this machine in, by the
+	// server's clock rather than this machine's. A service reads it to know
+	// how far back the logs it finds are this machine's to report: what
+	// happened before anyone enrolled it is not this account's business.
+	EnrolledAt time.Time `json:"enrolled_at,omitzero"`
 }
 
 // Path returns the settings file location.

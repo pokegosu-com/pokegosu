@@ -340,14 +340,17 @@ $$;
 -- minted key. The key is made at this moment, for this machine, and goes
 -- nowhere else; only its digest stays here.
 --
---   → {"outcome": "registered", "user_id": "...", "device_name": "laptop"}
+--   → {"outcome": "registered", "user_id": "...", "device_name": "laptop",
+--      "enrolled_at": "..."}
 --   → {"outcome": "waiting"}      nobody has approved it yet
 --   → {"outcome": "not_found"}    expired, or already collected
 --   → {"outcome": "device_taken"} that machine belongs to another account
 --
 -- A machine the same account already registered is enrolled again with the
 -- new key, which is how a retired machine, or one that lost its settings but
--- kept its id, comes back. It keeps its id, and so its history.
+-- kept its id, comes back. It keeps its id, and so its history — and
+-- enrolled_at stays the first time it was let in, which is what a service
+-- reads to know how far back this machine's usage is its own to report.
 -- ============================================================
 create function public.claim_enrollment(claim_hash bytea, api_key_hash bytea)
 returns jsonb
@@ -358,7 +361,7 @@ set search_path = ''
 as $$
 declare
   request record;
-  registered uuid;
+  registered record;
 begin
   select e.code_hash, e.device_id, e.device_name, e.user_id into request
     from public.enrollments e
@@ -379,12 +382,12 @@ begin
         api_key_hash = excluded.api_key_hash,
         revoked_at = null
     where d.user_id = excluded.user_id
-  returning d.id into registered;
+  returning d.id, d.created_at into registered;
 
   -- Nothing came back: the id is taken, and not by this account. The request
   -- stays, so a person can see it is still waiting rather than having it
   -- vanish; it expires on its own.
-  if registered is null then
+  if registered.id is null then
     return jsonb_build_object('outcome', 'device_taken');
   end if;
 
@@ -394,7 +397,8 @@ begin
   return jsonb_build_object(
     'outcome', 'registered',
     'user_id', request.user_id,
-    'device_name', request.device_name);
+    'device_name', request.device_name,
+    'enrolled_at', to_char(registered.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'));
 end;
 $$;
 

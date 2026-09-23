@@ -23,6 +23,9 @@ since the last run. One pass, then it exits: run it from cron, a systemd
 timer or launchd rather than leaving it resident.
 
 flags:
+  --since DATE     read from DATE instead of from when this machine was
+                   enrolled: YYYY-MM-DD (UTC) or a full RFC3339 timestamp.
+                   Rounded down to the hour
   --all            upload every bucket, not only the changed ones. Use after
                    the server has lost data, or to check a disagreement
   --quiet          print nothing unless something went wrong, which is what a
@@ -30,6 +33,10 @@ flags:
   --path DIR       read DIR instead of the default log location. Repeatable
   --provider ID    read only this provider's logs. Repeatable, and needed
                    alongside --path once there is more than one provider
+
+By default a sync reports nothing from before this machine was enrolled: what
+the logs hold from before then is nobody's business but this machine's. The
+hour the enrolment fell in is reported whole.
 
 Run login first: sync needs the settings it writes.
 `
@@ -44,6 +51,7 @@ func runSync(args []string) error {
 	fs.SetOutput(io.Discard)
 
 	var (
+		since     = fs.String("since", "", "read from this date instead of from enrolment")
 		all       = fs.Bool("all", false, "upload every bucket")
 		quiet     = fs.Bool("quiet", false, "print nothing unless something went wrong")
 		paths     pathList
@@ -78,7 +86,12 @@ func runSync(args []string) error {
 		return err
 	}
 
-	result, err := scan.Run(scan.Options{Roots: paths, Providers: selected})
+	from, err := readSince(*since, cfg.EnrolledAt)
+	if err != nil {
+		return err
+	}
+
+	result, err := scan.Run(scan.Options{Roots: paths, Providers: selected, Since: from})
 	if err != nil {
 		return err
 	}
@@ -124,6 +137,19 @@ func runSync(args []string) error {
 		fmt.Printf("sent %s to %s\n", count(len(sent), "bucket", "buckets"), cfg.URL)
 	}
 	return nil
+}
+
+// readSince decides how far back this machine reports.
+//
+// Enrolment is the floor: usage from before an account claimed this machine
+// is not that account's, and a first sync that uploaded months of history
+// would say otherwise. --since is an explicit request and wins either way,
+// so a machine can still be told to report older logs, or fewer.
+func readSince(flagValue string, enrolledAt time.Time) (time.Time, error) {
+	if flagValue == "" {
+		return enrolledAt, nil
+	}
+	return parseSince(flagValue)
 }
 
 // send uploads in batches and returns everything the server accepted, which

@@ -123,6 +123,10 @@ type Claim struct {
 	// DeviceName is what the account will call this machine, which is what
 	// the person approved.
 	DeviceName string
+
+	// EnrolledAt is when this machine was first let in, by the server's
+	// clock. Enrolling again does not move it.
+	EnrolledAt time.Time
 }
 
 // ClaimEnrollment collects the key, if a person has approved the request.
@@ -134,6 +138,7 @@ func (c *Client) ClaimEnrollment(ctx context.Context, claimToken string) (Claim,
 		Status     string `json:"status"`
 		APIKey     string `json:"api_key"`
 		DeviceName string `json:"device_name"`
+		EnrolledAt string `json:"enrolled_at"`
 	}
 	if err := c.post(ctx, "claim-enrollment", map[string]string{"claim_token": claimToken}, &claimed); err != nil {
 		return Claim{}, err
@@ -144,7 +149,11 @@ func (c *Client) ClaimEnrollment(ctx context.Context, claimToken string) (Claim,
 		// mean "not yet", and the caller asks again until the deadline.
 		return Claim{Waiting: true}, nil
 	}
-	return Claim{APIKey: claimed.APIKey, DeviceName: claimed.DeviceName}, nil
+	// A server that hands over a key without saying when this machine was
+	// enrolled leaves the zero time, which reads as "no floor" rather than
+	// as "everything is too old to send".
+	enrolled, _ := time.Parse(time.RFC3339, claimed.EnrolledAt)
+	return Claim{APIKey: claimed.APIKey, DeviceName: claimed.DeviceName, EnrolledAt: enrolled}, nil
 }
 
 // Ingest records this machine's rollups and returns how many the server took.

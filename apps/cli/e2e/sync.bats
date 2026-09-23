@@ -47,8 +47,12 @@ teardown() {
 
 # sync_fixture <provider> <case> — sync reading one fixture instead of the
 # machine's own logs.
+#
+# --since reaches past the enrolment these tests just did: the fixtures are
+# dated years back, and by default a machine reports nothing from before it
+# was enrolled. The test below is the one about that.
 sync_fixture() {
-    pokegosu coder sync --provider "$1" --path "$(fixture_logs "$1" "$2")" "${@:3}"
+    pokegosu coder sync --since 2020-01-01 --provider "$1" --path "$(fixture_logs "$1" "$2")" "${@:3}"
 }
 
 @test "what the logs say is what the server ends up holding" {
@@ -113,6 +117,17 @@ sync_fixture() {
     # Each machine reports its own logs, and neither overwrites the other.
     assert_synced claude_code normal-session "$(device_rollups "$SESSION" "$first")"
     assert_synced claude_code multiple-projects "$(device_rollups "$SESSION" "$second")"
+}
+
+# Usage from before an account claimed this machine is not that account's,
+# and a machine enrolled today would otherwise upload months of history on
+# its first run.
+@test "nothing from before this machine was enrolled is sent" {
+    run pokegosu coder sync --provider claude_code --path "$(fixture_logs claude_code normal-session)"
+    [ "$status" -eq 0 ]
+    [[ $output == *"nothing to send"* ]]
+
+    [ "$(device_rollups "$SESSION" "$DEVICE" | json get rollups.length)" = 0 ]
 }
 
 @test "sync without login says to log in" {

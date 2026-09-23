@@ -115,6 +115,7 @@ func runLogin(args []string) error {
 	if claim.DeviceName != "" {
 		cfg.DeviceName = claim.DeviceName
 	}
+	cfg.EnrolledAt = claim.EnrolledAt
 
 	// Saved only after the server handed over a key: settings on disk should
 	// mean settings that work.

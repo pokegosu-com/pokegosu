@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(38);
+select plan(39);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -147,7 +147,7 @@ reset role;
 select pg_temp.as_edge_function();
 
 select is(
-  public.claim_enrollment(pg_temp.h('claim-a'), pg_temp.h('key-a')) - 'user_id',
+  public.claim_enrollment(pg_temp.h('claim-a'), pg_temp.h('key-a')) - 'user_id' - 'enrolled_at',
   '{"outcome": "registered", "device_name": "laptop"}'::jsonb,
   'the machine collects its key once it has been let in');
 
@@ -261,7 +261,7 @@ select public.approve_enrollment('EFGH-5678');
 
 select pg_temp.as_edge_function();
 select is(
-  public.claim_enrollment(pg_temp.h('claim-again'), pg_temp.h('key-a2')) - 'user_id',
+  public.claim_enrollment(pg_temp.h('claim-again'), pg_temp.h('key-a2')) - 'user_id' - 'enrolled_at',
   '{"outcome": "registered", "device_name": "laptop 2"}'::jsonb,
   'the account that owns a machine can enrol it again');
 
@@ -270,6 +270,29 @@ select results_eq(
   $$ select name, api_key_hash, revoked_at from public.devices where id = '11111111-1111-1111-1111-111111111111' $$,
   $$ values ('laptop 2', pg_temp.h('key-a2'), null::timestamptz) $$,
   'enrolling again takes the new name and key, and brings the machine back');
+
+-- ------------------------------------------------------------
+-- When a machine was let in
+-- ------------------------------------------------------------
+select pg_temp.as_edge_function();
+select pg_temp.start('FGHJ6789', 'claim-first', '55555555-5555-5555-5555-555555555555', 'fresh');
+
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select public.approve_enrollment('FGHJ-6789');
+
+select pg_temp.as_edge_function();
+create temporary table collected as
+select public.claim_enrollment(pg_temp.h('claim-first'), pg_temp.h('key-first')) as value;
+
+-- A service reads this to know how far back the logs it finds are this
+-- machine's to report, so it has to be the moment the account first let it
+-- in rather than the moment it last collected a key.
+reset role;
+select results_eq(
+  $$ select value ->> 'enrolled_at' from collected $$,
+  $$ select to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+       from public.devices where id = '55555555-5555-5555-5555-555555555555' $$,
+  'collecting says when the machine was first enrolled');
 
 select * from finish();
 rollback;
