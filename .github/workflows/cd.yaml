@@ -35,22 +35,16 @@ jobs:
   #
   # No database password is kept anywhere: given only a project and a token,
   # the Supabase CLI asks the Management API for a login role with a
-  # temporary password, and connects through the pooler with it. The token
-  # (SUPABASE_ACCESS_TOKEN, shared with the functions job) is a scoped
-  # personal access token limited to this one project and to what these two
-  # jobs call:
+  # temporary password, and connects through the pooler with it. The token,
+  # SUPABASE_ACCESS_TOKEN, is shared with the functions job.
   #
-  #   Database             read-write  the temporary login role
-  #   Connection Pooling   read        the pooler address; runners have no IPv6
-  #   Project Settings     read        the project itself
-  #   Edge Functions       read-write  the functions job
-  #
-  # A classic token would reach every project on the account instead.
-  #
-  # Supabase lets a token live thirty days at most, so one is made for each
-  # release, just before tagging (see "Releasing" in the README), and can
-  # expire a day later. Forgotten, this job is the first to fail, so nothing
-  # ships half way; set a fresh token and rerun the failed jobs.
+  # It is a personal access token, which reaches every project its account
+  # does; scoped tokens, which would limit it to this project, are not open to
+  # every account yet. So it lives for one release only: one is made just
+  # before tagging, to expire a day later (see "Releasing" in the README).
+  # Supabase allows thirty days at most anyway. Forgotten or expired, this job
+  # is the first to fail, so nothing ships half way; set a fresh token and
+  # rerun the failed jobs.
   migrate:
     name: 'Migrate database'
     runs-on: 'ubuntu-latest'
