@@ -8,9 +8,9 @@ import type { Outcome, useGame } from './use-game'
 
 type Game = ReturnType<typeof useGame>
 
-function nameOf(box: Box | null, pokedexId: unknown): string {
-  const found = box?.started ? box.pokemon.find((p) => p.pokedex_id === pokedexId) : undefined
-  return found ? ko(found.names) : '포켓몬'
+function nameOf(box: Box | null, speciesId: unknown): string {
+  const found = box?.started ? box.pokemon.find((p) => p.species_id === speciesId) : undefined
+  return found ? ko(found) : '포켓몬'
 }
 
 /** One line for what the last button did, in the games' voice where they have one. */
@@ -23,7 +23,7 @@ function say(box: Box | null, fn: string, o: Outcome): string | null {
           ? `경험치 ${exactTokens(Number(o.exp))} 을 얻었다! Lv.${o.level_before} → Lv.${o.level_after}`
           : `경험치 ${exactTokens(Number(o.exp))} 을 얻었다!`
     case 'hatch:hatched':
-      return `${o.is_shiny ? '✨ ' : ''}알에서 ${nameOf(box, o.pokedex_id)}이(가) 태어났다!`
+      return `${o.is_shiny ? '✨ ' : ''}알에서 ${nameOf(box, o.species_id)}이(가) 태어났다!`
     case 'evolve:evolved':
       return `축하합니다! ${nameOf(box, o.to)}(으)로 진화했다!`
     case 'receive_egg:received':
@@ -72,7 +72,7 @@ export function Panel({ game }: { game: Game }) {
   return (
     <section className="space-y-3">
       {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
-      {main && 'pokedex_id' in main ? (
+      {main && 'species_id' in main ? (
         <PokemonCard pokemon={main} act={act} busy={busy} />
       ) : main ? (
         <EggCard egg={main} act={act} busy={busy} />

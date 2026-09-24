@@ -79,11 +79,11 @@ export function PokemonCard({
     >
       <header className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- animated GIFs from pokedex-web */}
-        <img src={spriteUrl(p)} alt={ko(p.names)} className="h-16 w-16 object-contain" />
+        <img src={spriteUrl(p)} alt={ko(p)} className="h-16 w-16 object-contain" />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="flex items-center gap-1 font-medium">
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
-            {ko(p.names)}
+            {ko(p)}
             <span className="text-muted text-xs tabular-nums">
               No.{String(p.dex_no).padStart(3, '0')}
             </span>
@@ -92,7 +92,7 @@ export function PokemonCard({
           <p className="text-muted flex gap-1 text-xs">
             {p.types.map((t) => (
               <span key={t.id} className="border-muted/30 rounded border px-1">
-                {ko(t.names)}
+                {ko(t)}
               </span>
             ))}
           </p>
@@ -114,7 +114,7 @@ export function PokemonCard({
         <Bar value={p.exp - p.level_exp} max={(p.next_level_exp ?? p.exp) - p.level_exp} />
         {p.evolves_to && !p.can_evolve && (
           <p className="text-muted text-xs">
-            Lv.{p.evolves_to.level} 에 {ko(p.evolves_to.names)}(으)로 진화할 수 있다
+            Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
           </p>
         )}
       </div>
@@ -123,7 +123,7 @@ export function PokemonCard({
         <p className="flex flex-wrap gap-1 text-xs">
           {p.ribbons.map((r) => (
             <span key={r.id} className="rounded bg-amber-500/15 px-1.5 py-0.5">
-              🎀 {ko(r.names)}
+              🎀 {ko(r)}
             </span>
           ))}
         </p>
@@ -137,7 +137,7 @@ export function PokemonCard({
             disabled={busy}
             onClick={() => act({ fn: 'evolve', companion_id: p.id })}
           >
-            {ko(p.evolves_to.names)}(으)로 진화
+            {ko(p.evolves_to)}(으)로 진화
           </button>
         )}
         {p.can_receive_egg && (
@@ -158,7 +158,7 @@ export function PokemonCard({
             disabled={busy}
             onClick={() => act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })}
           >
-            {ko(r.names)} 받기
+            {ko(r)} 받기
           </button>
         ))}
         {!p.is_main && (

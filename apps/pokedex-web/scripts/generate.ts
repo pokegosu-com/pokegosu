@@ -1,6 +1,6 @@
 // Reads PokéAPI once and writes what the rest of the repository needs from it:
 // the sprite manifest this app serves from, and the migration that fills the
-// pokedex tables. Both are committed; nothing reads PokéAPI at build or run
+// species and pokedex tables. Both are committed; nothing reads PokéAPI at build or run
 // time.
 //
 //   node scripts/generate.ts
@@ -19,25 +19,24 @@ const SPRITES_BASE = `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITE
 /** Generation I: national dex numbers 1 to 151, in their default forms. */
 const LAST_DEX_NO = 151
 
-/**
- * The languages kept, as the pokedex keys them, and PokéAPI's codes for each
- * in order of preference. PokéAPI's "ja" is written as an adult reads it, with
- * kanji; "ja-hrkt" is the all-kana text the games offer children.
- */
-const LANGUAGES: Record<string, string[]> = {
-  ko: ['ko'],
-  en: ['en'],
-  ja: ['ja', 'ja-hrkt'],
-  'zh-Hans': ['zh-hans'],
-  'zh-Hant': ['zh-hant'],
-  fr: ['fr'],
-  de: ['de'],
-  es: ['es'],
-  it: ['it'],
-}
+/** The languages kept, Korean and English for now, as PokéAPI codes them. */
+const LANGUAGES = ['ko', 'en']
 
-/** Scripts written without spaces between words, so a line break joins with nothing. */
-const UNSPACED = new Set(['ja', 'zh-Hans', 'zh-Hant'])
+/**
+ * The pokedexes kept, with the names PokéAPI lacks in Korean, and which game's
+ * entry each prefers, first found wins; with none of them, the newest entry.
+ */
+const POKEDEXES: Record<
+  string,
+  { apiId: number; names: Record<string, string>; versions: string[] }
+> = {
+  national: { apiId: 1, names: { ko: '전국도감', en: 'National Pokédex' }, versions: [] },
+  kanto: {
+    apiId: 2,
+    names: { ko: '관동도감', en: 'Kanto Pokédex' },
+    versions: ['lets-go-pikachu', 'lets-go-eevee', 'firered', 'leafgreen', 'yellow', 'red', 'blue'],
+  },
+}
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
@@ -95,56 +94,74 @@ function idOf(resource: Named | { url: string }): number {
   return Number(resource.url.replace(/\/$/, '').split('/').pop())
 }
 
-/** One value per kept language, from whichever PokéAPI code it prefers. */
+/** One value per kept language. */
 function localise<T extends Localised>(
   entries: T[],
   value: (entry: T) => string,
   pick: (matching: T[]) => T | undefined = (matching) => matching[0],
 ): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const [key, codes] of Object.entries(LANGUAGES)) {
-    for (const code of codes) {
-      const chosen = pick(entries.filter((e) => e.language.name === code))
-      if (chosen) {
-        out[key] = value(chosen)
-        break
-      }
-    }
+  for (const code of LANGUAGES) {
+    const chosen = pick(entries.filter((e) => e.language.name === code))
+    if (chosen) out[code] = value(chosen)
   }
   return out
 }
 
 /** PokéAPI keeps the games' line breaks and page breaks; a screen wants prose. */
-function prose(text: string, key: string): string {
-  const joiner = UNSPACED.has(key) ? '' : ' '
+function prose(text: string): string {
   return text
-    .replace(/­\n/g, '')
-    .replace(/[\n\f\r]+/g, joiner)
+    .replace(/\u00ad\n/g, '')
+    .replace(/[\n\f\r]+/g, ' ')
     .replace(/ {2,}/g, ' ')
     .trim()
 }
 
-const itemNames = new Map<string, Record<string, string>>()
+/** PokéAPI names triggers in English only. */
+const TRIGGER_KO_NAMES: Record<string, string> = {
+  'level-up': '레벨업',
+  'use-item': '도구 사용',
+  trade: '통신교환',
+}
 
-/** How a form is reached, with only what the games actually ask for. */
-async function evolutionOf(detail: EvolutionDetail) {
-  const out: Record<string, unknown> = { trigger: detail.trigger.name }
-  if (detail.min_level) out.min_level = detail.min_level
-  if (detail.min_happiness) out.min_happiness = detail.min_happiness
-  if (detail.time_of_day) out.time_of_day = detail.time_of_day
-  for (const key of ['item', 'held_item'] as const) {
-    const item = detail[key]
-    if (!item) continue
-    if (!itemNames.has(item.name)) {
-      const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item.name}`)
-      itemNames.set(
-        item.name,
-        localise(fetched.names, (n) => n.name),
-      )
-    }
-    out[key] = { id: item.name, names: itemNames.get(item.name) }
+const triggers = new Map<string, Record<string, string>>()
+const items = new Map<string, Record<string, string>>()
+
+type Evolution = { id: string; trigger: string; level: number | null; item: string | null }
+
+const methods = new Map<string, Evolution>()
+
+/**
+ * How a form is reached, as a row of evolution_methods named for what it is.
+ * A method has a column for a level and for an item, which is all Generation
+ * I asks; anything else fails here rather than being dropped, so a wider
+ * table grows the columns it needs.
+ */
+async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
+  if (detail.held_item || detail.min_happiness || detail.time_of_day) {
+    throw new Error(`an evolution condition species has no column for: ${JSON.stringify(detail)}`)
   }
-  return out
+  const trigger = detail.trigger.name
+  if (!triggers.has(trigger)) {
+    const ko = TRIGGER_KO_NAMES[trigger]
+    if (!ko) throw new Error(`no Korean name for the trigger ${trigger}`)
+    const fetched = await get<{ names: ({ name: string } & Localised)[] }>(
+      `evolution-trigger/${trigger}`,
+    )
+    triggers.set(trigger, { ...localise(fetched.names, (n) => n.name), ko })
+  }
+  const item = detail.item?.name ?? null
+  if (item && !items.has(item)) {
+    const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item}`)
+    items.set(
+      item,
+      localise(fetched.names, (n) => n.name),
+    )
+  }
+  const level = detail.min_level ?? null
+  const id = [trigger, level, item].filter((part) => part !== null).join('-')
+  if (!methods.has(id)) methods.set(id, { id, trigger, level, item })
+  return methods.get(id)!
 }
 
 type Row = {
@@ -153,8 +170,8 @@ type Row = {
   dexNo: number
   generation: number
   names: Record<string, string>
-  genera: Record<string, string>
-  descriptions: Record<string, string>
+  genus: Record<string, string>
+  flavor: Species['flavor_text_entries']
   types: string[]
   stats: Record<string, number>
   height: number
@@ -163,12 +180,9 @@ type Row = {
   captureRate: number
   hatchCounter: number
   genderRate: number
-  isBaby: boolean
-  isLegendary: boolean
-  isMythical: boolean
-  chainId: number
+  category: 'baby' | 'legendary' | 'mythical' | null
   evolvesFrom: number | null
-  evolution: Record<string, unknown> | null
+  evolution: Evolution | null
   sprites: Record<string, string>
 }
 
@@ -232,17 +246,8 @@ async function main() {
       dexNo: s.id,
       generation: idOf(s.generation),
       names: localise(s.names, (n) => n.name),
-      genera: localise(s.genera, (g) => g.genus),
-      // The newest entry in each language: PokéAPI lists them oldest first.
-      descriptions: Object.fromEntries(
-        Object.entries(
-          localise(
-            s.flavor_text_entries,
-            (f) => f.flavor_text,
-            (matching) => matching.at(-1),
-          ),
-        ).map(([key, text]) => [key, prose(text, key)]),
-      ),
+      genus: localise(s.genera, (g) => g.genus),
+      flavor: s.flavor_text_entries,
       types: pokemon.types.sort((a, b) => a.slot - b.slot).map((t) => t.type.name),
       stats: Object.fromEntries(pokemon.stats.map((st) => [STATS[st.stat.name], st.base_stat])),
       height: pokemon.height,
@@ -251,10 +256,13 @@ async function main() {
       captureRate: s.capture_rate,
       hatchCounter: s.hatch_counter,
       genderRate: s.gender_rate,
-      isBaby: s.is_baby,
-      isLegendary: s.is_legendary,
-      isMythical: s.is_mythical,
-      chainId: idOf(s.evolution_chain),
+      category: s.is_baby
+        ? 'baby'
+        : s.is_legendary
+          ? 'legendary'
+          : s.is_mythical
+            ? 'mythical'
+            : null,
       evolvesFrom: evolution ? evolution.from : null,
       evolution: evolution ? await evolutionOf(evolution.detail) : null,
       sprites: {
@@ -262,6 +270,29 @@ async function main() {
         animated_shiny: `/sprites/pokemon/shiny/${s.id}.gif`,
       },
     })
+  }
+
+  // Each pokedex's numbering, and its entry text in the game it prefers.
+  // PokéAPI lists a species' entries oldest first.
+  const byDexNo = new Map(rows.map((r) => [r.dexNo, r]))
+  const entries: { dex: string; number: number; row: Row; description: Record<string, string> }[] =
+    []
+  for (const [dex, { apiId, versions }] of Object.entries(POKEDEXES)) {
+    const listed = await get<{
+      pokemon_entries: { entry_number: number; pokemon_species: Named }[]
+    }>(`pokedex/${apiId}`)
+    for (const entry of listed.pokemon_entries) {
+      const row = byDexNo.get(idOf(entry.pokemon_species))
+      if (!row) continue
+      const description = localise(
+        row.flavor,
+        (f) => prose(f.flavor_text),
+        (matching) =>
+          versions.map((v) => matching.find((f) => f.version.name === v)).find(Boolean) ??
+          matching.at(-1),
+      )
+      entries.push({ dex, number: entry.entry_number, row, description })
+    }
   }
 
   const typeIds = [...new Set(rows.flatMap((r) => r.types))].sort()
@@ -317,15 +348,18 @@ async function main() {
     '-- Generated by apps/pokedex-web/scripts/generate.ts from PokéAPI. Do not edit;',
     '-- change the script and run it again.',
     '--',
-    `-- ${rows.length} forms: the default form of every Generation I species.`,
+    `-- ${rows.length} forms, the default form of every Generation I species, and`,
+    `-- their entries in the ${Object.keys(POKEDEXES).join(' and ')} pokedexes.`,
     '',
-    'insert into public.pokedex_types (id, names) values',
-    typeIds.map((id) => `  (${sql(id)}, ${sql(typeNames.get(id))})`).join(',\n') + ';',
+    'insert into public.types (id, ko_name, en_name) values',
+    typeIds
+      .map((id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`)
+      .join(',\n') + ';',
     '',
-    'insert into public.pokedex_growth_rates (id) values',
+    'insert into public.growth_rates (id) values',
     rates.map((r) => `  (${sql(r)})`).join(',\n') + ';',
     '',
-    'insert into public.pokedex_experience_levels (growth_rate, level, exp) values',
+    'insert into public.experience_levels (growth_rate, level, exp) values',
     rates
       .flatMap((rate) =>
         levels
@@ -335,31 +369,62 @@ async function main() {
       )
       .join(',\n') + ';',
     '',
-    'insert into public.pokedex (',
-    '  id, slug, dex_no, is_default, generation, names, genera, descriptions,',
+    'insert into public.evolution_triggers (id, ko_name, en_name) values',
+    [...triggers]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
+      .join(',\n') + ';',
+    '',
+    'insert into public.items (id, ko_name, en_name) values',
+    [...items]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
+      .join(',\n') + ';',
+    '',
+    'insert into public.evolution_methods (id, trigger, level, item) values',
+    [...methods.values()]
+      .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
+      .map((m) => `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)})`)
+      .join(',\n') + ';',
+    '',
+    'insert into public.species (',
+    '  id, slug, ko_name, en_name, ko_genus, en_genus, generation, category,',
     '  type1, type2, hp, attack, defense, special_attack, special_defense, speed, height, weight,',
-    '  growth_rate, capture_rate, hatch_counter, gender_rate, is_baby, is_legendary, is_mythical,',
-    '  evolution_chain_id, evolves_from_id, evolution, sprites',
+    '  growth_rate, capture_rate, hatch_counter, gender_rate,',
+    '  evolves_from_id, evolution_method, sprites',
     ') values',
     ordered
       .map((r) =>
         [
-          `  (${r.id}, ${sql(r.slug)}, ${r.dexNo}, true, ${r.generation},`,
-          `   ${sql(r.names)},`,
-          `   ${sql(r.genera)},`,
-          `   ${sql(r.descriptions)},`,
+          `  (${r.id}, ${sql(r.slug)}, ${sql(r.names.ko)}, ${sql(r.names.en)}, ${sql(r.genus.ko)}, ${sql(r.genus.en)},` +
+            ` ${r.generation}, ${sql(r.category)},`,
           `   ${sql(r.types[0])}, ${sql(r.types[1] ?? null)}, ${r.stats.hp}, ${r.stats.attack}, ${r.stats.defense},` +
             ` ${r.stats.special_attack}, ${r.stats.special_defense}, ${r.stats.speed}, ${r.height}, ${r.weight},`,
-          `   ${sql(r.growthRate)}, ${r.captureRate}, ${r.hatchCounter}, ${r.genderRate}, ${r.isBaby}, ${r.isLegendary}, ${r.isMythical},`,
-          `   ${r.chainId}, ${sql(r.evolvesFrom)}, ${sql(r.evolution)}, ${sql(r.sprites)})`,
+          `   ${sql(r.growthRate)}, ${r.captureRate}, ${r.hatchCounter}, ${r.genderRate},`,
+          `   ${sql(r.evolvesFrom)}, ${sql(r.evolution?.id)}, ${sql(r.sprites)})`,
         ].join('\n'),
+      )
+      .join(',\n') + ';',
+    '',
+    'insert into public.pokedex_kinds (id, ko_name, en_name) values',
+    Object.entries(POKEDEXES)
+      .map(([id, { names }]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
+      .join(',\n') + ';',
+    '',
+    'insert into public.pokedex (dex, number, species_id, is_default, ko_description, en_description) values',
+    entries
+      .map(
+        (e) =>
+          `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, true, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
       )
       .join(',\n') + ';',
     '',
   ]
   await writeFile(MIGRATION, out.join('\n'))
 
-  console.log(`${rows.length} forms, ${typeIds.length} types, ${sprites.length} sprites`)
+  console.log(
+    `${rows.length} forms, ${entries.length} entries, ${typeIds.length} types, ${sprites.length} sprites`,
+  )
 }
 
 await main()

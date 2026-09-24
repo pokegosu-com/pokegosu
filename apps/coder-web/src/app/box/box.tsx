@@ -63,8 +63,7 @@ const collator = new Intl.Collator('ko')
 const sorts: Record<Sort, (a: Pokemon, b: Pokemon) => number> = {
   recent: (a, b) => b.hatched_at.localeCompare(a.hatched_at),
   dex: (a, b) => a.dex_no - b.dex_no || b.hatched_at.localeCompare(a.hatched_at),
-  name: (a, b) =>
-    collator.compare(ko(a.names), ko(b.names)) || b.hatched_at.localeCompare(a.hatched_at),
+  name: (a, b) => collator.compare(ko(a), ko(b)) || b.hatched_at.localeCompare(a.hatched_at),
 }
 
 function matches(p: Pokemon, view: View): boolean {
@@ -89,7 +88,7 @@ export function BoxView() {
   const pokemon = box?.started ? box.pokemon : []
   const eggs = box?.started ? box.eggs : []
   const types = [
-    ...new Map(pokemon.flatMap((p) => p.types).map((t) => [t.id, ko(t.names)])).entries(),
+    ...new Map(pokemon.flatMap((p) => p.types).map((t) => [t.id, ko(t)])).entries(),
   ].sort((a, b) => collator.compare(a[1], b[1]))
   const shown = pokemon.filter((p) => matches(p, view)).sort(sorts[view.sort])
 

@@ -11,52 +11,68 @@
 -- what a Pokémon is. A person's own companions are read through box(), which
 -- hides what an egg holds until it hatches.
 --
--- What a Pokémon is comes from the pokedex, in the migrations before this
--- one; what the game makes of it is here.
+-- What a Pokémon is comes from species, in the migrations before this one;
+-- what the game makes of it is here.
+
+
+-- ============================================================
+-- level_only_methods — the ways to evolve the game can offer: a level-up at a
+-- level, with nothing else asked. game_species keeps its families to these,
+-- and level_up_evolution() finds them, so the two agree.
+--
+-- Not granted to anyone.
+-- ============================================================
+create function public.level_only_methods()
+returns setof text
+language sql
+stable
+set search_path = ''
+as $$
+  select m.id from public.evolution_methods m
+   where m.trigger = 'level-up' and m.level is not null and m.item is null;
+$$;
 
 
 -- ============================================================
 -- game_species: what an egg can hold, and how likely each is.
 --
--- The first form of every Generation I family whose evolutions are all plain
--- level-ups, so that a button and a level are all any of them ever needs. A
--- family with a stone or a trade anywhere in it is left out whole rather than
--- cut short, and so is one that does not evolve within the table: Hitmonlee
--- and Hitmonchan share a family, but only through Tyrogue. Each weighs its capture rate,
--- the way the games make Pidgey common and Dratini rare; weight is the game's
--- to change.
+-- The first form of every Generation I family whose evolutions, if it has
+-- any, are all plain level-ups, so that a button and a level are all any of
+-- them ever needs. A family with a stone or a trade anywhere in it is left out
+-- whole rather than cut short. One that never evolves is in, legendaries and
+-- Ditto included, though the games hatch none of those from an egg. Each
+-- weighs its capture rate, the way the games make Pidgey common and Mewtwo
+-- rarer still; weight is the game's to change.
 -- ============================================================
 create table public.game_species (
-  pokedex_id integer primary key references public.pokedex,
+  species_id integer primary key references public.species,
   weight     integer not null check (weight > 0)
 );
 
-insert into public.game_species (pokedex_id, weight)
-select p.id, p.capture_rate
-  from public.pokedex p
- where p.is_default
-   and p.generation = 1
-   and p.evolves_from_id is null
-   and p.evolution_chain_id in (
-         select f.evolution_chain_id
-           from public.pokedex f
-          group by f.evolution_chain_id
-         having bool_or(f.evolves_from_id is not null)
-            and bool_and(f.evolves_from_id is null
-                         or f.evolution - 'min_level' = '{"trigger": "level-up"}'::jsonb));
+insert into public.game_species (species_id, weight)
+select s.id, s.capture_rate
+  from public.species s
+ where s.generation = 1
+   and s.evolves_from_id is null
+   and not exists (
+         select 1 from public.species d
+          where public.first_form(d.id) = s.id
+            and d.evolves_from_id is not null
+            and d.evolution_method not in (select public.level_only_methods()));
 
 -- Ribbons are kinds, the way the games have many; what earns each is decided
 -- in eligible_ribbons().
 create table public.ribbons (
-  id           text primary key,
-  names        jsonb not null check (names ? 'ko' and names ? 'en'),
-  descriptions jsonb not null check (descriptions ? 'ko' and descriptions ? 'en')
+  id             text primary key,
+  ko_name        text,
+  en_name        text,
+  ko_description text,
+  en_description text
 );
 
-insert into public.ribbons (id, names, descriptions) values
-  ('level-100',
-   '{"ko": "레벨 100 리본", "en": "Level 100 Ribbon"}',
-   '{"ko": "Lv.100 까지 함께 성장한 포켓몬에게 주는 리본", "en": "A ribbon for a Pokémon that grew all the way to Lv.100"}');
+insert into public.ribbons (id, ko_name, en_name, ko_description, en_description) values
+  ('level-100', '레벨 100 리본', 'Level 100 Ribbon',
+   'Lv.100 까지 함께 성장한 포켓몬에게 주는 리본', 'A ribbon for a Pokémon that grew all the way to Lv.100');
 
 -- The balance of the game, in one row. Changing a value changes what happens
 -- from then on and nothing already earned: experience is stored, not derived.
@@ -82,9 +98,9 @@ insert into public.game_settings values (true, 2000, 1000, 257, 25000000, 3, 64)
 
 -- ============================================================
 -- companions: an egg or a Pokémon, one row for its whole life. Hatching fills
--- hatched_at and level on the same row, and evolving changes pokedex_id.
+-- hatched_at and level on the same row, and evolving changes species_id.
 --
--- pokedex_id is a form, not a species: a form change, such as Rotom's, is a
+-- species_id is a form, not a species: a form change, such as Rotom's, is a
 -- change to this column, and a form fixed at birth, such as an Unown's
 -- letter, stays as it hatched.
 --
@@ -99,7 +115,7 @@ insert into public.game_settings values (true, 2000, 1000, 257, 25000000, 3, 64)
 create table public.companions (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users on delete cascade,
-  pokedex_id      integer not null references public.pokedex,
+  species_id      integer not null references public.species,
   is_shiny        boolean not null,
   steps           integer not null default 0 check (steps >= 0),
   exp             integer not null default 0 check (exp >= 0),
@@ -195,17 +211,15 @@ begin
   select * into settings from public.game_settings;
 
   with owned as (
-    select distinct p.evolution_chain_id
+    select distinct public.first_form(c.species_id) as first_form
       from public.companions c
-      join public.pokedex p on p.id = c.pokedex_id
      where c.user_id = owner
   ),
   weighted as (
-    select p.id,
-           g.weight * case when o.evolution_chain_id is null then settings.unowned_line_weight else 1 end as weight
+    select g.species_id as id,
+           g.weight * case when o.first_form is null then settings.unowned_line_weight else 1 end as weight
       from public.game_species g
-      join public.pokedex p on p.id = g.pokedex_id
-      left join owned o on o.evolution_chain_id = p.evolution_chain_id
+      left join owned o on o.first_form = g.species_id
   ),
   running as (
     select id, sum(weight) over (order by id) as upto, sum(weight) over () as total
@@ -220,7 +234,7 @@ begin
    order by r.id
    limit 1;
 
-  insert into public.companions (user_id, pokedex_id, is_shiny)
+  insert into public.companions (user_id, species_id, is_shiny)
   values (owner, drawn, floor(random() * settings.shiny_odds) = 0)
   returning id into egg;
   return egg;
@@ -338,7 +352,7 @@ begin
   select c.id, c.steps, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
     into target
     from public.companions c
-    join public.pokedex p on p.id = c.pokedex_id
+    join public.species p on p.id = c.species_id
    where c.id = main;
 
   if budget > 0 and target.hatched_at is null then
@@ -346,7 +360,7 @@ begin
     added_steps := greatest(0, least(room, budget / settings.tokens_per_step));
   elsif budget > 0 then
     select e.exp - target.exp into room
-      from public.pokedex_experience_levels e
+      from public.experience_levels e
      where e.growth_rate = target.growth_rate and e.level = 100;
     added_exp := greatest(0, least(room, budget / settings.tokens_per_exp));
   end if;
@@ -358,7 +372,7 @@ begin
 
   if added_exp > 0 then
     select max(e.level) into new_level
-      from public.pokedex_experience_levels e
+      from public.experience_levels e
      where e.growth_rate = target.growth_rate and e.exp <= target.exp + added_exp;
   end if;
 
@@ -413,7 +427,7 @@ $$;
 -- ============================================================
 -- hatch — an egg with all its steps becomes a Lv.1 Pokémon.
 --
---   → {"outcome": "hatched", "pokedex_id": 4, "is_shiny": false}
+--   → {"outcome": "hatched", "species_id": 4, "is_shiny": false}
 --   → {"outcome": "not_ready"} | {"outcome": "not_an_egg"} | {"outcome": "not_found"}
 -- ============================================================
 create function public.hatch(companion_id uuid)
@@ -435,21 +449,21 @@ begin
   end if;
 
   select p.hatch_counter * g.steps_per_cycle into needed
-    from public.pokedex p, public.game_settings g
-   where p.id = egg.pokedex_id;
+    from public.species p, public.game_settings g
+   where p.id = egg.species_id;
   if egg.steps < needed then
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
   update public.companions c set hatched_at = now(), level = 1 where c.id = egg.id;
-  return jsonb_build_object('outcome', 'hatched', 'pokedex_id', egg.pokedex_id, 'is_shiny', egg.is_shiny);
+  return jsonb_build_object('outcome', 'hatched', 'species_id', egg.species_id, 'is_shiny', egg.is_shiny);
 end;
 $$;
 
 
 -- ============================================================
 -- level_up_evolution — the form a form becomes by level alone, and at which
--- level, or no row. The pokedex knows stones and trades too; the game uses
+-- level, or no row. species knows stones and trades too; the game uses
 -- only this. evolve() acts on it and box() shows it, so the two agree.
 --
 -- Every family an egg can hold has one such next form, so none is chosen.
@@ -462,10 +476,11 @@ language sql
 stable
 set search_path = ''
 as $$
-  select p.id, (p.evolution ->> 'min_level')::smallint
-    from public.pokedex p
+  select p.id, m.level
+    from public.species p
+    join public.evolution_methods m on m.id = p.evolution_method
    where p.evolves_from_id = from_id
-     and p.evolution - 'min_level' = '{"trigger": "level-up"}'::jsonb
+     and m.id in (select public.level_only_methods())
    order by p.id
    limit 1;
 $$;
@@ -496,14 +511,14 @@ begin
   end if;
 
   select e.id into next_form
-    from public.level_up_evolution(pokemon.pokedex_id) e
+    from public.level_up_evolution(pokemon.species_id) e
    where e.min_level <= pokemon.level;
   if next_form is null then
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
-  update public.companions c set pokedex_id = next_form where c.id = pokemon.id;
-  return jsonb_build_object('outcome', 'evolved', 'from', pokemon.pokedex_id, 'to', next_form);
+  update public.companions c set species_id = next_form where c.id = pokemon.id;
+  return jsonb_build_object('outcome', 'evolved', 'from', pokemon.species_id, 'to', next_form);
 end;
 $$;
 
@@ -653,16 +668,18 @@ $$;
 --
 --   → {"started": true, "main_companion_id": "...", "balance": "123",
 --      "eggs":    [{"id", "created_at", "steps", "steps_needed", "is_main", "markings"}],
---      "pokemon": [{"id", "pokedex_id", "dex_no", "names", "sprites",
---                   "types": [{"id", "names"}], "is_shiny", "level", "exp",
+--      "pokemon": [{"id", "species_id", "dex_no", "ko_name", "en_name", "sprites",
+--                   "types": [{"id", "ko_name", "en_name"}], "is_shiny", "level", "exp",
 --                   "level_exp", "next_level_exp",
---                   "evolves_to": {"pokedex_id", "names", "level"} | null, "can_evolve",
---                   "can_receive_egg", "ribbons": [{"id", "names", "received_at"}],
---                   "ribbons_waiting": [{"id", "names"}], "created_at", "hatched_at",
+--                   "evolves_to": {"species_id", "ko_name", "en_name", "level"} | null,
+--                   "can_evolve", "can_receive_egg",
+--                   "ribbons": [{"id", "ko_name", "en_name", "received_at"}],
+--                   "ribbons_waiting": [{"id", "ko_name", "en_name"}], "created_at", "hatched_at",
 --                   "is_main", "markings"}]}
 --   → {"started": false, "balance": "123"}
 --
--- Names come in every language the pokedex keeps; the screen picks one.
+-- Names come in Korean and English; the screen picks one. dex_no is the
+-- national pokedex's number.
 --
 -- An egg says how many steps it needs, which hints at what it holds, as the
 -- games do when they say an egg will take a while. It says nothing more.
@@ -705,36 +722,39 @@ begin
                'markings', c.markings)
              order by c.created_at)
         from public.companions c
-        join public.pokedex p on p.id = c.pokedex_id
+        join public.species p on p.id = c.species_id
         cross join public.game_settings g
        where c.user_id = caller and c.hatched_at is null), '[]'::jsonb),
     'pokemon', coalesce((
       select jsonb_agg(jsonb_build_object(
                'id', c.id,
-               'pokedex_id', p.id,
-               'dex_no', p.dex_no,
-               'names', p.names,
+               'species_id', p.id,
+               'dex_no', dex.number,
+               'ko_name', p.ko_name,
+               'en_name', p.en_name,
                'sprites', p.sprites,
-               'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'names', t.names)
+               'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
                                           order by t.id = p.type2)
-                           from public.pokedex_types t where t.id in (p.type1, p.type2)),
+                           from public.types t where t.id in (p.type1, p.type2)),
                'is_shiny', c.is_shiny,
                'level', c.level,
                'exp', c.exp,
                'level_exp', here.exp,
                'next_level_exp', above.exp,
                'evolves_to', case when nxt.id is not null then
-                   jsonb_build_object('pokedex_id', nxt.id, 'names', target.names, 'level', nxt.min_level) end,
+                   jsonb_build_object('species_id', nxt.id, 'ko_name', target.ko_name, 'en_name', target.en_name,
+                                      'level', nxt.min_level) end,
                'can_evolve', coalesce(c.level >= nxt.min_level, false),
                'can_receive_egg', c.level >= 50 and c.egg_received_at is null,
                'ribbons', coalesce((
-                   select jsonb_agg(jsonb_build_object('id', r.id, 'names', r.names, 'received_at', cr.received_at)
+                   select jsonb_agg(jsonb_build_object('id', r.id, 'ko_name', r.ko_name, 'en_name', r.en_name,
+                                                       'received_at', cr.received_at)
                                     order by cr.received_at)
                      from public.companion_ribbons cr
                      join public.ribbons r on r.id = cr.ribbon_id
                     where cr.companion_id = c.id), '[]'::jsonb),
                'ribbons_waiting', coalesce((
-                   select jsonb_agg(jsonb_build_object('id', r.id, 'names', r.names) order by r.id)
+                   select jsonb_agg(jsonb_build_object('id', r.id, 'ko_name', r.ko_name, 'en_name', r.en_name) order by r.id)
                      from public.ribbons r
                     where r.id = any (public.eligible_ribbons(c))), '[]'::jsonb),
                'created_at', c.created_at,
@@ -743,12 +763,13 @@ begin
                'markings', c.markings)
              order by c.hatched_at)
         from public.companions c
-        join public.pokedex p on p.id = c.pokedex_id
-        join public.pokedex_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
-        left join public.pokedex_experience_levels above
+        join public.species p on p.id = c.species_id
+        join public.experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
+        left join public.experience_levels above
           on above.growth_rate = p.growth_rate and above.level = c.level + 1
         left join lateral public.level_up_evolution(p.id) nxt on true
-        left join public.pokedex target on target.id = nxt.id
+        left join public.species target on target.id = nxt.id
+        left join public.pokedex dex on dex.dex = 'national' and dex.species_id = p.id
        where c.user_id = caller and c.hatched_at is not null), '[]'::jsonb));
 end;
 $$;
@@ -760,6 +781,7 @@ $$;
 revoke execute on function
   public.roll_egg(uuid),
   public.lock_companion(uuid, uuid),
+  public.level_only_methods(),
   public.level_up_evolution(integer),
   public.eligible_ribbons(public.companions),
   public.start_game(),

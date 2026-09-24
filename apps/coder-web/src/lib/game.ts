@@ -20,38 +20,39 @@ export type Egg = {
   markings: number
 }
 
-/** A name or text in every language the pokedex keeps, keyed like "ko" or "zh-Hans". */
-export type Names = Record<string, string>
+/** Anything named in Korean and English, either of which may be missing. */
+export type Named = { ko_name: string | null; en_name: string | null }
 
 export type Pokemon = {
   id: string
-  pokedex_id: number
+  species_id: number
   dex_no: number
-  names: Names
+  ko_name: string | null
+  en_name: string | null
   sprites: { animated?: string; animated_shiny?: string }
-  types: { id: string; names: Names }[]
+  types: ({ id: string } & Named)[]
   is_shiny: boolean
   level: number
   exp: number
   level_exp: number
   next_level_exp: number | null
-  evolves_to: { pokedex_id: number; names: Names; level: number } | null
+  evolves_to: ({ species_id: number; level: number } & Named) | null
   can_evolve: boolean
   can_receive_egg: boolean
-  ribbons: { id: string; names: Names; received_at: string }[]
-  ribbons_waiting: { id: string; names: Names }[]
+  ribbons: ({ id: string; received_at: string } & Named)[]
+  ribbons_waiting: ({ id: string } & Named)[]
   created_at: string
   hatched_at: string
   is_main: boolean
   markings: number
 }
 
-/** This app is in Korean; English stands in for a text the pokedex lacks in it. */
-export function ko(names: Names): string {
-  return names.ko ?? names.en ?? ''
+/** This app is in Korean; English stands in for a text missing in it. */
+export function ko(named: Named): string {
+  return named.ko_name ?? named.en_name ?? ''
 }
 
-/** The pokedex keeps sprite paths; pokedex-web serves them. */
+/** species keeps sprite paths; pokedex-web serves them. */
 export function spriteUrl(pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>): string | undefined {
   const path = pokemon.is_shiny ? pokemon.sprites.animated_shiny : pokemon.sprites.animated
   return path && `${env.NEXT_PUBLIC_POKEDEX_URL}${path}`

@@ -72,7 +72,7 @@ export type Database = {
           is_shiny: boolean
           level: number | null
           markings: number
-          pokedex_id: number
+          species_id: number
           steps: number
           user_id: string
         }
@@ -86,7 +86,7 @@ export type Database = {
           is_shiny: boolean
           level?: number | null
           markings?: number
-          pokedex_id: number
+          species_id: number
           steps?: number
           user_id: string
         }
@@ -100,16 +100,16 @@ export type Database = {
           is_shiny?: boolean
           level?: number | null
           markings?: number
-          pokedex_id?: number
+          species_id?: number
           steps?: number
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'companions_pokedex_id_fkey'
-            columns: ['pokedex_id']
+            foreignKeyName: 'companions_species_id_fkey'
+            columns: ['species_id']
             isOneToOne: false
-            referencedRelation: 'pokedex'
+            referencedRelation: 'species'
             referencedColumns: ['id']
           },
         ]
@@ -177,6 +177,86 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_methods: {
+        Row: {
+          id: string
+          item: string | null
+          level: number | null
+          trigger: string
+        }
+        Insert: {
+          id: string
+          item?: string | null
+          level?: number | null
+          trigger: string
+        }
+        Update: {
+          id?: string
+          item?: string | null
+          level?: number | null
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'evolution_methods_item_fkey'
+            columns: ['item']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'evolution_methods_trigger_fkey'
+            columns: ['trigger']
+            isOneToOne: false
+            referencedRelation: 'evolution_triggers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      evolution_triggers: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      experience_levels: {
+        Row: {
+          exp: number
+          growth_rate: string
+          level: number
+        }
+        Insert: {
+          exp: number
+          growth_rate: string
+          level: number
+        }
+        Update: {
+          exp?: number
+          growth_rate?: string
+          level?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'experience_levels_growth_rate_fkey'
+            columns: ['growth_rate']
+            isOneToOne: false
+            referencedRelation: 'growth_rates'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       game_settings: {
         Row: {
           claim_limit_tokens: number
@@ -209,179 +289,28 @@ export type Database = {
       }
       game_species: {
         Row: {
-          pokedex_id: number
+          species_id: number
           weight: number
         }
         Insert: {
-          pokedex_id: number
+          species_id: number
           weight: number
         }
         Update: {
-          pokedex_id?: number
+          species_id?: number
           weight?: number
         }
         Relationships: [
           {
-            foreignKeyName: 'game_species_pokedex_id_fkey'
-            columns: ['pokedex_id']
+            foreignKeyName: 'game_species_species_id_fkey'
+            columns: ['species_id']
             isOneToOne: true
-            referencedRelation: 'pokedex'
+            referencedRelation: 'species'
             referencedColumns: ['id']
           },
         ]
       }
-      pokedex: {
-        Row: {
-          attack: number
-          capture_rate: number
-          defense: number
-          descriptions: Json
-          dex_no: number
-          evolution: Json | null
-          evolution_chain_id: number
-          evolves_from_id: number | null
-          gender_rate: number
-          genera: Json
-          generation: number
-          growth_rate: string
-          hatch_counter: number
-          height: number
-          hp: number
-          id: number
-          is_baby: boolean
-          is_default: boolean
-          is_legendary: boolean
-          is_mythical: boolean
-          names: Json
-          slug: string
-          special_attack: number
-          special_defense: number
-          speed: number
-          sprites: Json
-          type1: string
-          type2: string | null
-          weight: number
-        }
-        Insert: {
-          attack: number
-          capture_rate: number
-          defense: number
-          descriptions?: Json
-          dex_no: number
-          evolution?: Json | null
-          evolution_chain_id: number
-          evolves_from_id?: number | null
-          gender_rate: number
-          genera?: Json
-          generation: number
-          growth_rate: string
-          hatch_counter: number
-          height: number
-          hp: number
-          id: number
-          is_baby: boolean
-          is_default: boolean
-          is_legendary: boolean
-          is_mythical: boolean
-          names: Json
-          slug: string
-          special_attack: number
-          special_defense: number
-          speed: number
-          sprites?: Json
-          type1: string
-          type2?: string | null
-          weight: number
-        }
-        Update: {
-          attack?: number
-          capture_rate?: number
-          defense?: number
-          descriptions?: Json
-          dex_no?: number
-          evolution?: Json | null
-          evolution_chain_id?: number
-          evolves_from_id?: number | null
-          gender_rate?: number
-          genera?: Json
-          generation?: number
-          growth_rate?: string
-          hatch_counter?: number
-          height?: number
-          hp?: number
-          id?: number
-          is_baby?: boolean
-          is_default?: boolean
-          is_legendary?: boolean
-          is_mythical?: boolean
-          names?: Json
-          slug?: string
-          special_attack?: number
-          special_defense?: number
-          speed?: number
-          sprites?: Json
-          type1?: string
-          type2?: string | null
-          weight?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'pokedex_evolves_from_id_fkey'
-            columns: ['evolves_from_id']
-            isOneToOne: false
-            referencedRelation: 'pokedex'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'pokedex_growth_rate_fkey'
-            columns: ['growth_rate']
-            isOneToOne: false
-            referencedRelation: 'pokedex_growth_rates'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'pokedex_type1_fkey'
-            columns: ['type1']
-            isOneToOne: false
-            referencedRelation: 'pokedex_types'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'pokedex_type2_fkey'
-            columns: ['type2']
-            isOneToOne: false
-            referencedRelation: 'pokedex_types'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      pokedex_experience_levels: {
-        Row: {
-          exp: number
-          growth_rate: string
-          level: number
-        }
-        Insert: {
-          exp: number
-          growth_rate: string
-          level: number
-        }
-        Update: {
-          exp?: number
-          growth_rate?: string
-          level?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'pokedex_experience_levels_growth_rate_fkey'
-            columns: ['growth_rate']
-            isOneToOne: false
-            referencedRelation: 'pokedex_growth_rates'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      pokedex_growth_rates: {
+      growth_rates: {
         Row: {
           id: string
         }
@@ -393,18 +322,81 @@ export type Database = {
         }
         Relationships: []
       }
-      pokedex_types: {
+      items: {
         Row: {
+          en_name: string | null
           id: string
-          names: Json
+          ko_name: string | null
         }
         Insert: {
+          en_name?: string | null
           id: string
-          names: Json
+          ko_name?: string | null
         }
         Update: {
+          en_name?: string | null
           id?: string
-          names?: Json
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      pokedex: {
+        Row: {
+          dex: string
+          en_description: string | null
+          is_default: boolean
+          ko_description: string | null
+          number: number
+          species_id: number
+        }
+        Insert: {
+          dex: string
+          en_description?: string | null
+          is_default: boolean
+          ko_description?: string | null
+          number: number
+          species_id: number
+        }
+        Update: {
+          dex?: string
+          en_description?: string | null
+          is_default?: boolean
+          ko_description?: string | null
+          number?: number
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pokedex_dex_fkey'
+            columns: ['dex']
+            isOneToOne: false
+            referencedRelation: 'pokedex_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      pokedex_kinds: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
         }
         Relationships: []
       }
@@ -443,21 +435,147 @@ export type Database = {
       }
       ribbons: {
         Row: {
-          descriptions: Json
+          en_description: string | null
+          en_name: string | null
           id: string
-          names: Json
+          ko_description: string | null
+          ko_name: string | null
         }
         Insert: {
-          descriptions: Json
+          en_description?: string | null
+          en_name?: string | null
           id: string
-          names: Json
+          ko_description?: string | null
+          ko_name?: string | null
         }
         Update: {
-          descriptions?: Json
+          en_description?: string | null
+          en_name?: string | null
           id?: string
-          names?: Json
+          ko_description?: string | null
+          ko_name?: string | null
         }
         Relationships: []
+      }
+      species: {
+        Row: {
+          attack: number
+          capture_rate: number
+          category: string | null
+          defense: number
+          en_genus: string | null
+          en_name: string | null
+          evolution_method: string | null
+          evolves_from_id: number | null
+          gender_rate: number
+          generation: number
+          growth_rate: string
+          hatch_counter: number
+          height: number
+          hp: number
+          id: number
+          ko_genus: string | null
+          ko_name: string | null
+          slug: string
+          special_attack: number
+          special_defense: number
+          speed: number
+          sprites: Json
+          type1: string
+          type2: string | null
+          weight: number
+        }
+        Insert: {
+          attack: number
+          capture_rate: number
+          category?: string | null
+          defense: number
+          en_genus?: string | null
+          en_name?: string | null
+          evolution_method?: string | null
+          evolves_from_id?: number | null
+          gender_rate: number
+          generation: number
+          growth_rate: string
+          hatch_counter: number
+          height: number
+          hp: number
+          id: number
+          ko_genus?: string | null
+          ko_name?: string | null
+          slug: string
+          special_attack: number
+          special_defense: number
+          speed: number
+          sprites?: Json
+          type1: string
+          type2?: string | null
+          weight: number
+        }
+        Update: {
+          attack?: number
+          capture_rate?: number
+          category?: string | null
+          defense?: number
+          en_genus?: string | null
+          en_name?: string | null
+          evolution_method?: string | null
+          evolves_from_id?: number | null
+          gender_rate?: number
+          generation?: number
+          growth_rate?: string
+          hatch_counter?: number
+          height?: number
+          hp?: number
+          id?: number
+          ko_genus?: string | null
+          ko_name?: string | null
+          slug?: string
+          special_attack?: number
+          special_defense?: number
+          speed?: number
+          sprites?: Json
+          type1?: string
+          type2?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'species_evolution_method_fkey'
+            columns: ['evolution_method']
+            isOneToOne: false
+            referencedRelation: 'evolution_methods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_evolves_from_id_fkey'
+            columns: ['evolves_from_id']
+            isOneToOne: false
+            referencedRelation: 'species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_growth_rate_fkey'
+            columns: ['growth_rate']
+            isOneToOne: false
+            referencedRelation: 'growth_rates'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_type1_fkey'
+            columns: ['type1']
+            isOneToOne: false
+            referencedRelation: 'types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'species_type2_fkey'
+            columns: ['type2']
+            isOneToOne: false
+            referencedRelation: 'types'
+            referencedColumns: ['id']
+          },
+        ]
       }
       trainers: {
         Row: {
@@ -484,6 +602,24 @@ export type Database = {
             referencedColumns: ['id', 'user_id']
           },
         ]
+      }
+      types: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
       }
       usage_rollups: {
         Row: {
@@ -544,8 +680,10 @@ export type Database = {
         Returns: string[]
       }
       evolve: { Args: { companion_id: string }; Returns: Json }
+      first_form: { Args: { species_id: number }; Returns: number }
       hatch: { Args: { companion_id: string }; Returns: Json }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
+      level_only_methods: { Args: never; Returns: string[] }
       level_up_evolution: {
         Args: { from_id: number }
         Returns: {
@@ -565,7 +703,7 @@ export type Database = {
           is_shiny: boolean
           level: number | null
           markings: number
-          pokedex_id: number
+          species_id: number
           steps: number
           user_id: string
         }
