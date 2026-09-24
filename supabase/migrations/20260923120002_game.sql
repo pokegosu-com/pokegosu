@@ -49,10 +49,14 @@ $$;
 -- and Ditto included, though the games hatch none of those from an egg.
 --
 -- How likely each is comes from its rarity, a tier with a weight of its own,
--- so the odds are the game's to set rather than the pokedex's. The tiers a
--- species starts in follow its capture rate, the way the games make Pidgey
--- common and Dratini rare, but only as a starting point: a species moves tier,
--- or a tier changes weight, without the capture rate having a say.
+-- so the odds are the game's to set rather than the pokedex's. Which tier a
+-- species is in was decided by hand, from how Red and Green hand it over: on
+-- the first routes is common, later or in one place is uncommon, a trade, a
+-- one-off or a low chance is rare, and the starters, the fossils, Dratini's
+-- family and Porygon are very rare. Legendaries and mythicals are mythic.
+--
+-- At these weights a person has every species but the mythic ones after about
+-- 140 eggs, and the mythic ones take as long again.
 -- ============================================================
 create table public.coder_egg_rarities (
   id      text primary key,
@@ -62,11 +66,38 @@ create table public.coder_egg_rarities (
 );
 
 insert into public.coder_egg_rarities (id, ko_name, en_name, weight) values
-  ('common',    '흔함',      'Common',    16),
+  ('common',    '흔함',      'Common',    10),
   ('uncommon',  '보통',      'Uncommon',   8),
-  ('rare',      '드묾',      'Rare',       4),
-  ('very-rare', '매우 드묾', 'Very rare',  2),
-  ('legendary', '전설',      'Legendary',  1);
+  ('rare',      '드묾',      'Rare',       6),
+  ('very-rare', '매우 드묾', 'Very rare',  4),
+  ('mythic',    '신비',      'Mythic',     1);
+
+-- Every species an egg can hold, by tier. A species missing here, or named
+-- here but unable to hatch, fails the insert below rather than going quiet.
+create temporary table egg_rarity (slug text primary key, rarity text not null);
+insert into egg_rarity (slug, rarity) values
+  ('caterpie', 'common'), ('weedle', 'common'), ('pidgey', 'common'), ('rattata', 'common'),
+  ('spearow', 'common'), ('ekans', 'common'), ('zubat', 'common'), ('diglett', 'common'),
+  ('meowth', 'common'), ('goldeen', 'common'), ('magikarp', 'common'),
+
+  ('sandshrew', 'uncommon'), ('paras', 'uncommon'), ('venonat', 'uncommon'), ('psyduck', 'uncommon'),
+  ('mankey', 'uncommon'), ('tentacool', 'uncommon'), ('ponyta', 'uncommon'), ('slowpoke', 'uncommon'),
+  ('magnemite', 'uncommon'), ('doduo', 'uncommon'), ('seel', 'uncommon'), ('grimer', 'uncommon'),
+  ('onix', 'uncommon'), ('krabby', 'uncommon'), ('voltorb', 'uncommon'), ('cubone', 'uncommon'),
+  ('koffing', 'uncommon'), ('rhyhorn', 'uncommon'), ('kangaskhan', 'uncommon'), ('scyther', 'uncommon'),
+  ('jynx', 'uncommon'), ('electabuzz', 'uncommon'), ('magmar', 'uncommon'), ('pinsir', 'uncommon'),
+  ('tauros', 'uncommon'),
+
+  ('farfetchd', 'rare'), ('drowzee', 'rare'), ('hitmonlee', 'rare'), ('hitmonchan', 'rare'),
+  ('lickitung', 'rare'), ('chansey', 'rare'), ('tangela', 'rare'), ('horsea', 'rare'),
+  ('mr-mime', 'rare'), ('lapras', 'rare'), ('ditto', 'rare'), ('snorlax', 'rare'),
+
+  ('bulbasaur', 'very-rare'), ('charmander', 'very-rare'), ('squirtle', 'very-rare'),
+  ('porygon', 'very-rare'), ('omanyte', 'very-rare'), ('kabuto', 'very-rare'),
+  ('aerodactyl', 'very-rare'), ('dratini', 'very-rare'),
+
+  ('articuno', 'mythic'), ('zapdos', 'mythic'), ('moltres', 'mythic'), ('mewtwo', 'mythic'),
+  ('mew', 'mythic');
 
 create table public.coder_egg_kinds (
   id      text primary key,
@@ -85,27 +116,31 @@ create table public.coder_egg_species (
   primary key (egg_kind, species_id)
 );
 
-with hatchable as (
-  select s.id, s.generation,
-         case
-           when s.category in ('legendary', 'mythical') then 'legendary'
-           when s.capture_rate < 45 then 'very-rare'
-           when s.capture_rate < 100 then 'rare'
-           when s.capture_rate < 190 then 'uncommon'
-           else 'common'
-         end as rarity
-    from public.pokedex_species s
-   where s.evolves_from_id is null
-     and not exists (
-           select 1 from public.pokedex_species d
-            where public.pokedex_first_form(d.id) = s.id
-              and d.evolves_from_id is not null
-              and d.evolution_method not in (select public.level_only_methods()))
-)
+create temporary table hatchable as
+select s.id, s.slug, s.generation
+  from public.pokedex_species s
+ where s.evolves_from_id is null
+   and not exists (
+         select 1 from public.pokedex_species d
+          where public.pokedex_first_form(d.id) = s.id
+            and d.evolves_from_id is not null
+            and d.evolution_method not in (select public.level_only_methods()));
+
+do $$
+begin
+  if exists (select slug from hatchable except select slug from egg_rarity)
+     or exists (select slug from egg_rarity except select slug from hatchable) then
+    raise exception 'every species an egg can hold needs a rarity, and every rarity such a species';
+  end if;
+end;
+$$;
+
 insert into public.coder_egg_species (egg_kind, species_id, rarity)
-select 'national', h.id, h.rarity from hatchable h
+select 'national', h.id, r.rarity from hatchable h join egg_rarity r using (slug)
 union all
-select 'gen1', h.id, h.rarity from hatchable h where h.generation = 1;
+select 'gen1', h.id, r.rarity from hatchable h join egg_rarity r using (slug) where h.generation = 1;
+
+drop table hatchable, egg_rarity;
 
 -- Ribbons are kinds, the way the games have many; what earns each is decided
 -- in eligible_ribbons().

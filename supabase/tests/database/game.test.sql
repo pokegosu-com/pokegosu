@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(54);
+select plan(56);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -50,6 +50,21 @@ select is_empty(
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
+select results_eq(
+  $$ select g.rarity, count(*)::int
+       from public.coder_egg_species g
+       join public.coder_egg_rarities r on r.id = g.rarity
+      where g.egg_kind = 'national'
+      group by g.rarity, r.weight
+      order by r.weight desc $$,
+  $$ values ('common', 11), ('uncommon', 25), ('rare', 12), ('very-rare', 8), ('mythic', 5) $$,
+  'every species an egg can hold has a tier');
+select is(
+  (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'national' and s.slug in ('pidgey', 'charmander', 'omanyte', 'dratini', 'snorlax', 'mewtwo')),
+  'charmander:very-rare pidgey:common omanyte:very-rare snorlax:rare dratini:very-rare mewtwo:mythic',
+  'the starters, fossils and Dratini are very rare, legendaries mythic');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
