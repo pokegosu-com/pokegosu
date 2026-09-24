@@ -25,42 +25,99 @@ type SyncOptions struct {
 	All bool
 
 	// Quiet prints nothing unless something went wrong, which is what a
-	// scheduled run wants.
+	// hook wants.
 	Quiet bool
+
+	// MinInterval skips the sync when the last one started less than this
+	// long ago. An agent's hook that fires every turn asks for it, so that a
+	// busy session does not send the same hour over and over.
+	MinInterval time.Duration
 
 	// Paths and Providers are as for scan.
 	Paths     []string
 	Providers []string
 }
 
+// now is the clock Sync reads, replaced in tests.
+var now = time.Now
+
+// Outcomes a sync can have.
+const (
+	Sent    = "sent"    // the server took Buckets rollups
+	Nothing = "nothing" // nothing had changed
+	Skipped = "skipped" // --min-interval held it back
+	Failed  = "failed"  // Error says why
+)
+
+// Result is how a sync went: what --jsonl prints, one line per sync, and
+// what a hook appends to its log.
+type Result struct {
+	At      time.Time `json:"at"`
+	Outcome string    `json:"outcome"`
+	Buckets int       `json:"buckets,omitempty"`
+	Error   string    `json:"error,omitempty"`
+}
+
 // Sync reads the local agent logs and uploads the hourly rollups that have
-// changed since the last run. One pass, then it returns.
-func Sync(opts SyncOptions) error {
+// changed since the last run. One pass, then it returns, saying how it went.
+func Sync(opts SyncOptions) (Result, error) {
+	settingsPath, err := config.Path()
+	if err != nil {
+		return Result{At: now(), Outcome: Failed, Error: err.Error()}, err
+	}
+	runPath := state.RunPath(settingsPath)
+	result := Result{At: now()}
+
+	if opts.MinInterval > 0 {
+		last := state.LoadRun(runPath)
+		if ago := result.At.Sub(last.At); !last.At.IsZero() && ago < opts.MinInterval {
+			if !opts.Quiet {
+				fmt.Printf("the last sync was %s ago; skipped\n", ago.Round(time.Second))
+			}
+			result.Outcome = Skipped
+			return result, nil
+		}
+	}
+
+	// Recorded before the sync, so that another one starting meanwhile
+	// counts its interval from this one.
+	_ = state.SaveRun(runPath, state.Run{At: result.At})
+
+	sent, err := sync(opts, settingsPath)
+	switch {
+	case err != nil:
+		result.Outcome, result.Buckets, result.Error = Failed, sent, err.Error()
+	case sent == 0:
+		result.Outcome = Nothing
+	default:
+		result.Outcome, result.Buckets = Sent, sent
+	}
+	return result, err
+}
+
+// sync is one pass, and says how many rollups the server took.
+func sync(opts SyncOptions, settingsPath string) (int, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if cfg == nil || cfg.APIKey == "" || cfg.APIURL == "" || cfg.DeviceID == "" {
-		return fmt.Errorf("not logged in: run pokegosu auth login first")
+		return 0, fmt.Errorf("not logged in: run pokegosu auth login first")
 	}
 
 	selected, err := selectProviders(opts.Providers)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// The server ignores anything older anyway; this keeps a first run from
 	// carrying months of logs across the network to be dropped.
 	result, err := scan.Run(scan.Options{Roots: opts.Paths, Providers: selected, Since: cfg.EnrolledAt})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	report(opts.Quiet, result)
 
-	settingsPath, err := config.Path()
-	if err != nil {
-		return err
-	}
 	cachePath := state.Path(settingsPath)
 	cache := state.Load(cachePath, cfg.APIURL, cfg.DeviceID)
 
@@ -77,7 +134,7 @@ func Sync(opts SyncOptions) error {
 		if !opts.Quiet {
 			fmt.Println("nothing to send")
 		}
-		return nil
+		return 0, nil
 	}
 
 	client := coderapi.New(cfg.APIURL, cfg.APIKey)
@@ -91,12 +148,12 @@ func Sync(opts SyncOptions) error {
 	}
 
 	if sendErr != nil {
-		return explainSync(sendErr)
+		return len(sent), explainSync(sendErr)
 	}
 	if !opts.Quiet {
 		fmt.Printf("sent %s to %s\n", count(len(sent), "bucket", "buckets"), cfg.URL)
 	}
-	return nil
+	return len(sent), nil
 }
 
 // send uploads in batches and returns everything the server accepted, which
@@ -119,7 +176,7 @@ func send(client *coderapi.Client, rollups []usage.Rollup) ([]usage.Rollup, erro
 // report says what was read before anything is uploaded, so that a wrong
 // number can be told apart from a failed upload without a second run.
 //
-// What could not be read goes to stderr even under --quiet: a scheduled run
+// What could not be read goes to stderr even under --quiet: a hook's run
 // that says nothing should mean nothing went wrong, and a log this client
 // cannot parse is the one thing that would make its numbers quietly small.
 func report(quiet bool, result scan.Result) {

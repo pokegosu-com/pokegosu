@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -173,5 +174,61 @@ func TestExplainSyncSeparatesTheTwoRefusals(t *testing.T) {
 				t.Errorf("said %q, which points at the wrong setting", explained)
 			}
 		})
+	}
+}
+
+// A sync says how it went, which is what --jsonl prints.
+func TestSyncSaysHowItWent(t *testing.T) {
+	t.Setenv("POKEGOSU_CONFIG_HOME", t.TempDir())
+
+	result, err := Sync(SyncOptions{Quiet: true})
+	if err == nil {
+		t.Fatal("a sync with no settings succeeded")
+	}
+	if result.At.IsZero() || result.Outcome != Failed || result.Error != err.Error() {
+		t.Errorf("result = %+v, want the failure %q", result, err)
+	}
+}
+
+// --min-interval counts from the last sync that started, and skips quietly.
+func TestSyncMinInterval(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("POKEGOSU_CONFIG_HOME", dir)
+	runPath := state.RunPath(filepath.Join(dir, "config.json"))
+
+	start := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	at := start
+	now = func() time.Time { return at }
+	t.Cleanup(func() { now = time.Now })
+
+	opts := SyncOptions{Quiet: true, MinInterval: 15 * time.Minute}
+	outcome := func() string {
+		result, _ := Sync(opts)
+		return result.Outcome
+	}
+
+	// No settings, so every sync that goes ahead fails.
+	if got := outcome(); got != Failed {
+		t.Fatalf("the first sync: %s", got)
+	}
+
+	at = start.Add(10 * time.Minute)
+	if got := outcome(); got != Skipped {
+		t.Errorf("a sync within the interval: %s", got)
+	}
+	if got := state.LoadRun(runPath).At; !got.Equal(start) {
+		t.Errorf("a skipped sync moved the record to %v", got)
+	}
+
+	at = start.Add(15 * time.Minute)
+	if got := outcome(); got != Failed {
+		t.Errorf("a sync after the interval: %s", got)
+	}
+
+	// Without the flag nothing is skipped.
+	at = start.Add(16 * time.Minute)
+	opts.MinInterval = 0
+	if got := outcome(); got != Failed {
+		t.Errorf("a sync without --min-interval: %s", got)
 	}
 }

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder"
@@ -13,7 +16,7 @@ func newCoderCmd() *cobra.Command {
 		Long: `Collect coding agent token usage from this machine, and upload hourly totals
 to the account it was enrolled with.`,
 	}
-	cmd.AddCommand(newScanCmd(), newSyncCmd())
+	cmd.AddCommand(newScanCmd(), newSyncCmd(), newHookCmd())
 	return cmd
 }
 
@@ -45,13 +48,14 @@ anywhere. Run it first when a number looks wrong.`,
 
 func newSyncCmd() *cobra.Command {
 	var opts coder.SyncOptions
+	var noFail, jsonl bool
 
 	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Upload what has changed since the last run",
 		Long: `Reads the local agent logs and uploads the hourly rollups that have changed
-since the last run. One pass, then it exits: run it from cron, a systemd
-timer or launchd rather than leaving it resident.
+since the last run. One pass, then it exits. "pokegosu coder hook install
+claude-code" has Claude Code run it for you.
 
 A sync reports nothing from before this machine was enrolled: what the logs
 hold from before then is nobody's business but this machine's. The server
@@ -61,7 +65,22 @@ request. The hour the enrolment fell in is reported whole.
 Run "pokegosu auth login" first: sync needs the settings it writes.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return coder.Sync(opts)
+			if jsonl {
+				// The line is the whole of what is printed; warnings still go
+				// to stderr.
+				opts.Quiet = true
+			}
+			result, err := coder.Sync(opts)
+			if jsonl {
+				line, _ := json.Marshal(result)
+				fmt.Fprintln(cmd.OutOrStdout(), string(line))
+			}
+			if err != nil && noFail {
+				// Said, but not as a failure: whatever ran this carries on.
+				fmt.Fprintf(cmd.ErrOrStderr(), "pokegosu: %v\n", err)
+				return nil
+			}
+			return err
 		},
 	}
 
@@ -69,7 +88,16 @@ Run "pokegosu auth login" first: sync needs the settings it writes.`,
 	f.BoolVar(&opts.All, "all", false,
 		"upload every bucket, not only the changed ones: after the server lost data, or to check a disagreement")
 	f.BoolVarP(&opts.Quiet, "quiet", "q", false,
-		"print nothing unless something went wrong, which is what a scheduled run wants")
+		"print nothing unless something went wrong, which is what a hook wants")
+	// The three below are what "pokegosu coder hook install" writes into an
+	// agent's settings, where whoever reads them can look them up here.
+	f.BoolVar(&jsonl, "jsonl", false,
+		"print how the sync went as one line of JSON, and nothing else: its time, outcome "+
+			"(sent, nothing, skipped or failed), buckets sent and error; for appending to a log")
+	f.BoolVar(&noFail, "no-fail", false,
+		"exit 0 even when the sync fails, so that a hook does not interrupt the agent")
+	f.DurationVar(&opts.MinInterval, "min-interval", 0,
+		"skip the sync if the last one started less than `DURATION` ago, such as 15m")
 	f.StringArrayVar(&opts.Paths, "path", nil,
 		"read `DIR` instead of the default log location (repeatable)")
 	f.StringArrayVar(&opts.Providers, "provider", nil,
