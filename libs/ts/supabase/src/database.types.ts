@@ -142,21 +142,42 @@ export type Database = {
         }
         Relationships: []
       }
-      coder_egg_species: {
+      coder_egg_rarities: {
         Row: {
-          egg_kind: string
-          species_id: number
+          en_name: string | null
+          id: string
+          ko_name: string | null
           weight: number
         }
         Insert: {
-          egg_kind: string
-          species_id: number
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
           weight: number
         }
         Update: {
-          egg_kind?: string
-          species_id?: number
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
           weight?: number
+        }
+        Relationships: []
+      }
+      coder_egg_species: {
+        Row: {
+          egg_kind: string
+          rarity: string
+          species_id: number
+        }
+        Insert: {
+          egg_kind: string
+          rarity: string
+          species_id: number
+        }
+        Update: {
+          egg_kind?: string
+          rarity?: string
+          species_id?: number
         }
         Relationships: [
           {
@@ -167,10 +188,43 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'coder_egg_species_rarity_fkey'
+            columns: ['rarity']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_rarities'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'coder_egg_species_species_id_fkey'
             columns: ['species_id']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      coder_experience_levels: {
+        Row: {
+          growth_rate: string
+          level: number
+          tokens: number
+        }
+        Insert: {
+          growth_rate: string
+          level: number
+          tokens: number
+        }
+        Update: {
+          growth_rate?: string
+          level?: number
+          tokens?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_experience_levels_growth_rate_fkey'
+            columns: ['growth_rate']
+            isOneToOne: false
+            referencedRelation: 'pokedex_growth_rates'
             referencedColumns: ['id']
           },
         ]
@@ -205,7 +259,6 @@ export type Database = {
           id: boolean
           shiny_odds: number
           tokens_per_cycle: number
-          tokens_per_exp: number
           unowned_line_weight: number
         }
         Insert: {
@@ -213,7 +266,6 @@ export type Database = {
           id?: boolean
           shiny_odds: number
           tokens_per_cycle: number
-          tokens_per_exp: number
           unowned_line_weight: number
         }
         Update: {
@@ -221,7 +273,6 @@ export type Database = {
           id?: boolean
           shiny_odds?: number
           tokens_per_cycle?: number
-          tokens_per_exp?: number
           unowned_line_weight?: number
         }
         Relationships: []

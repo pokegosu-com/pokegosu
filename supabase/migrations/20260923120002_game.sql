@@ -46,10 +46,28 @@ $$;
 -- has any, are all plain level-ups, so that a button and a level are all any
 -- of them ever needs. A family with a stone or a trade anywhere in it is left
 -- out whole rather than cut short. One that never evolves is in, legendaries
--- and Ditto included, though the games hatch none of those from an egg. Each
--- weighs its capture rate, the way the games make Pidgey common and Mewtwo
--- rarer still; weight is the game's to change, per kind.
+-- and Ditto included, though the games hatch none of those from an egg.
+--
+-- How likely each is comes from its rarity, a tier with a weight of its own,
+-- so the odds are the game's to set rather than the pokedex's. The tiers a
+-- species starts in follow its capture rate, the way the games make Pidgey
+-- common and Dratini rare, but only as a starting point: a species moves tier,
+-- or a tier changes weight, without the capture rate having a say.
 -- ============================================================
+create table public.coder_egg_rarities (
+  id      text primary key,
+  ko_name text,
+  en_name text,
+  weight  integer not null check (weight > 0)
+);
+
+insert into public.coder_egg_rarities (id, ko_name, en_name, weight) values
+  ('common',    '흔함',      'Common',    16),
+  ('uncommon',  '보통',      'Uncommon',   8),
+  ('rare',      '드묾',      'Rare',       4),
+  ('very-rare', '매우 드묾', 'Very rare',  2),
+  ('legendary', '전설',      'Legendary',  1);
+
 create table public.coder_egg_kinds (
   id      text primary key,
   ko_name text,
@@ -63,12 +81,19 @@ insert into public.coder_egg_kinds (id, ko_name, en_name) values
 create table public.coder_egg_species (
   egg_kind   text not null references public.coder_egg_kinds,
   species_id integer not null references public.pokedex_species,
-  weight     integer not null check (weight > 0),
+  rarity     text not null references public.coder_egg_rarities,
   primary key (egg_kind, species_id)
 );
 
 with hatchable as (
-  select s.id, s.generation, s.capture_rate
+  select s.id, s.generation,
+         case
+           when s.category in ('legendary', 'mythical') then 'legendary'
+           when s.capture_rate < 45 then 'very-rare'
+           when s.capture_rate < 100 then 'rare'
+           when s.capture_rate < 190 then 'uncommon'
+           else 'common'
+         end as rarity
     from public.pokedex_species s
    where s.evolves_from_id is null
      and not exists (
@@ -77,10 +102,10 @@ with hatchable as (
               and d.evolves_from_id is not null
               and d.evolution_method not in (select public.level_only_methods()))
 )
-insert into public.coder_egg_species (egg_kind, species_id, weight)
-select 'national', h.id, h.capture_rate from hatchable h
+insert into public.coder_egg_species (egg_kind, species_id, rarity)
+select 'national', h.id, h.rarity from hatchable h
 union all
-select 'gen1', h.id, h.capture_rate from hatchable h where h.generation = 1;
+select 'gen1', h.id, h.rarity from hatchable h where h.generation = 1;
 
 -- Ribbons are kinds, the way the games have many; what earns each is decided
 -- in eligible_ribbons().
@@ -96,12 +121,47 @@ insert into public.coder_ribbons (id, ko_name, en_name, ko_description, en_descr
   ('level-100', '레벨 100 리본', 'Level 100 Ribbon',
    'Lv.100 까지 함께 성장한 포켓몬에게 주는 리본', 'A ribbon for a Pokémon that grew all the way to Lv.100');
 
+-- ============================================================
+-- coder_experience_levels: the tokens a Pokémon needs to reach each level.
+--
+-- A token is a point of experience, so this is the game's own curve rather
+-- than the games' tables times a rate. It keeps their growth rates, and their
+-- order, a slow Pokémon needing a quarter more than a medium one at Lv.100 as
+-- in the games, but not their shape: the games' curves are cubic, making
+-- Lv.100 eight times Lv.50, and this one is flatter, so Lv.50 is 40% of
+-- Lv.100.
+--
+--   tokens(level) = total × ((level − 1) / 99) ^ p,  with p set so that
+--   tokens(50) = 0.4 × tokens(100)
+--
+-- Medium Fast, the rate most Pokémon grow at, reaches Lv.50 on 200M tokens
+-- and Lv.100 on 500M: at 200M a day, a day and two and a half days. The other
+-- rates keep their distance from it. The rows are the game's to change one by
+-- one; this only writes the first of them.
+-- ============================================================
+create table public.coder_experience_levels (
+  growth_rate text not null references public.pokedex_growth_rates,
+  level       smallint not null check (level between 1 and 100),
+  tokens      bigint not null check (tokens >= 0),
+  primary key (growth_rate, level)
+);
+
+with totals as (
+  select e.growth_rate,
+         500000000::numeric * e.exp / m.exp as total
+    from public.pokedex_experience_levels e
+    join public.pokedex_experience_levels m on m.growth_rate = 'medium' and m.level = 100
+   where e.level = 100
+)
+insert into public.coder_experience_levels (growth_rate, level, tokens)
+select t.growth_rate, n,
+       round(t.total * power((n - 1) / 99.0, ln(0.4) / ln(49.0 / 99)))
+  from totals t, generate_series(1, 100) n;
+
 -- The balance of the game, in one row. Changing a value changes what happens
 -- from then on and nothing already earned: experience is stored, not derived.
 create table public.coder_settings (
   id                  boolean primary key default true check (id),
-  -- K: tokens that make one point of experience.
-  tokens_per_exp      integer not null check (tokens_per_exp > 0),
   -- S: tokens that make one egg cycle. An egg needs its species'
   -- hatch_counter of them, as the games count an egg in cycles of steps.
   tokens_per_cycle    integer not null check (tokens_per_cycle > 0),
@@ -114,7 +174,7 @@ create table public.coder_settings (
   shiny_odds          integer not null check (shiny_odds >= 1)
 );
 
-insert into public.coder_settings values (true, 2000, 257000, 25000000, 3, 64);
+insert into public.coder_settings values (true, 1000000, 20000000, 3, 64);
 
 
 -- ============================================================
@@ -140,7 +200,7 @@ create table public.coder_companions (
   egg_kind        text not null references public.coder_egg_kinds,
   is_shiny        boolean not null,
   cycles          integer not null default 0 check (cycles >= 0),
-  exp             integer not null default 0 check (exp >= 0),
+  exp             bigint not null default 0 check (exp >= 0),
   level           smallint check (level between 1 and 100),
   invested_tokens public.token_count not null default 0,
   markings        smallint not null default 0
@@ -188,11 +248,13 @@ create table public.coder_trainers (
 -- because an egg's species must not reach the browser before it hatches.
 -- ============================================================
 revoke all on
-  public.coder_egg_kinds, public.coder_egg_species, public.coder_ribbons, public.coder_settings, public.coder_companions,
+  public.coder_egg_kinds, public.coder_egg_rarities, public.coder_egg_species, public.coder_experience_levels, public.coder_ribbons, public.coder_settings, public.coder_companions,
   public.coder_companion_ribbons, public.coder_trainers
   from anon, authenticated;
 
 alter table public.coder_egg_kinds        enable row level security;
+alter table public.coder_egg_rarities     enable row level security;
+alter table public.coder_experience_levels enable row level security;
 alter table public.coder_egg_species      enable row level security;
 alter table public.coder_ribbons           enable row level security;
 alter table public.coder_settings     enable row level security;
@@ -200,8 +262,13 @@ alter table public.coder_companions        enable row level security;
 alter table public.coder_companion_ribbons enable row level security;
 alter table public.coder_trainers          enable row level security;
 
-grant select on public.coder_egg_kinds, public.coder_egg_species, public.coder_ribbons, public.coder_settings to authenticated;
+grant select on public.coder_egg_kinds, public.coder_egg_rarities, public.coder_egg_species,
+  public.coder_experience_levels, public.coder_ribbons, public.coder_settings to authenticated;
 
+create policy "anyone signed in can read egg rarities" on public.coder_egg_rarities
+  for select to authenticated using (true);
+create policy "anyone signed in can read the experience curve" on public.coder_experience_levels
+  for select to authenticated using (true);
 create policy "anyone signed in can read the kinds of egg" on public.coder_egg_kinds
   for select to authenticated using (true);
 create policy "anyone signed in can read what eggs hold" on public.coder_egg_species
@@ -216,7 +283,7 @@ create policy "anyone signed in can read the game's settings" on public.coder_se
 -- roll_egg — a new egg for a person, drawn here and nowhere else.
 --
 -- Every row of coder_egg_species for the kind asked for is a candidate at its
--- weight. A family the person has never had, not even as an unhatched egg,
+-- rarity's weight. A family the person has never had, not even as an unhatched egg,
 -- weighs unowned_line_weight times more, so a collection does not stall on
 -- duplicates for years.
 --
@@ -243,8 +310,9 @@ begin
   ),
   weighted as (
     select g.species_id as id,
-           g.weight * case when o.first_form is null then settings.unowned_line_weight else 1 end as weight
+           r.weight * case when o.first_form is null then settings.unowned_line_weight else 1 end as weight
       from public.coder_egg_species g
+      join public.coder_egg_rarities r on r.id = g.rarity
       left join owned o on o.first_form = g.species_id
      where g.egg_kind = roll_egg.egg_kind
   ),
@@ -325,7 +393,7 @@ $$;
 --
 -- It only invests: an egg fills with cycles up to what it needs, a Pokémon
 -- with experience up to Lv.100, and nothing else changes. What is left over,
--- including the tokens short of one cycle or one point, stays in the balance.
+-- including the tokens short of one cycle, stays in the balance.
 --
 -- The companion is named even though only the main one may take tokens today,
 -- so the screen can say which one it means: a main changed in another tab is
@@ -351,7 +419,7 @@ declare
   budget bigint;
   room bigint;
   added_cycles integer := 0;
-  added_exp integer := 0;
+  added_exp bigint := 0;
   spent bigint;
   new_level smallint;
 begin
@@ -390,21 +458,21 @@ begin
     room := target.hatch_counter - target.cycles;
     added_cycles := greatest(0, least(room, budget / settings.tokens_per_cycle));
   elsif budget > 0 then
-    select e.exp - target.exp into room
-      from public.pokedex_experience_levels e
+    select e.tokens - target.exp into room
+      from public.coder_experience_levels e
      where e.growth_rate = target.growth_rate and e.level = 100;
-    added_exp := greatest(0, least(room, budget / settings.tokens_per_exp));
+    added_exp := greatest(0, least(room, budget));
   end if;
 
-  spent := added_cycles::bigint * settings.tokens_per_cycle + added_exp::bigint * settings.tokens_per_exp;
+  spent := added_cycles::bigint * settings.tokens_per_cycle + added_exp;
   if spent = 0 then
     return jsonb_build_object('outcome', 'nothing', 'balance', (earned - invested)::text);
   end if;
 
   if added_exp > 0 then
     select max(e.level) into new_level
-      from public.pokedex_experience_levels e
-     where e.growth_rate = target.growth_rate and e.exp <= target.exp + added_exp;
+      from public.coder_experience_levels e
+     where e.growth_rate = target.growth_rate and e.tokens <= target.exp + added_exp;
   end if;
 
   update public.coder_companions c
@@ -712,11 +780,10 @@ $$;
 -- Names come in Korean and English; the screen picks one. dex_no is the
 -- national pokedex's number.
 --
--- Progress is in tokens, the one unit a person knows: an egg's cycles and a
--- Pokémon's experience come back multiplied by what each cost, so "tokens"
--- is where it stands, and level_tokens and next_level_tokens bracket its
--- level. The tokens_per_* in force apply, so progress made at an older rate is
--- shown at today's.
+-- Progress is in tokens, the one unit a person knows. A Pokémon's experience
+-- is tokens already; an egg's cycles come back at today's tokens_per_cycle.
+-- "tokens" is where it stands, and level_tokens and next_level_tokens bracket
+-- its level.
 --
 -- An egg says how many tokens it needs, which hints at what it holds, as the
 -- games do when they say an egg will take a while. It says nothing more.
@@ -775,9 +842,9 @@ begin
                            from public.pokedex_types t where t.id in (p.type1, p.type2)),
                'is_shiny', c.is_shiny,
                'level', c.level,
-               'tokens', c.exp::bigint * g.tokens_per_exp,
-               'level_tokens', here.exp::bigint * g.tokens_per_exp,
-               'next_level_tokens', above.exp::bigint * g.tokens_per_exp,
+               'tokens', c.exp,
+               'level_tokens', here.tokens,
+               'next_level_tokens', above.tokens,
                'evolves_to', case when nxt.id is not null then
                    jsonb_build_object('species_id', nxt.id, 'ko_name', target.ko_name, 'en_name', target.en_name,
                                       'level', nxt.min_level) end,
@@ -802,8 +869,8 @@ begin
         from public.coder_companions c
         join public.pokedex_species p on p.id = c.species_id
         cross join public.coder_settings g
-        join public.pokedex_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
-        left join public.pokedex_experience_levels above
+        join public.coder_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
+        left join public.coder_experience_levels above
           on above.growth_rate = p.growth_rate and above.level = c.level + 1
         left join lateral public.level_up_evolution(p.id) nxt on true
         left join public.pokedex_species target on target.id = nxt.id

@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(50);
+select plan(54);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -52,6 +52,12 @@ select ok((select count(*) = 3 from public.coder_egg_species g join public.poked
   'one that never evolves is in, a legendary and Ditto too');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
+select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
+  200000000::bigint, 'Medium Fast reaches Lv.50 on 200M tokens');
+select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
+  500000000::bigint, 'and Lv.100 on 500M, Lv.50 being 40% of it');
+select is((select tokens from public.coder_experience_levels where growth_rate = 'slow' and level = 100),
+  625000000::bigint, 'a slow one needs a quarter more, as in the games');
 
 
 -- ------------------------------------------------------------
@@ -72,7 +78,7 @@ select ok(not (public.box() -> 'eggs' -> 0 ? 'species_id') and not (public.box()
 select throws_ok($$ select * from public.coder_companions $$, '42501', null,
   'a person cannot read their companions directly, so an egg cannot be looked into');
 
--- Charmander from here on: 20 cycles, so 5,140,000 tokens; Medium Slow.
+-- Charmander from here on: 20 cycles, so 20,000,000 tokens; Medium Slow.
 reset role;
 update public.coder_companions set species_id = 4, is_shiny = false where id = pg_temp.main();
 
@@ -92,15 +98,15 @@ select pg_temp.use(999, '2026-09-23T11:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 5140000, "cycles": 20, "exp": 0,
-    "level_before": null, "level_after": null, "balance": "294860999"}'::jsonb,
+  '{"outcome": "claimed", "tokens": 20000000, "cycles": 20, "exp": 0,
+    "level_before": null, "level_after": null, "balance": "280000999"}'::jsonb,
   'an egg takes cycles up to what it needs, and no more');
 
-select is(public.claim(pg_temp.main()), '{"outcome": "nothing", "balance": "294860999"}'::jsonb,
+select is(public.claim(pg_temp.main()), '{"outcome": "nothing", "balance": "280000999"}'::jsonb,
   'a full egg takes nothing until it hatches');
 
-select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '5140000'::jsonb,
-  'the box says how far it has to go, in tokens: 20 cycles at 257,000 each');
+select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '20000000'::jsonb,
+  'the box says how far it has to go, in tokens: 20 cycles at 1,000,000 each');
 
 
 -- ------------------------------------------------------------
@@ -118,16 +124,20 @@ select is(public.box() -> 'eggs', '[]'::jsonb, 'and leaves the egg box');
 -- ------------------------------------------------------------
 -- Claiming into a Pokémon
 -- ------------------------------------------------------------
--- 25,000,000 tokens is 12,500 experience, which Medium Slow puts at Lv.25.
+-- 20,000,000 tokens, the limit of one claim, is Lv.9 on the game's Medium
+-- Slow curve, and three claims are past Lv.16.
 select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 25000000, "cycles": 0, "exp": 12500,
-    "level_before": 1, "level_after": 25, "balance": "269860999"}'::jsonb,
-  'one claim invests no more than the limit');
+  '{"outcome": "claimed", "tokens": 20000000, "cycles": 0, "exp": 20000000,
+    "level_before": 1, "level_after": 9, "balance": "260000999"}'::jsonb,
+  'one claim invests no more than the limit, and a token is a point of experience');
 
-select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 23470000::bigint,
-  'the box gives where this level starts, in tokens: 11,735 experience at 2,000 each');
-select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 26822000::bigint, 'and where the next one does');
-select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 25000000::bigint, 'and where it stands');
+select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 19989447::bigint,
+  'the box gives where this level starts, from the game''s own curve');
+select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 23304759::bigint, 'and where the next one does');
+select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 20000000::bigint, 'and where it stands');
+select ok(not (public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'Charmander waits for Lv.16');
+
+select public.claim(pg_temp.main()), public.claim(pg_temp.main());
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'past Lv.16 it can evolve');
 
 
@@ -148,7 +158,7 @@ select is(public.box() -> 'pokemon' -> 0 -> 'evolves_to',
 select is(public.receive_egg(pg_temp.main()), '{"outcome": "not_ready"}'::jsonb, 'no egg before Lv.50');
 
 reset role;
-update public.coder_companions set level = 50, exp = 117360 where id = pg_temp.main();
+update public.coder_companions set level = 50, exp = 211972000 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_receive_egg')::boolean, 'at Lv.50 the egg is waiting');
@@ -183,7 +193,7 @@ select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "not_
   'the Lv.100 ribbon waits for Lv.100');
 
 reset role;
-update public.coder_companions set level = 100, exp = 1059860 where id = pg_temp.main();
+update public.coder_companions set level = 100, exp = 529930000 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select is(public.claim(pg_temp.main()) ->> 'outcome', 'nothing', 'a Lv.100 takes no more experience');
