@@ -46,6 +46,11 @@ jobs:
   #   Edge Functions       read-write  the functions job
   #
   # A classic token would reach every project on the account instead.
+  #
+  # Supabase lets a token live thirty days at most, so one is made for each
+  # release, just before tagging (see "Releasing" in the README), and can
+  # expire a day later. Forgotten, this job is the first to fail, so nothing
+  # ships half way; set a fresh token and rerun the failed jobs.
   migrate:
     name: 'Migrate database'
     runs-on: 'ubuntu-latest'
