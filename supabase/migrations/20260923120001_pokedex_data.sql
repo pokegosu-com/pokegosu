@@ -4,7 +4,7 @@
 -- 151 forms, the default form of every Generation I species, and
 -- their entries in the national and kanto pokedexes.
 
-insert into public.types (id, ko_name, en_name) values
+insert into public.pokedex_types (id, ko_name, en_name) values
   ('bug', '벌레', 'Bug'),
   ('dragon', '드래곤', 'Dragon'),
   ('electric', '전기', 'Electric'),
@@ -23,13 +23,13 @@ insert into public.types (id, ko_name, en_name) values
   ('steel', '강철', 'Steel'),
   ('water', '물', 'Water');
 
-insert into public.growth_rates (id) values
+insert into public.pokedex_growth_rates (id) values
   ('fast'),
   ('medium'),
   ('medium-slow'),
   ('slow');
 
-insert into public.experience_levels (growth_rate, level, exp) values
+insert into public.pokedex_experience_levels (growth_rate, level, exp) values
   ('fast', 1, 0),
   ('fast', 2, 6),
   ('fast', 3, 21),
@@ -431,19 +431,19 @@ insert into public.experience_levels (growth_rate, level, exp) values
   ('slow', 99, 1212873),
   ('slow', 100, 1250000);
 
-insert into public.evolution_triggers (id, ko_name, en_name) values
+insert into public.pokedex_evolution_triggers (id, ko_name, en_name) values
   ('level-up', '레벨업', 'Level up'),
   ('trade', '통신교환', 'Trade or Linking Cord'),
   ('use-item', '도구 사용', 'Use item');
 
-insert into public.items (id, ko_name, en_name) values
+insert into public.pokedex_items (id, ko_name, en_name) values
   ('fire-stone', '불꽃의돌', 'Fire Stone'),
   ('leaf-stone', '리프의돌', 'Leaf Stone'),
   ('moon-stone', '달의돌', 'Moon Stone'),
   ('thunder-stone', '천둥의돌', 'Thunder Stone'),
   ('water-stone', '물의돌', 'Water Stone');
 
-insert into public.evolution_methods (id, trigger, level, item) values
+insert into public.pokedex_evolution_methods (id, trigger, level, item) values
   ('level-up-7', 'level-up', 7, null),
   ('level-up-10', 'level-up', 10, null),
   ('level-up-16', 'level-up', 16, null),
@@ -474,7 +474,7 @@ insert into public.evolution_methods (id, trigger, level, item) values
   ('use-item-thunder-stone', 'use-item', null, 'thunder-stone'),
   ('use-item-water-stone', 'use-item', null, 'water-stone');
 
-insert into public.species (
+insert into public.pokedex_species (
   id, slug, ko_name, en_name, ko_genus, en_genus, generation, category,
   type1, type2, hp, attack, defense, special_attack, special_defense, speed, height, weight,
   growth_rate, capture_rate, hatch_counter, gender_rate,
@@ -1089,7 +1089,7 @@ insert into public.pokedex_kinds (id, ko_name, en_name) values
   ('national', '전국도감', 'National Pokédex'),
   ('kanto', '관동도감', 'Kanto Pokédex');
 
-insert into public.pokedex (dex, number, species_id, is_default, ko_description, en_description) values
+insert into public.pokedex_entries (dex, number, species_id, is_default, ko_description, en_description) values
   ('national', 1, 1, true, '태어나서 얼마 동안 등의 씨앗에 담긴 영양을 섭취하며 자란다.', 'While it is young, it uses the nutrients that are stored in the seed on its back in order to grow.'),
   ('national', 2, 2, true, '햇빛을 받을수록 몸에 힘이 솟아나 등의 꽃봉오리가 자라난다.', 'Exposure to sunlight adds to its strength. Sunlight also makes the bud on its back grow larger.'),
   ('national', 3, 3, true, '꽃에서 황홀한 향기가 퍼져 나와 싸우는 자의 기분을 달래준다.', 'A bewitching aroma wafts from its flower. The fragrance becalms those engaged in a battle.'),

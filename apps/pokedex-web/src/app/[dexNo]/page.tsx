@@ -37,21 +37,23 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
   const db = pokedex()
   const [forms, all, kinds, triggers, items, methods, types] = await Promise.all([
     db
-      .from('pokedex')
-      .select('is_default, species(*)')
+      .from('pokedex_entries')
+      .select('is_default, species:pokedex_species(*)')
       .eq('dex', 'national')
       .eq('number', n)
       .order('is_default', { ascending: false }),
     // Every form, small enough to take whole: the family is found by following
     // evolves_from_id, and each links by its national number.
     db
-      .from('pokedex')
-      .select('number, species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)')
+      .from('pokedex_entries')
+      .select(
+        'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
+      )
       .eq('dex', 'national'),
     db.from('pokedex_kinds').select('id, ko_name, en_name'),
-    db.from('evolution_triggers').select('id, ko_name, en_name'),
-    db.from('items').select('id, ko_name, en_name'),
-    db.from('evolution_methods').select('id, trigger, level, item'),
+    db.from('pokedex_evolution_triggers').select('id, ko_name, en_name'),
+    db.from('pokedex_items').select('id, ko_name, en_name'),
+    db.from('pokedex_evolution_methods').select('id, trigger, level, item'),
     typeNames(),
   ])
   for (const result of [forms, all, kinds, triggers, items, methods]) {
@@ -62,7 +64,7 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
 
   // Every pokedex's entry for the form shown.
   const entriesOf = await db
-    .from('pokedex')
+    .from('pokedex_entries')
     .select('dex, number, ko_description, en_description')
     .eq('species_id', p.id)
   if (entriesOf.error) throw entriesOf.error

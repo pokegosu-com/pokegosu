@@ -5,8 +5,8 @@ import { dexNo, ko, pokedex, typeNames } from '@/lib/pokedex'
 export default async function Pokedex() {
   const [{ data, error }, types] = await Promise.all([
     pokedex()
-      .from('pokedex')
-      .select('number, species(ko_name, en_name, type1, type2, sprites)')
+      .from('pokedex_entries')
+      .select('number, species:pokedex_species(ko_name, en_name, type1, type2, sprites)')
       .eq('dex', 'national')
       .eq('is_default', true)
       .order('number'),

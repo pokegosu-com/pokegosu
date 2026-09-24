@@ -42,10 +42,10 @@ $$;
 select is((select count(*)::int from public.game_species), 61,
   'every Generation I family that evolves by level alone, or not at all');
 select is_empty(
-  $$ select g.species_id from public.game_species g join public.species s on s.id = g.species_id
+  $$ select g.species_id from public.game_species g join public.pokedex_species s on s.id = g.species_id
       where s.evolves_from_id is not null or s.slug in ('abra', 'pikachu', 'nidoran-f', 'eevee') $$,
   'only a first form, and none whose family needs a stone or a trade');
-select ok((select count(*) = 3 from public.game_species g join public.species s on s.id = g.species_id
+select ok((select count(*) = 3 from public.game_species g join public.pokedex_species s on s.id = g.species_id
             where s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,

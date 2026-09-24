@@ -11,8 +11,8 @@
 -- what a Pokémon is. A person's own companions are read through box(), which
 -- hides what an egg holds until it hatches.
 --
--- What a Pokémon is comes from species, in the migrations before this one;
--- what the game makes of it is here.
+-- What a Pokémon is comes from the pokedex_ tables, in the migrations before
+-- this one; what the game makes of it is here.
 
 
 -- ============================================================
@@ -28,7 +28,7 @@ language sql
 stable
 set search_path = ''
 as $$
-  select m.id from public.evolution_methods m
+  select m.id from public.pokedex_evolution_methods m
    where m.trigger = 'level-up' and m.level is not null and m.item is null;
 $$;
 
@@ -45,18 +45,18 @@ $$;
 -- rarer still; weight is the game's to change.
 -- ============================================================
 create table public.game_species (
-  species_id integer primary key references public.species,
+  species_id integer primary key references public.pokedex_species,
   weight     integer not null check (weight > 0)
 );
 
 insert into public.game_species (species_id, weight)
 select s.id, s.capture_rate
-  from public.species s
+  from public.pokedex_species s
  where s.generation = 1
    and s.evolves_from_id is null
    and not exists (
-         select 1 from public.species d
-          where public.first_form(d.id) = s.id
+         select 1 from public.pokedex_species d
+          where public.pokedex_first_form(d.id) = s.id
             and d.evolves_from_id is not null
             and d.evolution_method not in (select public.level_only_methods()));
 
@@ -115,7 +115,7 @@ insert into public.game_settings values (true, 2000, 1000, 257, 25000000, 3, 64)
 create table public.companions (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users on delete cascade,
-  species_id      integer not null references public.species,
+  species_id      integer not null references public.pokedex_species,
   is_shiny        boolean not null,
   steps           integer not null default 0 check (steps >= 0),
   exp             integer not null default 0 check (exp >= 0),
@@ -211,7 +211,7 @@ begin
   select * into settings from public.game_settings;
 
   with owned as (
-    select distinct public.first_form(c.species_id) as first_form
+    select distinct public.pokedex_first_form(c.species_id) as first_form
       from public.companions c
      where c.user_id = owner
   ),
@@ -352,7 +352,7 @@ begin
   select c.id, c.steps, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
     into target
     from public.companions c
-    join public.species p on p.id = c.species_id
+    join public.pokedex_species p on p.id = c.species_id
    where c.id = main;
 
   if budget > 0 and target.hatched_at is null then
@@ -360,7 +360,7 @@ begin
     added_steps := greatest(0, least(room, budget / settings.tokens_per_step));
   elsif budget > 0 then
     select e.exp - target.exp into room
-      from public.experience_levels e
+      from public.pokedex_experience_levels e
      where e.growth_rate = target.growth_rate and e.level = 100;
     added_exp := greatest(0, least(room, budget / settings.tokens_per_exp));
   end if;
@@ -372,7 +372,7 @@ begin
 
   if added_exp > 0 then
     select max(e.level) into new_level
-      from public.experience_levels e
+      from public.pokedex_experience_levels e
      where e.growth_rate = target.growth_rate and e.exp <= target.exp + added_exp;
   end if;
 
@@ -449,7 +449,7 @@ begin
   end if;
 
   select p.hatch_counter * g.steps_per_cycle into needed
-    from public.species p, public.game_settings g
+    from public.pokedex_species p, public.game_settings g
    where p.id = egg.species_id;
   if egg.steps < needed then
     return jsonb_build_object('outcome', 'not_ready');
@@ -477,8 +477,8 @@ stable
 set search_path = ''
 as $$
   select p.id, m.level
-    from public.species p
-    join public.evolution_methods m on m.id = p.evolution_method
+    from public.pokedex_species p
+    join public.pokedex_evolution_methods m on m.id = p.evolution_method
    where p.evolves_from_id = from_id
      and m.id in (select public.level_only_methods())
    order by p.id
@@ -722,7 +722,7 @@ begin
                'markings', c.markings)
              order by c.created_at)
         from public.companions c
-        join public.species p on p.id = c.species_id
+        join public.pokedex_species p on p.id = c.species_id
         cross join public.game_settings g
        where c.user_id = caller and c.hatched_at is null), '[]'::jsonb),
     'pokemon', coalesce((
@@ -735,7 +735,7 @@ begin
                'sprites', p.sprites,
                'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
                                           order by t.id = p.type2)
-                           from public.types t where t.id in (p.type1, p.type2)),
+                           from public.pokedex_types t where t.id in (p.type1, p.type2)),
                'is_shiny', c.is_shiny,
                'level', c.level,
                'exp', c.exp,
@@ -763,13 +763,13 @@ begin
                'markings', c.markings)
              order by c.hatched_at)
         from public.companions c
-        join public.species p on p.id = c.species_id
-        join public.experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
-        left join public.experience_levels above
+        join public.pokedex_species p on p.id = c.species_id
+        join public.pokedex_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
+        left join public.pokedex_experience_levels above
           on above.growth_rate = p.growth_rate and above.level = c.level + 1
         left join lateral public.level_up_evolution(p.id) nxt on true
-        left join public.species target on target.id = nxt.id
-        left join public.pokedex dex on dex.dex = 'national' and dex.species_id = p.id
+        left join public.pokedex_species target on target.id = nxt.id
+        left join public.pokedex_entries dex on dex.dex = 'national' and dex.species_id = p.id
        where c.user_id = caller and c.hatched_at is not null), '[]'::jsonb));
 end;
 $$;

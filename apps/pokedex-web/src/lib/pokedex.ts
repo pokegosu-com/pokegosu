@@ -13,15 +13,15 @@ export function dexNo(n: number): string {
 }
 
 /**
- * species and the pokedex are readable by anyone, so these pages read them as
- * a visitor: no session, and no cookies to keep.
+ * The pokedex_ tables are readable by anyone, so these pages read them as a
+ * visitor: no session, and no cookies to keep.
  */
 export function pokedex() {
   return createClient({ getAll: () => [], setAll: () => {} })
 }
 
 export async function typeNames(): Promise<Map<string, string>> {
-  const { data, error } = await pokedex().from('types').select('id, ko_name, en_name')
+  const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
   if (error) throw error
   return new Map(data.map((t) => [t.id, ko(t)]))
 }

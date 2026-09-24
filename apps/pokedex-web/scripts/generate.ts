@@ -1,6 +1,6 @@
 // Reads PokéAPI once and writes what the rest of the repository needs from it:
 // the sprite manifest this app serves from, and the migration that fills the
-// species and pokedex tables. Both are committed; nothing reads PokéAPI at build or run
+// pokedex_ tables. Both are committed; nothing reads PokéAPI at build or run
 // time.
 //
 //   node scripts/generate.ts
@@ -351,15 +351,15 @@ async function main() {
     `-- ${rows.length} forms, the default form of every Generation I species, and`,
     `-- their entries in the ${Object.keys(POKEDEXES).join(' and ')} pokedexes.`,
     '',
-    'insert into public.types (id, ko_name, en_name) values',
+    'insert into public.pokedex_types (id, ko_name, en_name) values',
     typeIds
       .map((id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`)
       .join(',\n') + ';',
     '',
-    'insert into public.growth_rates (id) values',
+    'insert into public.pokedex_growth_rates (id) values',
     rates.map((r) => `  (${sql(r)})`).join(',\n') + ';',
     '',
-    'insert into public.experience_levels (growth_rate, level, exp) values',
+    'insert into public.pokedex_experience_levels (growth_rate, level, exp) values',
     rates
       .flatMap((rate) =>
         levels
@@ -369,25 +369,25 @@ async function main() {
       )
       .join(',\n') + ';',
     '',
-    'insert into public.evolution_triggers (id, ko_name, en_name) values',
+    'insert into public.pokedex_evolution_triggers (id, ko_name, en_name) values',
     [...triggers]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
       .join(',\n') + ';',
     '',
-    'insert into public.items (id, ko_name, en_name) values',
+    'insert into public.pokedex_items (id, ko_name, en_name) values',
     [...items]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
       .join(',\n') + ';',
     '',
-    'insert into public.evolution_methods (id, trigger, level, item) values',
+    'insert into public.pokedex_evolution_methods (id, trigger, level, item) values',
     [...methods.values()]
       .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
       .map((m) => `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)})`)
       .join(',\n') + ';',
     '',
-    'insert into public.species (',
+    'insert into public.pokedex_species (',
     '  id, slug, ko_name, en_name, ko_genus, en_genus, generation, category,',
     '  type1, type2, hp, attack, defense, special_attack, special_defense, speed, height, weight,',
     '  growth_rate, capture_rate, hatch_counter, gender_rate,',
@@ -411,7 +411,7 @@ async function main() {
       .map(([id, { names }]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
       .join(',\n') + ';',
     '',
-    'insert into public.pokedex (dex, number, species_id, is_default, ko_description, en_description) values',
+    'insert into public.pokedex_entries (dex, number, species_id, is_default, ko_description, en_description) values',
     entries
       .map(
         (e) =>
