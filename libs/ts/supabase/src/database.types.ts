@@ -64,9 +64,9 @@ export type Database = {
       coder_companions: {
         Row: {
           created_at: string
-          cycles: number
           egg_kind: string
           egg_received_at: string | null
+          egg_tokens: number
           exp: number
           hatched_at: string | null
           id: string
@@ -79,9 +79,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          cycles?: number
           egg_kind: string
           egg_received_at?: string | null
+          egg_tokens?: number
           exp?: number
           hatched_at?: string | null
           id?: string
@@ -94,9 +94,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          cycles?: number
           egg_kind?: string
           egg_received_at?: string | null
+          egg_tokens?: number
           exp?: number
           hatched_at?: string | null
           id?: string
@@ -255,21 +255,18 @@ export type Database = {
       }
       coder_settings: {
         Row: {
-          claim_limit_tokens: number
           id: boolean
           shiny_odds: number
           tokens_per_cycle: number
           unowned_line_weight: number
         }
         Insert: {
-          claim_limit_tokens: number
           id?: boolean
           shiny_odds: number
           tokens_per_cycle: number
           unowned_line_weight: number
         }
         Update: {
-          claim_limit_tokens?: number
           id?: boolean
           shiny_odds?: number
           tokens_per_cycle?: number
@@ -756,7 +753,7 @@ export type Database = {
     Functions: {
       approve_enrollment: { Args: { code: string }; Returns: Json }
       box: { Args: never; Returns: Json }
-      claim: { Args: { companion_id: string }; Returns: Json }
+      claim: { Args: { companion_id: string; tokens: number }; Returns: Json }
       claim_enrollment: {
         Args: { api_key_hash: string; claim_hash: string }
         Returns: Json
@@ -782,9 +779,9 @@ export type Database = {
         Args: { companion_id: string; owner: string }
         Returns: {
           created_at: string
-          cycles: number
           egg_kind: string
           egg_received_at: string | null
+          egg_tokens: number
           exp: number
           hatched_at: string | null
           id: string

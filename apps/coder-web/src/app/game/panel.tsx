@@ -1,7 +1,7 @@
 'use client'
 
 import { compactTokens, exactTokens } from '@/lib/format'
-import { ko, type Box } from '@/lib/game'
+import { claimable, ko, type Box } from '@/lib/game'
 
 import { EggCard, PokemonCard } from './cards'
 import type { Outcome, useGame } from './use-game'
@@ -17,7 +17,7 @@ function nameOf(box: Box | null, speciesId: unknown): string {
 function say(box: Box | null, fn: string, o: Outcome): string | null {
   switch (`${fn}:${o.outcome}`) {
     case 'claim:claimed':
-      return Number(o.cycles) > 0
+      return o.level_before === null
         ? `알이 토큰 ${exactTokens(Number(o.tokens))} 만큼 자랐다.`
         : o.level_after !== o.level_before
           ? `토큰 ${exactTokens(Number(o.tokens))} 을 얻었다! Lv.${o.level_before} → Lv.${o.level_after}`
@@ -39,7 +39,7 @@ function say(box: Box | null, fn: string, o: Outcome): string | null {
 
 /** The main companion, what is left to claim, and what just happened. */
 export function Panel({ game }: { game: Game }) {
-  const { box, busy, last, act, claimAll, failure } = game
+  const { box, curve, busy, last, act, failure } = game
   if (failure) {
     return <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{failure}</p>
   }
@@ -68,12 +68,13 @@ export function Panel({ game }: { game: Game }) {
   const main = box.pokemon.find((p) => p.is_main) ?? box.eggs.find((e) => e.is_main) ?? null
   const message = last ? say(box, last.action.fn, last.outcome) : null
   const balance = BigInt(box.balance)
+  const tokens = claimable(box)
 
   return (
     <section className="space-y-3">
       {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
       {main && 'species_id' in main ? (
-        <PokemonCard pokemon={main} act={act} busy={busy} />
+        <PokemonCard pokemon={main} curve={curve} act={act} busy={busy} />
       ) : main ? (
         <EggCard egg={main} act={act} busy={busy} />
       ) : null}
@@ -81,11 +82,11 @@ export function Panel({ game }: { game: Game }) {
         <span title={`${exactTokens(box.balance)} 토큰`}>
           받을 수 있는 토큰 {balance > 0n ? compactTokens(balance) : '없음'}
         </span>
-        {balance > 0n && (
+        {tokens > 0 && (
           <button
             type="button"
             disabled={busy}
-            onClick={() => claimAll(box.main_companion_id)}
+            onClick={() => act({ fn: 'claim', companion_id: box.main_companion_id, tokens })}
             className="border-muted/40 hover:border-muted rounded-md border px-3 py-1.5 font-medium disabled:opacity-50"
           >
             메인에게 주기

@@ -198,20 +198,16 @@ select t.growth_rate, n,
 create table public.coder_settings (
   id                  boolean primary key default true check (id),
   -- S: tokens that make one egg cycle. An egg needs its species'
-  -- hatch_counter of them, as the games count an egg in cycles of steps.
+  -- hatch_counter of them, as the games count an egg in cycles of steps;
+  -- the egg itself counts tokens, as a Pokémon counts experience.
   tokens_per_cycle    integer not null check (tokens_per_cycle > 0),
-  -- The most one claim() may invest. It sets the pace and nothing more: the
-  -- web claims again every second while anything fits, so a backlog arrives
-  -- as a run of level-ups rather than an egg turning Lv.50 in one press.
-  -- There is no daily cap; a busy day earns all it spent.
-  claim_limit_tokens  bigint not null check (claim_limit_tokens > 0),
   -- How much likelier a line the person has never had is to hatch.
   unowned_line_weight integer not null check (unowned_line_weight >= 1),
   -- An egg is shiny one time in this many.
   shiny_odds          integer not null check (shiny_odds >= 1)
 );
 
-insert into public.coder_settings values (true, 1000000, 20000000, 3, 64);
+insert into public.coder_settings values (true, 1000000, 5, 64);
 
 
 -- ============================================================
@@ -236,7 +232,7 @@ create table public.coder_companions (
   species_id      integer not null references public.pokedex_species,
   egg_kind        text not null references public.coder_egg_kinds,
   is_shiny        boolean not null,
-  cycles          integer not null default 0 check (cycles >= 0),
+  egg_tokens      bigint not null default 0 check (egg_tokens >= 0),
   exp             bigint not null default 0 check (exp >= 0),
   level           smallint check (level between 1 and 100),
   invested_tokens public.token_count not null default 0,
@@ -420,17 +416,24 @@ $$;
 
 
 -- ============================================================
--- claim — invest what the person has not yet spent into the main companion.
+-- claim — invest tokens the person has not yet spent into the main companion.
 --
---   → {"outcome": "claimed", "tokens": 24998000, "cycles": 0, "exp": 12499,
---      "level_before": 7, "level_after": 21, "balance": "123"}
---   → {"outcome": "nothing", "balance": "123"}   nothing left, or nothing fits
+--   {"companion_id": "...", "tokens": 62000000}
+--
+--   → {"outcome": "claimed", "tokens": 62000000, "level_before": 7,
+--      "level_after": 21, "balance": "0"}
+--   → {"outcome": "nothing", "balance": "0"}   nothing left, or nothing fits
+--   → {"outcome": "invalid_amount"}            not a positive number
 --   → {"outcome": "not_main"}
 --   → {"outcome": "not_started"}
 --
--- It only invests: an egg fills with cycles up to what it needs, a Pokémon
--- with experience up to Lv.100, and nothing else changes. What is left over,
--- including the tokens short of one cycle, stays in the balance.
+-- The screen asks for an amount, and this places as much of it as it can:
+-- no more than the balance, and no more than the companion can still take,
+-- which is the tokens an egg needs to hatch or a Pokémon needs for Lv.100. An
+-- egg counts tokens as a Pokémon counts experience, one for one. "tokens" in
+-- the answer is what was placed, which the screen counts up to. There is no
+-- limit to a claim and no daily cap: a busy day earns everything it spent,
+-- and watching it fill slowly is the screen's doing.
 --
 -- The companion is named even though only the main one may take tokens today,
 -- so the screen can say which one it means: a main changed in another tab is
@@ -439,7 +442,7 @@ $$;
 --
 -- The balance is a string for the reason usage() gives its total as one.
 -- ============================================================
-create function public.claim(companion_id uuid)
+create function public.claim(companion_id uuid, tokens bigint)
 returns jsonb
 language plpgsql
 volatile
@@ -451,12 +454,8 @@ declare
   settings public.coder_settings;
   main uuid;
   target record;
-  earned bigint;
-  invested bigint;
-  budget bigint;
+  balance bigint;
   room bigint;
-  added_cycles integer := 0;
-  added_exp bigint := 0;
   spent bigint;
   new_level smallint;
 begin
@@ -474,47 +473,43 @@ begin
   if main <> claim.companion_id then
     return jsonb_build_object('outcome', 'not_main');
   end if;
+  if claim.tokens is null or claim.tokens <= 0 then
+    return jsonb_build_object('outcome', 'invalid_amount');
+  end if;
 
   select * into settings from public.coder_settings;
 
-  select coalesce(sum(r.tokens), 0) into earned
-    from public.usage_rollups r
-   where r.user_id = caller;
-  select coalesce(sum(c.invested_tokens), 0) into invested
-    from public.coder_companions c
-   where c.user_id = caller;
-  budget := least(earned - invested, settings.claim_limit_tokens);
+  balance := (select coalesce(sum(r.tokens), 0) from public.usage_rollups r where r.user_id = caller)
+           - (select coalesce(sum(c.invested_tokens), 0) from public.coder_companions c where c.user_id = caller);
 
-  select c.id, c.cycles, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
+  select c.id, c.egg_tokens, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
     into target
     from public.coder_companions c
     join public.pokedex_species p on p.id = c.species_id
    where c.id = main;
 
-  if budget > 0 and target.hatched_at is null then
-    room := target.hatch_counter - target.cycles;
-    added_cycles := greatest(0, least(room, budget / settings.tokens_per_cycle));
-  elsif budget > 0 then
+  if target.hatched_at is null then
+    room := target.hatch_counter::bigint * settings.tokens_per_cycle - target.egg_tokens;
+  else
     select e.tokens - target.exp into room
       from public.coder_experience_levels e
      where e.growth_rate = target.growth_rate and e.level = 100;
-    added_exp := greatest(0, least(room, budget));
   end if;
 
-  spent := added_cycles::bigint * settings.tokens_per_cycle + added_exp;
+  spent := greatest(0, least(claim.tokens, balance, room));
   if spent = 0 then
-    return jsonb_build_object('outcome', 'nothing', 'balance', (earned - invested)::text);
+    return jsonb_build_object('outcome', 'nothing', 'balance', greatest(balance, 0)::text);
   end if;
 
-  if added_exp > 0 then
+  if target.hatched_at is not null then
     select max(e.level) into new_level
       from public.coder_experience_levels e
-     where e.growth_rate = target.growth_rate and e.tokens <= target.exp + added_exp;
+     where e.growth_rate = target.growth_rate and e.tokens <= target.exp + spent;
   end if;
 
   update public.coder_companions c
-     set cycles = c.cycles + added_cycles,
-         exp = c.exp + added_exp,
+     set egg_tokens = c.egg_tokens + case when target.hatched_at is null then spent else 0 end,
+         exp = c.exp + case when target.hatched_at is null then 0 else spent end,
          level = coalesce(new_level, c.level),
          invested_tokens = c.invested_tokens + spent
    where c.id = main;
@@ -522,11 +517,9 @@ begin
   return jsonb_build_object(
     'outcome', 'claimed',
     'tokens', spent,
-    'cycles', added_cycles,
-    'exp', added_exp,
     'level_before', target.level,
     'level_after', coalesce(new_level, target.level),
-    'balance', (earned - invested - spent)::text);
+    'balance', (balance - spent)::text);
 end;
 $$;
 
@@ -561,7 +554,7 @@ $$;
 
 
 -- ============================================================
--- hatch — an egg with all its cycles becomes a Lv.1 Pokémon.
+-- hatch — an egg with all the tokens it needs becomes a Lv.1 Pokémon.
 --
 --   → {"outcome": "hatched", "species_id": 4, "is_shiny": false}
 --   → {"outcome": "not_ready"} | {"outcome": "not_an_egg"} | {"outcome": "not_found"}
@@ -575,7 +568,7 @@ set search_path = ''
 as $$
 declare
   egg public.coder_companions := public.lock_companion(auth.uid(), hatch.companion_id);
-  needed integer;
+  needed bigint;
 begin
   if egg.id is null then
     return jsonb_build_object('outcome', 'not_found');
@@ -584,10 +577,10 @@ begin
     return jsonb_build_object('outcome', 'not_an_egg');
   end if;
 
-  select p.hatch_counter into needed
-    from public.pokedex_species p
+  select p.hatch_counter::bigint * g.tokens_per_cycle into needed
+    from public.pokedex_species p, public.coder_settings g
    where p.id = egg.species_id;
-  if egg.cycles < needed then
+  if egg.egg_tokens < needed then
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
@@ -804,9 +797,9 @@ $$;
 --
 --   → {"started": true, "main_companion_id": "...", "balance": "123",
 --      "eggs":    [{"id", "created_at", "tokens", "tokens_needed", "is_main", "markings"}],
---      "pokemon": [{"id", "species_id", "dex_no", "ko_name", "en_name", "sprites",
+--      "pokemon": [{"id", "species_id", "dex_no", "ko_name", "en_name", "sprites", "growth_rate",
 --                   "types": [{"id", "ko_name", "en_name"}], "is_shiny", "level",
---                   "tokens", "level_tokens", "next_level_tokens",
+--                   "tokens", "level_tokens", "next_level_tokens", "max_tokens",
 --                   "evolves_to": {"species_id", "ko_name", "en_name", "level"} | null,
 --                   "can_evolve", "can_receive_egg",
 --                   "ribbons": [{"id", "ko_name", "en_name", "received_at"}],
@@ -817,10 +810,9 @@ $$;
 -- Names come in Korean and English; the screen picks one. dex_no is the
 -- national pokedex's number.
 --
--- Progress is in tokens, the one unit a person knows. A Pokémon's experience
--- is tokens already; an egg's cycles come back at today's tokens_per_cycle.
--- "tokens" is where it stands, and level_tokens and next_level_tokens bracket
--- its level.
+-- Progress is in tokens, the one unit a person knows: an egg's and a
+-- Pokémon's alike. "tokens" is where it stands; an egg needs tokens_needed,
+-- and level_tokens and next_level_tokens bracket a Pokémon's level.
 --
 -- An egg says how many tokens it needs, which hints at what it holds, as the
 -- games do when they say an egg will take a while. It says nothing more.
@@ -857,7 +849,7 @@ begin
       select jsonb_agg(jsonb_build_object(
                'id', c.id,
                'created_at', c.created_at,
-               'tokens', c.cycles::bigint * g.tokens_per_cycle,
+               'tokens', c.egg_tokens,
                'tokens_needed', p.hatch_counter::bigint * g.tokens_per_cycle,
                'is_main', c.id = main,
                'markings', c.markings)
@@ -874,6 +866,7 @@ begin
                'ko_name', p.ko_name,
                'en_name', p.en_name,
                'sprites', p.sprites,
+               'growth_rate', p.growth_rate,
                'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
                                           order by t.id = p.type2)
                            from public.pokedex_types t where t.id in (p.type1, p.type2)),
@@ -882,6 +875,7 @@ begin
                'tokens', c.exp,
                'level_tokens', here.tokens,
                'next_level_tokens', above.tokens,
+               'max_tokens', top.tokens,
                'evolves_to', case when nxt.id is not null then
                    jsonb_build_object('species_id', nxt.id, 'ko_name', target.ko_name, 'en_name', target.en_name,
                                       'level', nxt.min_level) end,
@@ -907,6 +901,7 @@ begin
         join public.pokedex_species p on p.id = c.species_id
         cross join public.coder_settings g
         join public.coder_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
+        join public.coder_experience_levels top on top.growth_rate = p.growth_rate and top.level = 100
         left join public.coder_experience_levels above
           on above.growth_rate = p.growth_rate and above.level = c.level + 1
         left join lateral public.level_up_evolution(p.id) nxt on true
@@ -927,7 +922,7 @@ revoke execute on function
   public.level_up_evolution(integer),
   public.eligible_ribbons(public.coder_companions),
   public.start_game(),
-  public.claim(uuid),
+  public.claim(uuid, bigint),
   public.hatch(uuid),
   public.evolve(uuid),
   public.receive_egg(uuid),
@@ -939,7 +934,7 @@ revoke execute on function
 
 grant execute on function
   public.start_game(),
-  public.claim(uuid),
+  public.claim(uuid, bigint),
   public.hatch(uuid),
   public.evolve(uuid),
   public.receive_egg(uuid),

@@ -83,7 +83,7 @@ const off = 'border-muted/30 text-muted hover:border-muted'
 export function BoxView() {
   const game = useGame()
   const [view, update] = useView()
-  const { box, act, busy } = game
+  const { box, curve, act, busy } = game
 
   const pokemon = box?.started ? box.pokemon : []
   const eggs = box?.started ? box.eggs : []
@@ -206,7 +206,7 @@ export function BoxView() {
               <ul className="grid gap-3 sm:grid-cols-2">
                 {shown.map((p) => (
                   <li key={p.id}>
-                    <PokemonCard pokemon={p} act={act} busy={busy} />
+                    <PokemonCard pokemon={p} curve={curve} act={act} busy={busy} />
                   </li>
                 ))}
                 {shown.length === 0 && (

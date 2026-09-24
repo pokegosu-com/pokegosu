@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(56);
+select plan(62);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -103,21 +103,28 @@ update public.coder_companions set species_id = 4, is_shiny = false where id = p
 -- ------------------------------------------------------------
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
-select is(public.claim(gen_random_uuid()), '{"outcome": "not_main"}'::jsonb, 'only the main may be fed');
-select is(public.claim(pg_temp.main()), '{"outcome": "nothing", "balance": "0"}'::jsonb,
+select is(public.claim(gen_random_uuid(), 1), '{"outcome": "not_main"}'::jsonb, 'only the main may be fed');
+select is(public.claim(pg_temp.main(), 1), '{"outcome": "nothing", "balance": "0"}'::jsonb,
   'with nothing used there is nothing to claim');
 
 reset role;
-select pg_temp.use(300000000, '2026-09-23T10:00:00Z');
+select pg_temp.use(60000000, '2026-09-23T10:00:00Z');
 select pg_temp.use(999, '2026-09-23T11:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
-select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 20000000, "cycles": 20, "exp": 0,
-    "level_before": null, "level_after": null, "balance": "280000999"}'::jsonb,
-  'an egg takes cycles up to what it needs, and no more');
+select is(public.claim(pg_temp.main(), 0), '{"outcome": "invalid_amount"}'::jsonb, 'an amount is positive');
+select is((public.box() ->> 'balance'), '60000999', 'and a refused one spends nothing');
 
-select is(public.claim(pg_temp.main()), '{"outcome": "nothing", "balance": "280000999"}'::jsonb,
+-- An egg counts tokens as a Pokémon counts experience, whole cycles or not.
+select is(public.claim(pg_temp.main(), 1500000),
+  '{"outcome": "claimed", "tokens": 1500000, "level_before": null, "level_after": null, "balance": "58500999"}'::jsonb,
+  'an egg takes tokens, not cycles');
+
+select is(public.claim(pg_temp.main(), 90000000),
+  '{"outcome": "claimed", "tokens": 18500000, "level_before": null, "level_after": null, "balance": "40000999"}'::jsonb,
+  'more than an egg needs is cut to what it needs');
+
+select is(public.claim(pg_temp.main(), 1000000), '{"outcome": "nothing", "balance": "40000999"}'::jsonb,
   'a full egg takes nothing until it hatches');
 
 select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '20000000'::jsonb,
@@ -139,20 +146,23 @@ select is(public.box() -> 'eggs', '[]'::jsonb, 'and leaves the egg box');
 -- ------------------------------------------------------------
 -- Claiming into a Pokémon
 -- ------------------------------------------------------------
--- 20,000,000 tokens, the limit of one claim, is Lv.9 on the game's Medium
--- Slow curve, and three claims are past Lv.16.
-select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 20000000, "cycles": 0, "exp": 20000000,
-    "level_before": 1, "level_after": 9, "balance": "260000999"}'::jsonb,
-  'one claim invests no more than the limit, and a token is a point of experience');
+-- The 40,000,999 left, to the token, is Lv.14 on the game's Medium Slow curve.
+select is(public.claim(pg_temp.main(), 999999999),
+  '{"outcome": "claimed", "tokens": 40000999, "level_before": 1, "level_after": 14, "balance": "0"}'::jsonb,
+  'more than is left is cut to what is left, and a token is a point of experience');
 
-select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 19989447::bigint,
+select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 37627916::bigint,
   'the box gives where this level starts, from the game''s own curve');
-select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 23304759::bigint, 'and where the next one does');
-select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 20000000::bigint, 'and where it stands');
+select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 41442108::bigint, 'and where the next one does');
+select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 40000999::bigint, 'and where it stands');
+select is(public.box() -> 'pokemon' -> 0 ->> 'growth_rate', 'medium-slow', 'and on which curve, for the screen to count along');
+select is((public.box() -> 'pokemon' -> 0 ->> 'max_tokens')::bigint, 529930000::bigint, 'and what Lv.100 takes');
 select ok(not (public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'Charmander waits for Lv.16');
 
-select public.claim(pg_temp.main()), public.claim(pg_temp.main());
+reset role;
+select pg_temp.use(20000000, '2026-09-23T12:00:00Z');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select is(public.claim(pg_temp.main(), 20000000) ->> 'level_after', '19', 'the next day''s tokens take it to Lv.19');
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'past Lv.16 it can evolve');
 
 
@@ -211,7 +221,11 @@ reset role;
 update public.coder_companions set level = 100, exp = 529930000 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
-select is(public.claim(pg_temp.main()) ->> 'outcome', 'nothing', 'a Lv.100 takes no more experience');
+reset role;
+select pg_temp.use(1000, '2026-09-23T13:00:00Z');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select is(public.claim(pg_temp.main(), 1000), '{"outcome": "nothing", "balance": "1000"}'::jsonb,
+  'a Lv.100 takes no more experience');
 select is(public.box() -> 'pokemon' -> 0 -> 'ribbons_waiting' -> 0 ->> 'id', 'level-100', 'the ribbon is waiting');
 select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "received"}'::jsonb, 'and is handed over');
 select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "already_received"}'::jsonb,
@@ -226,7 +240,7 @@ select is(public.receive_ribbon(pg_temp.main(), 'nope'), '{"outcome": "unknown_r
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000b');
 select is(public.hatch(pg_temp.main()), '{"outcome": "not_found"}'::jsonb,
   'another person''s companion is not found');
-select is(public.claim(pg_temp.main()), '{"outcome": "not_started"}'::jsonb,
+select is(public.claim(pg_temp.main(), 1), '{"outcome": "not_started"}'::jsonb,
   'and nobody else''s tokens reach it');
 
 

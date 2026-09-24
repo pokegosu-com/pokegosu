@@ -7,15 +7,29 @@ import {
   eggHint,
   eggSpriteUrl,
   ko,
+  levelAt,
   markOf,
   spriteUrl,
+  type Curve,
   type Egg,
   type Pokemon,
 } from '@/lib/game'
 
+import { useCountUp } from './count-up'
+
 import type { useGame } from './use-game'
 
 type Act = ReturnType<typeof useGame>['act']
+
+/** A level's worth of climbing takes this long, however many tokens it is. */
+const MS_PER_LEVEL = 350
+
+/** How long a Pokémon's climb from one number of tokens to another takes on screen. */
+function climbTime(curve: Curve, growthRate: string, from: number, to: number): number {
+  const a = levelAt(curve, growthRate, from)?.level ?? 1
+  const b = levelAt(curve, growthRate, to)?.level ?? 1
+  return Math.min(8000, Math.max(600, (b - a + 1) * MS_PER_LEVEL))
+}
 
 const button =
   'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50 bg-accent text-surface'
@@ -65,14 +79,27 @@ export function Marks({
 
 export function PokemonCard({
   pokemon: p,
+  curve,
   act,
   busy,
 }: {
   pokemon: Pokemon
+  curve: Curve
   act: Act
   busy: boolean
 }) {
-  const toNext = p.next_level_tokens === null ? null : p.next_level_tokens - p.tokens
+  // A claim lands all at once; the card counts up to it a level at a time,
+  // along the same curve the server used. Without the curve yet, it shows the
+  // box's own figures.
+  const { shown, climbing } = useCountUp(p.tokens, (from, to) =>
+    climbTime(curve, p.growth_rate, from, to),
+  )
+  const at = levelAt(curve, p.growth_rate, shown) ?? {
+    level: p.level,
+    from: p.level_tokens,
+    to: p.next_level_tokens,
+  }
+  const toNext = at.to === null ? null : Math.ceil(at.to - shown)
   return (
     <article
       className={`space-y-3 rounded-lg border px-4 py-3 ${p.is_main ? 'border-accent' : 'border-muted/25'}`}
@@ -106,16 +133,13 @@ export function PokemonCard({
 
       <div className="space-y-1">
         <p className="flex justify-between text-xs">
-          <span className="tabular-nums">Lv.{p.level}</span>
+          <span className="tabular-nums">Lv.{at.level}</span>
           <span className="text-muted tabular-nums">
             {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 토큰`}
           </span>
         </p>
-        <Bar
-          value={p.tokens - p.level_tokens}
-          max={(p.next_level_tokens ?? p.tokens) - p.level_tokens}
-        />
-        {p.evolves_to && !p.can_evolve && (
+        <Bar value={shown - at.from} max={(at.to ?? shown) - at.from} />
+        {p.evolves_to && !(p.can_evolve && !climbing) && (
           <p className="text-muted text-xs">
             Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
           </p>
@@ -133,7 +157,7 @@ export function PokemonCard({
       )}
 
       <footer className="flex flex-wrap gap-2">
-        {p.can_evolve && p.evolves_to && (
+        {!climbing && p.can_evolve && p.evolves_to && (
           <button
             type="button"
             className={button}
@@ -143,7 +167,7 @@ export function PokemonCard({
             {ko(p.evolves_to)}(으)로 진화
           </button>
         )}
-        {p.can_receive_egg && (
+        {!climbing && p.can_receive_egg && (
           <button
             type="button"
             className={button}
@@ -153,17 +177,18 @@ export function PokemonCard({
             알 받기
           </button>
         )}
-        {p.ribbons_waiting.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            className={button}
-            disabled={busy}
-            onClick={() => act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })}
-          >
-            {ko(r)} 받기
-          </button>
-        ))}
+        {!climbing &&
+          p.ribbons_waiting.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={button}
+              disabled={busy}
+              onClick={() => act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })}
+            >
+              {ko(r)} 받기
+            </button>
+          ))}
         {!p.is_main && (
           <button
             type="button"
@@ -180,7 +205,8 @@ export function PokemonCard({
 }
 
 export function EggCard({ egg, act, busy }: { egg: Egg; act: Act; busy: boolean }) {
-  const ready = egg.tokens >= egg.tokens_needed
+  const { shown, climbing } = useCountUp(egg.tokens, () => 1500)
+  const ready = !climbing && egg.tokens >= egg.tokens_needed
   return (
     <article
       className={`space-y-3 rounded-lg border px-4 py-3 ${egg.is_main ? 'border-accent' : 'border-muted/25'}`}
@@ -207,9 +233,9 @@ export function EggCard({ egg, act, busy }: { egg: Egg; act: Act; busy: boolean 
 
       <div className="space-y-1">
         <p className="text-muted text-right text-xs tabular-nums">
-          {exactTokens(egg.tokens)} / {exactTokens(egg.tokens_needed)} 토큰
+          {exactTokens(Math.floor(shown))} / {exactTokens(egg.tokens_needed)} 토큰
         </p>
-        <Bar value={egg.tokens} max={egg.tokens_needed} />
+        <Bar value={shown} max={egg.tokens_needed} />
       </div>
 
       <footer className="flex flex-wrap gap-2">

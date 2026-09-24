@@ -14,7 +14,7 @@ export type Box =
 export type Egg = {
   id: string
   created_at: string
-  /** Tokens it has taken, and needs to hatch; its cycles, at today's rate. */
+  /** Tokens it has taken, and needs to hatch. */
   tokens: number
   tokens_needed: number
   is_main: boolean
@@ -31,6 +31,7 @@ export type Pokemon = {
   ko_name: string | null
   en_name: string | null
   sprites: { animated?: string; animated_shiny?: string }
+  growth_rate: string
   types: ({ id: string } & Named)[]
   is_shiny: boolean
   level: number
@@ -38,6 +39,8 @@ export type Pokemon = {
   tokens: number
   level_tokens: number
   next_level_tokens: number | null
+  /** What Lv.100 takes; experience past it has nowhere to go. */
+  max_tokens: number
   evolves_to: ({ species_id: number; level: number } & Named) | null
   can_evolve: boolean
   can_receive_egg: boolean
@@ -61,6 +64,36 @@ export function spriteUrl(pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>): strin
 }
 
 export const eggSpriteUrl = `${env.NEXT_PUBLIC_POKEDEX_URL}/sprites/egg.png`
+
+/**
+ * What to claim into the main companion: the lesser of what is left and what
+ * it can still take. claim() cuts any amount down to the same, so this only
+ * keeps the button from offering what would come back as nothing.
+ */
+export function claimable(box: Box): number {
+  if (!box.started) return 0
+  const left = Number(BigInt(box.balance) > 0n ? BigInt(box.balance) : 0n)
+  const pokemon = box.pokemon.find((p) => p.id === box.main_companion_id)
+  const egg = box.eggs.find((e) => e.id === box.main_companion_id)
+  const room = pokemon
+    ? pokemon.max_tokens - pokemon.tokens
+    : egg
+      ? egg.tokens_needed - egg.tokens
+      : 0
+  return Math.max(0, Math.min(left, room))
+}
+
+/** The game's experience curve: per growth rate, the tokens each level starts at, Lv.1 first. */
+export type Curve = Map<string, number[]>
+
+/** The level a number of tokens reaches, and where that level starts and ends. */
+export function levelAt(curve: Curve, growthRate: string, tokens: number) {
+  const starts = curve.get(growthRate)
+  if (!starts?.length) return null
+  let level = 1
+  while (level < starts.length && starts[level] <= tokens) level += 1
+  return { level, from: starts[level - 1], to: level < starts.length ? starts[level] : null }
+}
 
 /** The games' box marks, in the order their bits run from the lowest up. */
 export const MARKS = ['●', '▲', '■', '♥', '★', '◆'] as const
