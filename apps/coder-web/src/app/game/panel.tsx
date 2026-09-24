@@ -39,7 +39,7 @@ function say(box: Box | null, fn: string, o: Outcome): string | null {
 
 /** The main companion, what is left to claim, and what just happened. */
 export function Panel({ game }: { game: Game }) {
-  const { box, busy, last, act, failure } = game
+  const { box, busy, last, act, claimAll, failure } = game
   if (failure) {
     return <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{failure}</p>
   }
@@ -85,7 +85,7 @@ export function Panel({ game }: { game: Game }) {
           <button
             type="button"
             disabled={busy}
-            onClick={() => act({ fn: 'claim', companion_id: box.main_companion_id })}
+            onClick={() => claimAll(box.main_companion_id)}
             className="border-muted/40 hover:border-muted rounded-md border px-3 py-1.5 font-medium disabled:opacity-50"
           >
             메인에게 주기

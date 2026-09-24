@@ -200,8 +200,10 @@ create table public.coder_settings (
   -- S: tokens that make one egg cycle. An egg needs its species'
   -- hatch_counter of them, as the games count an egg in cycles of steps.
   tokens_per_cycle    integer not null check (tokens_per_cycle > 0),
-  -- The most one claim() may invest, so a backlog arrives over several
-  -- claims rather than turning an egg into a Lv.50 in one press.
+  -- The most one claim() may invest. It sets the pace and nothing more: the
+  -- web claims again every second while anything fits, so a backlog arrives
+  -- as a run of level-ups rather than an egg turning Lv.50 in one press.
+  -- There is no daily cap; a busy day earns all it spent.
   claim_limit_tokens  bigint not null check (claim_limit_tokens > 0),
   -- How much likelier a line the person has never had is to hatch.
   unowned_line_weight integer not null check (unowned_line_weight >= 1),
