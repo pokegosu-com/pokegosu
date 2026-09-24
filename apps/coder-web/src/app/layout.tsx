@@ -21,6 +21,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
             <Link href="/" className="font-semibold tracking-tight">
               coder
             </Link>
+            <Link href="/box" className="text-muted hover:text-ink">
+              박스
+            </Link>
             <a
               href={`${env.NEXT_PUBLIC_ACCOUNT_URL}/devices`}
               className="text-muted hover:text-ink"

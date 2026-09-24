@@ -9,9 +9,12 @@ export const env = createEnv({
   client: {
     /** Where people sign in; this app sends them there without a session. */
     NEXT_PUBLIC_ACCOUNT_URL: z.url(),
+    /** Where the sprites are served from; pokedex-web. */
+    NEXT_PUBLIC_POKEDEX_URL: z.url(),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_ACCOUNT_URL: process.env.NEXT_PUBLIC_ACCOUNT_URL,
+    NEXT_PUBLIC_POKEDEX_URL: process.env.NEXT_PUBLIC_POKEDEX_URL,
   },
   emptyStringAsUndefined: true,
   // For builds that only check the code, such as `moon ci`. A deploy must

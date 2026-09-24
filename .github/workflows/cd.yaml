@@ -84,6 +84,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: '${{ vars.NEXT_PUBLIC_SUPABASE_URL }}'
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
           NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
+          NEXT_PUBLIC_POKEDEX_URL: '${{ vars.NEXT_PUBLIC_POKEDEX_URL }}'
 
   # A release exists only for a version that is live.
   release:
