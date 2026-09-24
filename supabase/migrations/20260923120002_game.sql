@@ -17,7 +17,7 @@
 
 -- ============================================================
 -- level_only_methods — the ways to evolve the game can offer: a level-up at a
--- level, with nothing else asked. game_species keeps its families to these,
+-- level, with nothing else asked. coder_egg_species keeps its families to these,
 -- and level_up_evolution() finds them, so the two agree.
 --
 -- Not granted to anyone.
@@ -34,35 +34,57 @@ $$;
 
 
 -- ============================================================
--- game_species: what an egg can hold, and how likely each is.
+-- coder_egg_kinds and coder_egg_species: the kinds of egg there are, and what
+-- each can hold, how likely.
 --
--- The first form of every Generation I family whose evolutions, if it has
--- any, are all plain level-ups, so that a button and a level are all any of
--- them ever needs. A family with a stone or a trade anywhere in it is left out
--- whole rather than cut short. One that never evolves is in, legendaries and
--- Ditto included, though the games hatch none of those from an egg. Each
+-- A national egg can hold anything the game hatches; a generation's egg only
+-- that generation's. With Generation I alone in the pokedex the two hold the
+-- same, and every egg handed out today is a national one; the kinds are here
+-- so a later egg can be narrower.
+--
+-- What any egg can hold is the first form of a family whose evolutions, if it
+-- has any, are all plain level-ups, so that a button and a level are all any
+-- of them ever needs. A family with a stone or a trade anywhere in it is left
+-- out whole rather than cut short. One that never evolves is in, legendaries
+-- and Ditto included, though the games hatch none of those from an egg. Each
 -- weighs its capture rate, the way the games make Pidgey common and Mewtwo
--- rarer still; weight is the game's to change.
+-- rarer still; weight is the game's to change, per kind.
 -- ============================================================
-create table public.game_species (
-  species_id integer primary key references public.pokedex_species,
-  weight     integer not null check (weight > 0)
+create table public.coder_egg_kinds (
+  id      text primary key,
+  ko_name text,
+  en_name text
 );
 
-insert into public.game_species (species_id, weight)
-select s.id, s.capture_rate
-  from public.pokedex_species s
- where s.generation = 1
-   and s.evolves_from_id is null
-   and not exists (
-         select 1 from public.pokedex_species d
-          where public.pokedex_first_form(d.id) = s.id
-            and d.evolves_from_id is not null
-            and d.evolution_method not in (select public.level_only_methods()));
+insert into public.coder_egg_kinds (id, ko_name, en_name) values
+  ('national', '전국 알', 'National Egg'),
+  ('gen1', '1세대 알', 'Generation I Egg');
+
+create table public.coder_egg_species (
+  egg_kind   text not null references public.coder_egg_kinds,
+  species_id integer not null references public.pokedex_species,
+  weight     integer not null check (weight > 0),
+  primary key (egg_kind, species_id)
+);
+
+with hatchable as (
+  select s.id, s.generation, s.capture_rate
+    from public.pokedex_species s
+   where s.evolves_from_id is null
+     and not exists (
+           select 1 from public.pokedex_species d
+            where public.pokedex_first_form(d.id) = s.id
+              and d.evolves_from_id is not null
+              and d.evolution_method not in (select public.level_only_methods()))
+)
+insert into public.coder_egg_species (egg_kind, species_id, weight)
+select 'national', h.id, h.capture_rate from hatchable h
+union all
+select 'gen1', h.id, h.capture_rate from hatchable h where h.generation = 1;
 
 -- Ribbons are kinds, the way the games have many; what earns each is decided
 -- in eligible_ribbons().
-create table public.ribbons (
+create table public.coder_ribbons (
   id             text primary key,
   ko_name        text,
   en_name        text,
@@ -70,20 +92,19 @@ create table public.ribbons (
   en_description text
 );
 
-insert into public.ribbons (id, ko_name, en_name, ko_description, en_description) values
+insert into public.coder_ribbons (id, ko_name, en_name, ko_description, en_description) values
   ('level-100', '레벨 100 리본', 'Level 100 Ribbon',
    'Lv.100 까지 함께 성장한 포켓몬에게 주는 리본', 'A ribbon for a Pokémon that grew all the way to Lv.100');
 
 -- The balance of the game, in one row. Changing a value changes what happens
 -- from then on and nothing already earned: experience is stored, not derived.
-create table public.game_settings (
+create table public.coder_settings (
   id                  boolean primary key default true check (id),
   -- K: tokens that make one point of experience.
   tokens_per_exp      integer not null check (tokens_per_exp > 0),
-  -- S: tokens that make one step towards hatching.
-  tokens_per_step     integer not null check (tokens_per_step > 0),
-  -- Steps in one egg cycle; an egg needs its species' hatch_counter of them.
-  steps_per_cycle     integer not null check (steps_per_cycle > 0),
+  -- S: tokens that make one egg cycle. An egg needs its species'
+  -- hatch_counter of them, as the games count an egg in cycles of steps.
+  tokens_per_cycle    integer not null check (tokens_per_cycle > 0),
   -- The most one claim() may invest, so a backlog arrives over several
   -- claims rather than turning an egg into a Lv.50 in one press.
   claim_limit_tokens  bigint not null check (claim_limit_tokens > 0),
@@ -93,11 +114,11 @@ create table public.game_settings (
   shiny_odds          integer not null check (shiny_odds >= 1)
 );
 
-insert into public.game_settings values (true, 2000, 1000, 257, 25000000, 3, 64);
+insert into public.coder_settings values (true, 2000, 257000, 25000000, 3, 64);
 
 
 -- ============================================================
--- companions: an egg or a Pokémon, one row for its whole life. Hatching fills
+-- coder_companions: an egg or a Pokémon, one row for its whole life. Hatching fills
 -- hatched_at and level on the same row, and evolving changes species_id.
 --
 -- species_id is a form, not a species: a form change, such as Rotom's, is a
@@ -112,12 +133,13 @@ insert into public.game_settings values (true, 2000, 1000, 257, 25000000, 3, 64)
 -- markings are the games' six box marks, ● ▲ ■ ♥ ★ ◆ from the lowest bits up,
 -- two bits each: 0 off, 1 blue, 2 red. The check refuses a mark set to 3.
 -- ============================================================
-create table public.companions (
+create table public.coder_companions (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users on delete cascade,
   species_id      integer not null references public.pokedex_species,
+  egg_kind        text not null references public.coder_egg_kinds,
   is_shiny        boolean not null,
-  steps           integer not null default 0 check (steps >= 0),
+  cycles          integer not null default 0 check (cycles >= 0),
   exp             integer not null default 0 check (exp >= 0),
   level           smallint check (level between 1 and 100),
   invested_tokens public.token_count not null default 0,
@@ -134,29 +156,29 @@ create table public.companions (
   constraint only_a_pokemon_gives_an_egg check (egg_received_at is null or hatched_at is not null)
 );
 
-create index on public.companions (user_id);
+create index on public.coder_companions (user_id);
 
-create table public.companion_ribbons (
-  companion_id uuid not null references public.companions on delete cascade,
-  ribbon_id    text not null references public.ribbons,
+create table public.coder_companion_ribbons (
+  companion_id uuid not null references public.coder_companions on delete cascade,
+  ribbon_id    text not null references public.coder_ribbons,
   received_at  timestamptz not null default now(),
   primary key (companion_id, ribbon_id)
 );
 
 
 -- ============================================================
--- trainers: one row per person playing, made when they start.
+-- coder_trainers: one row per person playing, made when they start.
 --
 -- It says which companion is the main one, the one claim() feeds, and naming
 -- the owner beside it stops that being anyone else's. It is also the row
 -- every change locks first: two tabs claiming at once would otherwise both
 -- see the same balance and spend it twice.
 -- ============================================================
-create table public.trainers (
+create table public.coder_trainers (
   user_id           uuid primary key references auth.users on delete cascade,
   main_companion_id uuid not null,
   created_at        timestamptz not null default now(),
-  foreign key (main_companion_id, user_id) references public.companions (id, user_id)
+  foreign key (main_companion_id, user_id) references public.coder_companions (id, user_id)
 );
 
 
@@ -166,37 +188,41 @@ create table public.trainers (
 -- because an egg's species must not reach the browser before it hatches.
 -- ============================================================
 revoke all on
-  public.game_species, public.ribbons, public.game_settings, public.companions,
-  public.companion_ribbons, public.trainers
+  public.coder_egg_kinds, public.coder_egg_species, public.coder_ribbons, public.coder_settings, public.coder_companions,
+  public.coder_companion_ribbons, public.coder_trainers
   from anon, authenticated;
 
-alter table public.game_species      enable row level security;
-alter table public.ribbons           enable row level security;
-alter table public.game_settings     enable row level security;
-alter table public.companions        enable row level security;
-alter table public.companion_ribbons enable row level security;
-alter table public.trainers          enable row level security;
+alter table public.coder_egg_kinds        enable row level security;
+alter table public.coder_egg_species      enable row level security;
+alter table public.coder_ribbons           enable row level security;
+alter table public.coder_settings     enable row level security;
+alter table public.coder_companions        enable row level security;
+alter table public.coder_companion_ribbons enable row level security;
+alter table public.coder_trainers          enable row level security;
 
-grant select on public.game_species, public.ribbons, public.game_settings to authenticated;
+grant select on public.coder_egg_kinds, public.coder_egg_species, public.coder_ribbons, public.coder_settings to authenticated;
 
-create policy "anyone signed in can read what eggs hold" on public.game_species
+create policy "anyone signed in can read the kinds of egg" on public.coder_egg_kinds
   for select to authenticated using (true);
-create policy "anyone signed in can read ribbons" on public.ribbons
+create policy "anyone signed in can read what eggs hold" on public.coder_egg_species
   for select to authenticated using (true);
-create policy "anyone signed in can read the game's settings" on public.game_settings
+create policy "anyone signed in can read ribbons" on public.coder_ribbons
+  for select to authenticated using (true);
+create policy "anyone signed in can read the game's settings" on public.coder_settings
   for select to authenticated using (true);
 
 
 -- ============================================================
 -- roll_egg — a new egg for a person, drawn here and nowhere else.
 --
--- Every row of game_species is a candidate at its weight. A family the person
--- has never had, not even as an unhatched egg, weighs unowned_line_weight
--- times more, so a collection does not stall on duplicates for years.
+-- Every row of coder_egg_species for the kind asked for is a candidate at its
+-- weight. A family the person has never had, not even as an unhatched egg,
+-- weighs unowned_line_weight times more, so a collection does not stall on
+-- duplicates for years.
 --
 -- Not granted to anyone: start_game and receive_egg call it as its owner.
 -- ============================================================
-create function public.roll_egg(owner uuid)
+create function public.roll_egg(owner uuid, egg_kind text)
 returns uuid
 language plpgsql
 volatile
@@ -204,22 +230,23 @@ security definer
 set search_path = ''
 as $$
 declare
-  settings public.game_settings;
+  settings public.coder_settings;
   drawn integer;
   egg uuid;
 begin
-  select * into settings from public.game_settings;
+  select * into settings from public.coder_settings;
 
   with owned as (
     select distinct public.pokedex_first_form(c.species_id) as first_form
-      from public.companions c
+      from public.coder_companions c
      where c.user_id = owner
   ),
   weighted as (
     select g.species_id as id,
            g.weight * case when o.first_form is null then settings.unowned_line_weight else 1 end as weight
-      from public.game_species g
+      from public.coder_egg_species g
       left join owned o on o.first_form = g.species_id
+     where g.egg_kind = roll_egg.egg_kind
   ),
   running as (
     select id, sum(weight) over (order by id) as upto, sum(weight) over () as total
@@ -234,8 +261,12 @@ begin
    order by r.id
    limit 1;
 
-  insert into public.companions (user_id, species_id, is_shiny)
-  values (owner, drawn, floor(random() * settings.shiny_odds) = 0)
+  if drawn is null then
+    raise exception 'no egg of kind % can hold anything', roll_egg.egg_kind;
+  end if;
+
+  insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny)
+  values (owner, drawn, roll_egg.egg_kind, floor(random() * settings.shiny_odds) = 0)
   returning id into egg;
   return egg;
 end;
@@ -265,13 +296,13 @@ begin
   if caller is null then
     raise exception 'sign in first' using errcode = '42501';
   end if;
-  if exists (select 1 from public.trainers t where t.user_id = caller) then
+  if exists (select 1 from public.coder_trainers t where t.user_id = caller) then
     return jsonb_build_object('outcome', 'already_started');
   end if;
 
   begin
-    egg := public.roll_egg(caller);
-    insert into public.trainers (user_id, main_companion_id) values (caller, egg);
+    egg := public.roll_egg(caller, 'national');
+    insert into public.coder_trainers (user_id, main_companion_id) values (caller, egg);
   exception when unique_violation then
     -- Another tab started at the same moment. Its egg stands, and this one
     -- goes back with the rest of the block.
@@ -286,15 +317,15 @@ $$;
 -- ============================================================
 -- claim — invest what the person has not yet spent into the main companion.
 --
---   → {"outcome": "claimed", "tokens": 24998000, "steps": 0, "exp": 12499,
+--   → {"outcome": "claimed", "tokens": 24998000, "cycles": 0, "exp": 12499,
 --      "level_before": 7, "level_after": 21, "balance": "123"}
 --   → {"outcome": "nothing", "balance": "123"}   nothing left, or nothing fits
 --   → {"outcome": "not_main"}
 --   → {"outcome": "not_started"}
 --
--- It only invests: an egg fills with steps up to what it needs, a Pokémon
+-- It only invests: an egg fills with cycles up to what it needs, a Pokémon
 -- with experience up to Lv.100, and nothing else changes. What is left over,
--- including the tokens short of one step or one point, stays in the balance.
+-- including the tokens short of one cycle or one point, stays in the balance.
 --
 -- The companion is named even though only the main one may take tokens today,
 -- so the screen can say which one it means: a main changed in another tab is
@@ -312,14 +343,14 @@ set search_path = ''
 as $$
 declare
   caller uuid := auth.uid();
-  settings public.game_settings;
+  settings public.coder_settings;
   main uuid;
   target record;
   earned bigint;
   invested bigint;
   budget bigint;
   room bigint;
-  added_steps integer := 0;
+  added_cycles integer := 0;
   added_exp integer := 0;
   spent bigint;
   new_level smallint;
@@ -329,7 +360,7 @@ begin
   end if;
 
   select t.main_companion_id into main
-    from public.trainers t
+    from public.coder_trainers t
    where t.user_id = caller
      for update;
   if not found then
@@ -339,25 +370,25 @@ begin
     return jsonb_build_object('outcome', 'not_main');
   end if;
 
-  select * into settings from public.game_settings;
+  select * into settings from public.coder_settings;
 
   select coalesce(sum(r.tokens), 0) into earned
     from public.usage_rollups r
    where r.user_id = caller;
   select coalesce(sum(c.invested_tokens), 0) into invested
-    from public.companions c
+    from public.coder_companions c
    where c.user_id = caller;
   budget := least(earned - invested, settings.claim_limit_tokens);
 
-  select c.id, c.steps, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
+  select c.id, c.cycles, c.exp, c.level, c.hatched_at, p.hatch_counter, p.growth_rate
     into target
-    from public.companions c
+    from public.coder_companions c
     join public.pokedex_species p on p.id = c.species_id
    where c.id = main;
 
   if budget > 0 and target.hatched_at is null then
-    room := target.hatch_counter * settings.steps_per_cycle - target.steps;
-    added_steps := greatest(0, least(room, budget / settings.tokens_per_step));
+    room := target.hatch_counter - target.cycles;
+    added_cycles := greatest(0, least(room, budget / settings.tokens_per_cycle));
   elsif budget > 0 then
     select e.exp - target.exp into room
       from public.pokedex_experience_levels e
@@ -365,7 +396,7 @@ begin
     added_exp := greatest(0, least(room, budget / settings.tokens_per_exp));
   end if;
 
-  spent := added_steps::bigint * settings.tokens_per_step + added_exp::bigint * settings.tokens_per_exp;
+  spent := added_cycles::bigint * settings.tokens_per_cycle + added_exp::bigint * settings.tokens_per_exp;
   if spent = 0 then
     return jsonb_build_object('outcome', 'nothing', 'balance', (earned - invested)::text);
   end if;
@@ -376,8 +407,8 @@ begin
      where e.growth_rate = target.growth_rate and e.exp <= target.exp + added_exp;
   end if;
 
-  update public.companions c
-     set steps = c.steps + added_steps,
+  update public.coder_companions c
+     set cycles = c.cycles + added_cycles,
          exp = c.exp + added_exp,
          level = coalesce(new_level, c.level),
          invested_tokens = c.invested_tokens + spent
@@ -386,7 +417,7 @@ begin
   return jsonb_build_object(
     'outcome', 'claimed',
     'tokens', spent,
-    'steps', added_steps,
+    'cycles', added_cycles,
     'exp', added_exp,
     'level_before', target.level,
     'level_after', coalesce(new_level, target.level),
@@ -402,21 +433,21 @@ $$;
 -- Not granted to anyone.
 -- ============================================================
 create function public.lock_companion(owner uuid, companion_id uuid)
-returns public.companions
+returns public.coder_companions
 language plpgsql
 volatile
 security definer
 set search_path = ''
 as $$
 declare
-  found public.companions;
+  found public.coder_companions;
 begin
   if owner is null then
     raise exception 'sign in first' using errcode = '42501';
   end if;
-  perform 1 from public.trainers t where t.user_id = owner for update;
+  perform 1 from public.coder_trainers t where t.user_id = owner for update;
   select * into found
-    from public.companions c
+    from public.coder_companions c
    where c.id = lock_companion.companion_id and c.user_id = owner
      for update;
   return found;
@@ -425,7 +456,7 @@ $$;
 
 
 -- ============================================================
--- hatch — an egg with all its steps becomes a Lv.1 Pokémon.
+-- hatch — an egg with all its cycles becomes a Lv.1 Pokémon.
 --
 --   → {"outcome": "hatched", "species_id": 4, "is_shiny": false}
 --   → {"outcome": "not_ready"} | {"outcome": "not_an_egg"} | {"outcome": "not_found"}
@@ -438,7 +469,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  egg public.companions := public.lock_companion(auth.uid(), hatch.companion_id);
+  egg public.coder_companions := public.lock_companion(auth.uid(), hatch.companion_id);
   needed integer;
 begin
   if egg.id is null then
@@ -448,14 +479,14 @@ begin
     return jsonb_build_object('outcome', 'not_an_egg');
   end if;
 
-  select p.hatch_counter * g.steps_per_cycle into needed
-    from public.pokedex_species p, public.game_settings g
+  select p.hatch_counter into needed
+    from public.pokedex_species p
    where p.id = egg.species_id;
-  if egg.steps < needed then
+  if egg.cycles < needed then
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
-  update public.companions c set hatched_at = now(), level = 1 where c.id = egg.id;
+  update public.coder_companions c set hatched_at = now(), level = 1 where c.id = egg.id;
   return jsonb_build_object('outcome', 'hatched', 'species_id', egg.species_id, 'is_shiny', egg.is_shiny);
 end;
 $$;
@@ -503,7 +534,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  pokemon public.companions := public.lock_companion(auth.uid(), evolve.companion_id);
+  pokemon public.coder_companions := public.lock_companion(auth.uid(), evolve.companion_id);
   next_form integer;
 begin
   if pokemon.id is null then
@@ -517,7 +548,7 @@ begin
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
-  update public.companions c set species_id = next_form where c.id = pokemon.id;
+  update public.coder_companions c set species_id = next_form where c.id = pokemon.id;
   return jsonb_build_object('outcome', 'evolved', 'from', pokemon.species_id, 'to', next_form);
 end;
 $$;
@@ -538,7 +569,7 @@ set search_path = ''
 as $$
 declare
   caller uuid := auth.uid();
-  pokemon public.companions := public.lock_companion(caller, receive_egg.companion_id);
+  pokemon public.coder_companions := public.lock_companion(caller, receive_egg.companion_id);
   egg uuid;
 begin
   if pokemon.id is null then
@@ -551,8 +582,8 @@ begin
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
-  update public.companions c set egg_received_at = now() where c.id = pokemon.id;
-  egg := public.roll_egg(caller);
+  update public.coder_companions c set egg_received_at = now() where c.id = pokemon.id;
+  egg := public.roll_egg(caller, 'national');
   return jsonb_build_object('outcome', 'received', 'companion_id', egg);
 end;
 $$;
@@ -568,20 +599,20 @@ $$;
 -- What earns a ribbon is written here, beside eligible_ribbons(), which box()
 -- uses to say which ones are waiting. The two must agree.
 -- ============================================================
-create function public.eligible_ribbons(pokemon public.companions)
+create function public.eligible_ribbons(pokemon public.coder_companions)
 returns text[]
 language sql
 stable
 set search_path = ''
 as $$
   select coalesce(array_agg(r.id order by r.id), '{}')
-    from public.ribbons r
+    from public.coder_ribbons r
    where case r.id
            when 'level-100' then pokemon.level = 100
            else false
          end
      and not exists (
-           select 1 from public.companion_ribbons cr
+           select 1 from public.coder_companion_ribbons cr
             where cr.companion_id = pokemon.id and cr.ribbon_id = r.id);
 $$;
 
@@ -593,15 +624,15 @@ security definer
 set search_path = ''
 as $$
 declare
-  pokemon public.companions := public.lock_companion(auth.uid(), receive_ribbon.companion_id);
+  pokemon public.coder_companions := public.lock_companion(auth.uid(), receive_ribbon.companion_id);
 begin
   if pokemon.id is null then
     return jsonb_build_object('outcome', 'not_found');
   end if;
-  if not exists (select 1 from public.ribbons r where r.id = receive_ribbon.ribbon_id) then
+  if not exists (select 1 from public.coder_ribbons r where r.id = receive_ribbon.ribbon_id) then
     return jsonb_build_object('outcome', 'unknown_ribbon');
   end if;
-  if exists (select 1 from public.companion_ribbons cr
+  if exists (select 1 from public.coder_companion_ribbons cr
               where cr.companion_id = pokemon.id and cr.ribbon_id = receive_ribbon.ribbon_id) then
     return jsonb_build_object('outcome', 'already_received');
   end if;
@@ -609,7 +640,7 @@ begin
     return jsonb_build_object('outcome', 'not_ready');
   end if;
 
-  insert into public.companion_ribbons (companion_id, ribbon_id)
+  insert into public.coder_companion_ribbons (companion_id, ribbon_id)
   values (pokemon.id, receive_ribbon.ribbon_id);
   return jsonb_build_object('outcome', 'received');
 end;
@@ -633,12 +664,12 @@ set search_path = ''
 as $$
 declare
   caller uuid := auth.uid();
-  chosen public.companions := public.lock_companion(caller, set_main.companion_id);
+  chosen public.coder_companions := public.lock_companion(caller, set_main.companion_id);
 begin
   if chosen.id is null then
     return jsonb_build_object('outcome', 'not_found');
   end if;
-  update public.trainers t set main_companion_id = chosen.id where t.user_id = caller;
+  update public.coder_trainers t set main_companion_id = chosen.id where t.user_id = caller;
   return jsonb_build_object('outcome', 'set');
 end;
 $$;
@@ -651,13 +682,13 @@ security definer
 set search_path = ''
 as $$
 declare
-  chosen public.companions := public.lock_companion(auth.uid(), set_markings.companion_id);
+  chosen public.coder_companions := public.lock_companion(auth.uid(), set_markings.companion_id);
 begin
   if chosen.id is null then
     return jsonb_build_object('outcome', 'not_found');
   end if;
   -- The table's check refuses a mark set to 3, with 23514.
-  update public.companions c set markings = set_markings.markings where c.id = chosen.id;
+  update public.coder_companions c set markings = set_markings.markings where c.id = chosen.id;
   return jsonb_build_object('outcome', 'set');
 end;
 $$;
@@ -667,10 +698,10 @@ $$;
 -- box — everything the person has, for the screen.
 --
 --   → {"started": true, "main_companion_id": "...", "balance": "123",
---      "eggs":    [{"id", "created_at", "steps", "steps_needed", "is_main", "markings"}],
+--      "eggs":    [{"id", "created_at", "tokens", "tokens_needed", "is_main", "markings"}],
 --      "pokemon": [{"id", "species_id", "dex_no", "ko_name", "en_name", "sprites",
---                   "types": [{"id", "ko_name", "en_name"}], "is_shiny", "level", "exp",
---                   "level_exp", "next_level_exp",
+--                   "types": [{"id", "ko_name", "en_name"}], "is_shiny", "level",
+--                   "tokens", "level_tokens", "next_level_tokens",
 --                   "evolves_to": {"species_id", "ko_name", "en_name", "level"} | null,
 --                   "can_evolve", "can_receive_egg",
 --                   "ribbons": [{"id", "ko_name", "en_name", "received_at"}],
@@ -681,7 +712,13 @@ $$;
 -- Names come in Korean and English; the screen picks one. dex_no is the
 -- national pokedex's number.
 --
--- An egg says how many steps it needs, which hints at what it holds, as the
+-- Progress is in tokens, the one unit a person knows: an egg's cycles and a
+-- Pokémon's experience come back multiplied by what each cost, so "tokens"
+-- is where it stands, and level_tokens and next_level_tokens bracket its
+-- level. The tokens_per_* in force apply, so progress made at an older rate is
+-- shown at today's.
+--
+-- An egg says how many tokens it needs, which hints at what it holds, as the
 -- games do when they say an egg will take a while. It says nothing more.
 -- ============================================================
 create function public.box()
@@ -701,9 +738,9 @@ begin
   end if;
 
   balance := (select coalesce(sum(r.tokens), 0) from public.usage_rollups r where r.user_id = caller)
-           - (select coalesce(sum(c.invested_tokens), 0) from public.companions c where c.user_id = caller);
+           - (select coalesce(sum(c.invested_tokens), 0) from public.coder_companions c where c.user_id = caller);
 
-  select t.main_companion_id into main from public.trainers t where t.user_id = caller;
+  select t.main_companion_id into main from public.coder_trainers t where t.user_id = caller;
   if not found then
     return jsonb_build_object('started', false, 'balance', balance::text);
   end if;
@@ -716,14 +753,14 @@ begin
       select jsonb_agg(jsonb_build_object(
                'id', c.id,
                'created_at', c.created_at,
-               'steps', c.steps,
-               'steps_needed', p.hatch_counter * g.steps_per_cycle,
+               'tokens', c.cycles::bigint * g.tokens_per_cycle,
+               'tokens_needed', p.hatch_counter::bigint * g.tokens_per_cycle,
                'is_main', c.id = main,
                'markings', c.markings)
              order by c.created_at)
-        from public.companions c
+        from public.coder_companions c
         join public.pokedex_species p on p.id = c.species_id
-        cross join public.game_settings g
+        cross join public.coder_settings g
        where c.user_id = caller and c.hatched_at is null), '[]'::jsonb),
     'pokemon', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -738,9 +775,9 @@ begin
                            from public.pokedex_types t where t.id in (p.type1, p.type2)),
                'is_shiny', c.is_shiny,
                'level', c.level,
-               'exp', c.exp,
-               'level_exp', here.exp,
-               'next_level_exp', above.exp,
+               'tokens', c.exp::bigint * g.tokens_per_exp,
+               'level_tokens', here.exp::bigint * g.tokens_per_exp,
+               'next_level_tokens', above.exp::bigint * g.tokens_per_exp,
                'evolves_to', case when nxt.id is not null then
                    jsonb_build_object('species_id', nxt.id, 'ko_name', target.ko_name, 'en_name', target.en_name,
                                       'level', nxt.min_level) end,
@@ -750,20 +787,21 @@ begin
                    select jsonb_agg(jsonb_build_object('id', r.id, 'ko_name', r.ko_name, 'en_name', r.en_name,
                                                        'received_at', cr.received_at)
                                     order by cr.received_at)
-                     from public.companion_ribbons cr
-                     join public.ribbons r on r.id = cr.ribbon_id
+                     from public.coder_companion_ribbons cr
+                     join public.coder_ribbons r on r.id = cr.ribbon_id
                     where cr.companion_id = c.id), '[]'::jsonb),
                'ribbons_waiting', coalesce((
                    select jsonb_agg(jsonb_build_object('id', r.id, 'ko_name', r.ko_name, 'en_name', r.en_name) order by r.id)
-                     from public.ribbons r
+                     from public.coder_ribbons r
                     where r.id = any (public.eligible_ribbons(c))), '[]'::jsonb),
                'created_at', c.created_at,
                'hatched_at', c.hatched_at,
                'is_main', c.id = main,
                'markings', c.markings)
              order by c.hatched_at)
-        from public.companions c
+        from public.coder_companions c
         join public.pokedex_species p on p.id = c.species_id
+        cross join public.coder_settings g
         join public.pokedex_experience_levels here on here.growth_rate = p.growth_rate and here.level = c.level
         left join public.pokedex_experience_levels above
           on above.growth_rate = p.growth_rate and above.level = c.level + 1
@@ -779,11 +817,11 @@ $$;
 -- Who may call what. See the note in the account migration.
 -- ============================================================
 revoke execute on function
-  public.roll_egg(uuid),
+  public.roll_egg(uuid, text),
   public.lock_companion(uuid, uuid),
   public.level_only_methods(),
   public.level_up_evolution(integer),
-  public.eligible_ribbons(public.companions),
+  public.eligible_ribbons(public.coder_companions),
   public.start_game(),
   public.claim(uuid),
   public.hatch(uuid),

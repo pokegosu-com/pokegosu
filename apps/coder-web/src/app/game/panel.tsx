@@ -17,11 +17,11 @@ function nameOf(box: Box | null, speciesId: unknown): string {
 function say(box: Box | null, fn: string, o: Outcome): string | null {
   switch (`${fn}:${o.outcome}`) {
     case 'claim:claimed':
-      return Number(o.steps) > 0
-        ? `알이 ${exactTokens(Number(o.steps))} 걸음만큼 자랐다.`
+      return Number(o.cycles) > 0
+        ? `알이 토큰 ${exactTokens(Number(o.tokens))} 만큼 자랐다.`
         : o.level_after !== o.level_before
-          ? `경험치 ${exactTokens(Number(o.exp))} 을 얻었다! Lv.${o.level_before} → Lv.${o.level_after}`
-          : `경험치 ${exactTokens(Number(o.exp))} 을 얻었다!`
+          ? `토큰 ${exactTokens(Number(o.tokens))} 을 얻었다! Lv.${o.level_before} → Lv.${o.level_after}`
+          : `토큰 ${exactTokens(Number(o.tokens))} 을 얻었다!`
     case 'hatch:hatched':
       return `${o.is_shiny ? '✨ ' : ''}알에서 ${nameOf(box, o.species_id)}이(가) 태어났다!`
     case 'evolve:evolved':

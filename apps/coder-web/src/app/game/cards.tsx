@@ -72,7 +72,7 @@ export function PokemonCard({
   act: Act
   busy: boolean
 }) {
-  const toNext = p.next_level_exp === null ? null : p.next_level_exp - p.exp
+  const toNext = p.next_level_tokens === null ? null : p.next_level_tokens - p.tokens
   return (
     <article
       className={`space-y-3 rounded-lg border px-4 py-3 ${p.is_main ? 'border-accent' : 'border-muted/25'}`}
@@ -108,10 +108,13 @@ export function PokemonCard({
         <p className="flex justify-between text-xs">
           <span className="tabular-nums">Lv.{p.level}</span>
           <span className="text-muted tabular-nums">
-            {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 경험치`}
+            {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 토큰`}
           </span>
         </p>
-        <Bar value={p.exp - p.level_exp} max={(p.next_level_exp ?? p.exp) - p.level_exp} />
+        <Bar
+          value={p.tokens - p.level_tokens}
+          max={(p.next_level_tokens ?? p.tokens) - p.level_tokens}
+        />
         {p.evolves_to && !p.can_evolve && (
           <p className="text-muted text-xs">
             Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
@@ -177,7 +180,7 @@ export function PokemonCard({
 }
 
 export function EggCard({ egg, act, busy }: { egg: Egg; act: Act; busy: boolean }) {
-  const ready = egg.steps >= egg.steps_needed
+  const ready = egg.tokens >= egg.tokens_needed
   return (
     <article
       className={`space-y-3 rounded-lg border px-4 py-3 ${egg.is_main ? 'border-accent' : 'border-muted/25'}`}
@@ -204,9 +207,9 @@ export function EggCard({ egg, act, busy }: { egg: Egg; act: Act; busy: boolean 
 
       <div className="space-y-1">
         <p className="text-muted text-right text-xs tabular-nums">
-          {exactTokens(egg.steps)} / {exactTokens(egg.steps_needed)} 걸음
+          {exactTokens(egg.tokens)} / {exactTokens(egg.tokens_needed)} 토큰
         </p>
-        <Bar value={egg.steps} max={egg.steps_needed} />
+        <Bar value={egg.tokens} max={egg.tokens_needed} />
       </div>
 
       <footer className="flex flex-wrap gap-2">

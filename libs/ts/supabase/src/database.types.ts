@@ -28,7 +28,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      companion_ribbons: {
+      coder_companion_ribbons: {
         Row: {
           companion_id: string
           received_at: string
@@ -46,24 +46,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'companion_ribbons_companion_id_fkey'
+            foreignKeyName: 'coder_companion_ribbons_companion_id_fkey'
             columns: ['companion_id']
             isOneToOne: false
-            referencedRelation: 'companions'
+            referencedRelation: 'coder_companions'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'companion_ribbons_ribbon_id_fkey'
+            foreignKeyName: 'coder_companion_ribbons_ribbon_id_fkey'
             columns: ['ribbon_id']
             isOneToOne: false
-            referencedRelation: 'ribbons'
+            referencedRelation: 'coder_ribbons'
             referencedColumns: ['id']
           },
         ]
       }
-      companions: {
+      coder_companions: {
         Row: {
           created_at: string
+          cycles: number
+          egg_kind: string
           egg_received_at: string | null
           exp: number
           hatched_at: string | null
@@ -73,11 +75,12 @@ export type Database = {
           level: number | null
           markings: number
           species_id: number
-          steps: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          cycles?: number
+          egg_kind: string
           egg_received_at?: string | null
           exp?: number
           hatched_at?: string | null
@@ -87,11 +90,12 @@ export type Database = {
           level?: number | null
           markings?: number
           species_id: number
-          steps?: number
           user_id: string
         }
         Update: {
           created_at?: string
+          cycles?: number
+          egg_kind?: string
           egg_received_at?: string | null
           exp?: number
           hatched_at?: string | null
@@ -101,16 +105,150 @@ export type Database = {
           level?: number | null
           markings?: number
           species_id?: number
-          steps?: number
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'companions_species_id_fkey'
+            foreignKeyName: 'coder_companions_egg_kind_fkey'
+            columns: ['egg_kind']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_companions_species_id_fkey'
             columns: ['species_id']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
             referencedColumns: ['id']
+          },
+        ]
+      }
+      coder_egg_kinds: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      coder_egg_species: {
+        Row: {
+          egg_kind: string
+          species_id: number
+          weight: number
+        }
+        Insert: {
+          egg_kind: string
+          species_id: number
+          weight: number
+        }
+        Update: {
+          egg_kind?: string
+          species_id?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_egg_species_egg_kind_fkey'
+            columns: ['egg_kind']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_egg_species_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      coder_ribbons: {
+        Row: {
+          en_description: string | null
+          en_name: string | null
+          id: string
+          ko_description: string | null
+          ko_name: string | null
+        }
+        Insert: {
+          en_description?: string | null
+          en_name?: string | null
+          id: string
+          ko_description?: string | null
+          ko_name?: string | null
+        }
+        Update: {
+          en_description?: string | null
+          en_name?: string | null
+          id?: string
+          ko_description?: string | null
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      coder_settings: {
+        Row: {
+          claim_limit_tokens: number
+          id: boolean
+          shiny_odds: number
+          tokens_per_cycle: number
+          tokens_per_exp: number
+          unowned_line_weight: number
+        }
+        Insert: {
+          claim_limit_tokens: number
+          id?: boolean
+          shiny_odds: number
+          tokens_per_cycle: number
+          tokens_per_exp: number
+          unowned_line_weight: number
+        }
+        Update: {
+          claim_limit_tokens?: number
+          id?: boolean
+          shiny_odds?: number
+          tokens_per_cycle?: number
+          tokens_per_exp?: number
+          unowned_line_weight?: number
+        }
+        Relationships: []
+      }
+      coder_trainers: {
+        Row: {
+          created_at: string
+          main_companion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          main_companion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          main_companion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_trainers_main_companion_id_user_id_fkey'
+            columns: ['main_companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'coder_companions'
+            referencedColumns: ['id', 'user_id']
           },
         ]
       }
@@ -176,59 +314,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      game_settings: {
-        Row: {
-          claim_limit_tokens: number
-          id: boolean
-          shiny_odds: number
-          steps_per_cycle: number
-          tokens_per_exp: number
-          tokens_per_step: number
-          unowned_line_weight: number
-        }
-        Insert: {
-          claim_limit_tokens: number
-          id?: boolean
-          shiny_odds: number
-          steps_per_cycle: number
-          tokens_per_exp: number
-          tokens_per_step: number
-          unowned_line_weight: number
-        }
-        Update: {
-          claim_limit_tokens?: number
-          id?: boolean
-          shiny_odds?: number
-          steps_per_cycle?: number
-          tokens_per_exp?: number
-          tokens_per_step?: number
-          unowned_line_weight?: number
-        }
-        Relationships: []
-      }
-      game_species: {
-        Row: {
-          species_id: number
-          weight: number
-        }
-        Insert: {
-          species_id: number
-          weight: number
-        }
-        Update: {
-          species_id?: number
-          weight?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'game_species_species_id_fkey'
-            columns: ['species_id']
-            isOneToOne: true
-            referencedRelation: 'pokedex_species'
-            referencedColumns: ['id']
-          },
-        ]
       }
       pokedex_entries: {
         Row: {
@@ -571,56 +656,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ribbons: {
-        Row: {
-          en_description: string | null
-          en_name: string | null
-          id: string
-          ko_description: string | null
-          ko_name: string | null
-        }
-        Insert: {
-          en_description?: string | null
-          en_name?: string | null
-          id: string
-          ko_description?: string | null
-          ko_name?: string | null
-        }
-        Update: {
-          en_description?: string | null
-          en_name?: string | null
-          id?: string
-          ko_description?: string | null
-          ko_name?: string | null
-        }
-        Relationships: []
-      }
-      trainers: {
-        Row: {
-          created_at: string
-          main_companion_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          main_companion_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          main_companion_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'trainers_main_companion_id_user_id_fkey'
-            columns: ['main_companion_id', 'user_id']
-            isOneToOne: false
-            referencedRelation: 'companions'
-            referencedColumns: ['id', 'user_id']
-          },
-        ]
-      }
       usage_rollups: {
         Row: {
           device_id: string
@@ -676,7 +711,9 @@ export type Database = {
         Returns: Json
       }
       eligible_ribbons: {
-        Args: { pokemon: Database['public']['Tables']['companions']['Row'] }
+        Args: {
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
         Returns: string[]
       }
       evolve: { Args: { companion_id: string }; Returns: Json }
@@ -694,6 +731,8 @@ export type Database = {
         Args: { companion_id: string; owner: string }
         Returns: {
           created_at: string
+          cycles: number
+          egg_kind: string
           egg_received_at: string | null
           exp: number
           hatched_at: string | null
@@ -703,12 +742,11 @@ export type Database = {
           level: number | null
           markings: number
           species_id: number
-          steps: number
           user_id: string
         }
         SetofOptions: {
           from: '*'
-          to: 'companions'
+          to: 'coder_companions'
           isOneToOne: true
           isSetofReturn: false
         }
@@ -721,7 +759,7 @@ export type Database = {
         Args: { companion_id: string; ribbon_id: string }
         Returns: Json
       }
-      roll_egg: { Args: { owner: string }; Returns: string }
+      roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
         Args: { companion_id: string; markings: number }

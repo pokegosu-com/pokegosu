@@ -47,7 +47,7 @@ select is((select category from public.pokedex_species where slug = 'mewtwo'), '
 set local role anon;
 select throws_ok($$ update public.pokedex_species set capture_rate = 255 $$, '42501', null,
   'anyone may read it, and nobody may change it');
-select throws_ok($$ select * from public.game_species $$, '42501', null,
+select throws_ok($$ select * from public.coder_egg_species $$, '42501', null,
   'the game''s own tables stay closed to visitors');
 reset role;
 

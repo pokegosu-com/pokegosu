@@ -14,8 +14,9 @@ export type Box =
 export type Egg = {
   id: string
   created_at: string
-  steps: number
-  steps_needed: number
+  /** Tokens it has taken, and needs to hatch; its cycles, at today's rate. */
+  tokens: number
+  tokens_needed: number
   is_main: boolean
   markings: number
 }
@@ -33,9 +34,10 @@ export type Pokemon = {
   types: ({ id: string } & Named)[]
   is_shiny: boolean
   level: number
-  exp: number
-  level_exp: number
-  next_level_exp: number | null
+  /** Its experience in tokens, at today's rate, and where its level starts and ends. */
+  tokens: number
+  level_tokens: number
+  next_level_tokens: number | null
   evolves_to: ({ species_id: number; level: number } & Named) | null
   can_evolve: boolean
   can_receive_egg: boolean
@@ -78,7 +80,7 @@ export function cycleMark(markings: number, index: number): number {
 
 /** The games' hint for how long an egg has left, by the share still to go. */
 export function eggHint(egg: Egg): string {
-  const left = 1 - egg.steps / egg.steps_needed
+  const left = 1 - egg.tokens / egg.tokens_needed
   if (left <= 0) return '안에서 소리가 들린다! 곧 태어날 것 같다!'
   if (left <= 0.1) return '가끔 움직이고 있다. 태어나기까지 조금 더 걸릴 것 같다.'
   if (left <= 0.4) return '안에서 소리가 들리는 것 같다. 곧 태어날 것 같다.'

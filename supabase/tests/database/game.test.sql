@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(47);
+select plan(50);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -32,21 +32,23 @@ $$;
 
 -- As its owner, since a person cannot read trainers themselves.
 create function pg_temp.main() returns uuid language sql security definer as $$
-  select main_companion_id from public.trainers where user_id = '00000000-0000-0000-0000-00000000000a';
+  select main_companion_id from public.coder_trainers where user_id = '00000000-0000-0000-0000-00000000000a';
 $$;
 
 
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.game_species), 61,
-  'every Generation I family that evolves by level alone, or not at all');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 61,
+  'a national egg holds every Generation I family that evolves by level alone, or not at all');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'gen1'), 61,
+  'and a Generation I egg the same, while the pokedex holds no other generation');
 select is_empty(
-  $$ select g.species_id from public.game_species g join public.pokedex_species s on s.id = g.species_id
+  $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where s.evolves_from_id is not null or s.slug in ('abra', 'pikachu', 'nidoran-f', 'eevee') $$,
   'only a first form, and none whose family needs a stone or a trade');
-select ok((select count(*) = 3 from public.game_species g join public.pokedex_species s on s.id = g.species_id
-            where s.slug in ('tauros', 'mewtwo', 'ditto')),
+select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+            where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
@@ -67,12 +69,12 @@ select is(public.box() -> 'eggs' -> 0 ->> 'id', pg_temp.main()::text, 'and it is
 select ok(not (public.box() -> 'eggs' -> 0 ? 'species_id') and not (public.box() -> 'eggs' -> 0 ? 'is_shiny'),
   'an egg does not say what it holds');
 
-select throws_ok($$ select * from public.companions $$, '42501', null,
+select throws_ok($$ select * from public.coder_companions $$, '42501', null,
   'a person cannot read their companions directly, so an egg cannot be looked into');
 
--- Charmander from here on: 20 cycles, so 5,140 steps; Medium Slow.
+-- Charmander from here on: 20 cycles, so 5,140,000 tokens; Medium Slow.
 reset role;
-update public.companions set species_id = 4, is_shiny = false where id = pg_temp.main();
+update public.coder_companions set species_id = 4, is_shiny = false where id = pg_temp.main();
 
 
 -- ------------------------------------------------------------
@@ -90,14 +92,15 @@ select pg_temp.use(999, '2026-09-23T11:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 5140000, "steps": 5140, "exp": 0,
+  '{"outcome": "claimed", "tokens": 5140000, "cycles": 20, "exp": 0,
     "level_before": null, "level_after": null, "balance": "294860999"}'::jsonb,
-  'an egg takes steps up to what it needs, and no more');
+  'an egg takes cycles up to what it needs, and no more');
 
 select is(public.claim(pg_temp.main()), '{"outcome": "nothing", "balance": "294860999"}'::jsonb,
   'a full egg takes nothing until it hatches');
 
-select is(public.box() -> 'eggs' -> 0 -> 'steps_needed', '5140'::jsonb, 'the box says how far it has to go');
+select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '5140000'::jsonb,
+  'the box says how far it has to go, in tokens: 20 cycles at 257,000 each');
 
 
 -- ------------------------------------------------------------
@@ -117,12 +120,14 @@ select is(public.box() -> 'eggs', '[]'::jsonb, 'and leaves the egg box');
 -- ------------------------------------------------------------
 -- 25,000,000 tokens is 12,500 experience, which Medium Slow puts at Lv.25.
 select is(public.claim(pg_temp.main()),
-  '{"outcome": "claimed", "tokens": 25000000, "steps": 0, "exp": 12500,
+  '{"outcome": "claimed", "tokens": 25000000, "cycles": 0, "exp": 12500,
     "level_before": 1, "level_after": 25, "balance": "269860999"}'::jsonb,
   'one claim invests no more than the limit');
 
-select is((public.box() -> 'pokemon' -> 0 ->> 'level_exp')::int, 11735, 'the box gives where this level starts');
-select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_exp')::int, 13411, 'and where the next one does');
+select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 23470000::bigint,
+  'the box gives where this level starts, in tokens: 11,735 experience at 2,000 each');
+select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 26822000::bigint, 'and where the next one does');
+select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 25000000::bigint, 'and where it stands');
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'past Lv.16 it can evolve');
 
 
@@ -143,7 +148,7 @@ select is(public.box() -> 'pokemon' -> 0 -> 'evolves_to',
 select is(public.receive_egg(pg_temp.main()), '{"outcome": "not_ready"}'::jsonb, 'no egg before Lv.50');
 
 reset role;
-update public.companions set level = 50, exp = 117360 where id = pg_temp.main();
+update public.coder_companions set level = 50, exp = 117360 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_receive_egg')::boolean, 'at Lv.50 the egg is waiting');
@@ -170,7 +175,7 @@ select throws_ok($$ select public.set_markings(pg_temp.main(), 3::smallint) $$, 
 -- Ribbons
 -- ------------------------------------------------------------
 reset role;
-update public.trainers set main_companion_id = (select id from public.companions where species_id = 5)
+update public.coder_trainers set main_companion_id = (select id from public.coder_companions where species_id = 5)
  where user_id = '00000000-0000-0000-0000-00000000000a';
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
@@ -178,7 +183,7 @@ select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "not_
   'the Lv.100 ribbon waits for Lv.100');
 
 reset role;
-update public.companions set level = 100, exp = 1059860 where id = pg_temp.main();
+update public.coder_companions set level = 100, exp = 1059860 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select is(public.claim(pg_temp.main()) ->> 'outcome', 'nothing', 'a Lv.100 takes no more experience');
@@ -204,12 +209,15 @@ select is(public.claim(pg_temp.main()), '{"outcome": "not_started"}'::jsonb,
 -- Rolling
 -- ------------------------------------------------------------
 reset role;
-select public.roll_egg('00000000-0000-0000-0000-00000000000b') from generate_series(1, 200);
+select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'gen1') from generate_series(1, 200);
 select is_empty(
-  $$ select c.id from public.companions c
+  $$ select c.id from public.coder_companions c
       where c.user_id = '00000000-0000-0000-0000-00000000000b'
-        and c.species_id not in (select species_id from public.game_species) $$,
-  'an egg only ever holds what game_species lists');
+        and (c.egg_kind <> 'gen1'
+             or c.species_id not in (select species_id from public.coder_egg_species where egg_kind = 'gen1')) $$,
+  'an egg holds only what its kind lists, and remembers its kind');
+select throws_ok($$ select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'nope') $$,
+  'P0001', null, 'an egg of a kind that holds nothing is refused');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');
