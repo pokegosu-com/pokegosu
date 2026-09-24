@@ -48,7 +48,7 @@ Nothing secret is typed or pasted. The code is worth little — ten minutes, one
 
 For a deployment other than the default, give its address: `pokegosu auth login --url https://pokegosu.example.com`. The CLI reads `/.well-known/pokegosu.json` there to find the rest, so no backend address has to be known or typed.
 
-Then have your coding agent run the sync. Login offers to do this at the end; to do it yourself:
+Then have your coding agent run the sync:
 
 ```sh
 pokegosu coder hook install claude-code
