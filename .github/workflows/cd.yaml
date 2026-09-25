@@ -13,6 +13,10 @@ concurrency:
   group: 'cd'
   cancel-in-progress: false
 
+# Every job reads the code; only the release job writes, and says so itself.
+permissions:
+  contents: 'read'
+
 jobs:
   # Every moon project tagged `nextjs` is a Worker, so a new app joins the
   # release by existing rather than by being listed here.

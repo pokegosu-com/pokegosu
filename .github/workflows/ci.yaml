@@ -10,6 +10,10 @@ concurrency:
   group: '${{ github.workflow }}-${{ github.ref }}'
   cancel-in-progress: true
 
+# Checks read the code and nothing else.
+permissions:
+  contents: 'read'
+
 jobs:
   ci:
     name: 'CI'
