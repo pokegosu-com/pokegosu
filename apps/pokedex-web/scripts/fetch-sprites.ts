@@ -4,6 +4,9 @@
 //
 // A file already on disk with the right hash is kept, so a second run costs no
 // requests.
+//
+// The sprites repository is CC0, but that waives only its own rights: the
+// images are © The Pokémon Company, as the manifest's notice says.
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'

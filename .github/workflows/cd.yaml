@@ -148,7 +148,9 @@ jobs:
             CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
               -ldflags "-s -w -X main.version=$GITHUB_REF_NAME" \
               -o "build/$name/pokegosu" ./apps/cli/cmd/pokegosu
-            tar -czf "release/$name.tar.gz" -C "build/$name" pokegosu
+            # Apache 2.0 asks for its licence and notice to go with the binary.
+            cp LICENSE NOTICE "build/$name/"
+            tar -czf "release/$name.tar.gz" -C "build/$name" pokegosu LICENSE NOTICE
           done
           cd release && sha256sum *.tar.gz > checksums.txt
       - uses: 'actions/upload-artifact@v7'
