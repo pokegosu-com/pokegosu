@@ -1,0 +1,4 @@
+# Read by Workers static assets. The install script is shown as text, so a
+# person can read it in the browser before piping it to sh.
+/install-cli.sh
+  Content-Type: text/plain; charset=utf-8

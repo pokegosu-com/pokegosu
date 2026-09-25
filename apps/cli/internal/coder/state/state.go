@@ -103,7 +103,7 @@ func Save(path string, s *State) error {
 // server already holds.
 //
 // What this cache holds is what one process asked the server for, not what
-// the server ended up with. Two syncs overlapping — a scheduled run and
+// the server ended up with. Two syncs overlapping — a hook's run and
 // someone impatient — can send different values for the same hour and arrive
 // in the other order, leaving the server holding one and the cache claiming
 // the other. An hour whose log has stopped growing never differs from the

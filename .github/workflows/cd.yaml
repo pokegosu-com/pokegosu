@@ -1,7 +1,8 @@
 name: 'CD'
 
-# Pushing a version tag ships every app at that version, and the GitHub release
-# is published only once they are all live. The `production` environment only
+# Pushing a version tag ships every app and the Edge Functions at that version,
+# and the GitHub release, with the CLI's binaries on it, is published only once
+# they are all live. The `production` environment only
 # admits `v*` tags, so nothing else can reach its secrets.
 on:
   push:
@@ -11,6 +12,10 @@ on:
 concurrency:
   group: 'cd'
   cancel-in-progress: false
+
+# Every job reads the code; only the release job writes, and says so itself.
+permissions:
+  contents: 'read'
 
 jobs:
   # Every moon project tagged `nextjs` is a Worker, so a new app joins the
@@ -30,9 +35,20 @@ jobs:
 
   # Applies the migrations the production database has not recorded yet, before
   # any app ships against them; CI's `supabase:verify` has already replayed
-  # them onto an empty database. The connection string reaches this one
-  # database only, unlike an access token, which spans every project on the
-  # account.
+  # them onto an empty database.
+  #
+  # No database password is kept anywhere: given only a project and a token,
+  # the Supabase CLI asks the Management API for a login role with a
+  # temporary password, and connects through the pooler with it. The token,
+  # SUPABASE_ACCESS_TOKEN, is shared with the functions job.
+  #
+  # It is a personal access token, which reaches every project its account
+  # does; scoped tokens, which would limit it to this project, are not open to
+  # every account yet. So it lives for one release only: one is made just
+  # before tagging, to expire a day later (see "Releasing" in the README).
+  # Supabase allows thirty days at most anyway. Forgotten or expired, this job
+  # is the first to fail, so nothing ships half way; set a fresh token and
+  # rerun the failed jobs.
   migrate:
     name: 'Migrate database'
     runs-on: 'ubuntu-latest'
@@ -47,9 +63,10 @@ jobs:
           dirname "$(moon bin node)" >> "$GITHUB_PATH"
           dirname "$(moon bin pnpm)" >> "$GITHUB_PATH"
       - run: 'pnpm install --frozen-lockfile'
-      - run: 'pnpm exec supabase db push --db-url "$SUPABASE_DB_URL" --yes'
+      - run: 'pnpm exec supabase db push --project-ref "$SUPABASE_PROJECT_REF" --yes'
         env:
-          SUPABASE_DB_URL: '${{ secrets.SUPABASE_DB_URL }}'
+          SUPABASE_ACCESS_TOKEN: '${{ secrets.SUPABASE_ACCESS_TOKEN }}'
+          SUPABASE_PROJECT_REF: '${{ vars.SUPABASE_PROJECT_REF }}'
 
   # One runner per app, so eight apps take as long as the slowest one. Each
   # deploy builds afresh inside vinext-cloudflare, which validates the app's
@@ -86,14 +103,71 @@ jobs:
           NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
           NEXT_PUBLIC_POKEDEX_URL: '${{ vars.NEXT_PUBLIC_POKEDEX_URL }}'
 
+  # Deploys every function under supabase/functions, after the migrations it
+  # calls into, with the verify_jwt settings in supabase/config.toml, on the
+  # token the migrate job describes. `--use-api` bundles on Supabase's side,
+  # so no Docker.
+  functions:
+    name: 'Deploy Edge Functions'
+    needs: 'migrate'
+    runs-on: 'ubuntu-latest'
+    environment: 'production'
+    steps:
+      - uses: 'actions/checkout@v7'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      # moon installs the Node and pnpm from .moon/toolchains.yaml but keeps
+      # them off PATH; `moon bin` says where they are.
+      - run: |
+          moon setup
+          dirname "$(moon bin node)" >> "$GITHUB_PATH"
+          dirname "$(moon bin pnpm)" >> "$GITHUB_PATH"
+      - run: 'pnpm install --frozen-lockfile'
+      - run: 'pnpm exec supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --use-api'
+        env:
+          SUPABASE_ACCESS_TOKEN: '${{ secrets.SUPABASE_ACCESS_TOKEN }}'
+          SUPABASE_PROJECT_REF: '${{ vars.SUPABASE_PROJECT_REF }}'
+
+  # The CLI for every platform install-cli.sh knows, under names without the
+  # version, so `releases/latest/download/<name>` always finds the newest.
+  # Building needs no secrets, so it runs outside the production environment.
+  cli:
+    name: 'Build CLI'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: 'actions/checkout@v7'
+      - uses: 'moonrepo/setup-toolchain@v0'
+      - run: |
+          moon setup
+          dirname "$(moon bin go)" >> "$GITHUB_PATH"
+      - run: |
+          mkdir -p release
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            name="pokegosu_${os}_${arch}"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
+              -ldflags "-s -w -X main.version=$GITHUB_REF_NAME" \
+              -o "build/$name/pokegosu" ./apps/cli/cmd/pokegosu
+            tar -czf "release/$name.tar.gz" -C "build/$name" pokegosu
+          done
+          cd release && sha256sum *.tar.gz > checksums.txt
+      - uses: 'actions/upload-artifact@v7'
+        with:
+          name: 'cli'
+          path: 'release/'
+
   # A release exists only for a version that is live.
   release:
     name: 'Release'
-    needs: 'deploy'
+    needs: ['deploy', 'functions', 'cli']
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'write'
     steps:
-      - run: 'gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes'
+      - uses: 'actions/download-artifact@v8'
+        with:
+          name: 'cli'
+          path: 'release/'
+      - run: 'gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes release/*'
         env:
           GH_TOKEN: '${{ github.token }}'

@@ -13,8 +13,15 @@ func TestTheTreeHasTheWordsPeopleAreToldToType(t *testing.T) {
 	cases := map[string][]string{
 		"auth login": {"url", "device-name"},
 		"coder scan": {"since", "format", "path", "provider"},
-		"coder sync": {"all", "quiet", "path", "provider"},
-		"version":    nil,
+		"coder sync": {"all", "quiet", "jsonl", "no-fail", "min-interval", "path", "provider"},
+		// "coder hook install" writes "coder sync --jsonl --no-fail
+		// --min-interval" into agents' settings, so renaming any of those
+		// breaks every hook already installed.
+		"coder hook install":   nil,
+		"coder hook uninstall": nil,
+		"coder hook logs":      {"lines"},
+		"coder hook doctor":    nil,
+		"version":              nil,
 	}
 	for path, flags := range cases {
 		cmd, rest, err := root.Find(strings.Fields(path))

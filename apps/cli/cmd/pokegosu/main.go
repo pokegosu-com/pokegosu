@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -27,10 +28,16 @@ func main() {
 	defer stop()
 
 	if err := newRoot().ExecuteContext(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "pokegosu: %v\n", err)
+		if !errors.Is(err, errSilent) {
+			fmt.Fprintf(os.Stderr, "pokegosu: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }
+
+// errSilent fails a command that has already said everything there is to
+// say, such as doctor, which has printed what is wrong and how to fix it.
+var errSilent = errors.New("failed")
 
 func newRoot() *cobra.Command {
 	root := &cobra.Command{
