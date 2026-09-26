@@ -5,13 +5,18 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(12);
+select plan(18);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1), 151,
   'every Generation I species has its default form');
+select is((select count(*)::int from public.pokedex_species where generation = 2), 100,
+  'and every Generation II species');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national'), 151, 'the national pokedex lists them');
-select is((select count(*)::int from public.pokedex_entries where dex = 'kanto'), 151, 'and so does Kanto''s');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national'), 251, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'kanto'), 151, 'Kanto''s the first 151');
+select is((select count(*)::int from public.pokedex_entries where dex = 'johto'), 251, 'and Johto''s all of them, in its own order');
+select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+            where e.dex = 'johto' and s.slug = 'pikachu'), 22::smallint, 'Pikachu is Johto''s No.22');
 
 select isnt(
   (select ko_description from public.pokedex_entries where dex = 'national' and number = 6),
@@ -41,6 +46,21 @@ select is_empty(
   'every form is named and categorised in Korean and English, though a language may be missing');
 
 select is(public.pokedex_first_form(149), 147, 'Dragonite''s family starts with Dratini');
+select is(public.pokedex_first_form(26), 172, 'and Raichu''s with Pichu, from the generation after');
+
+select is(
+  (select row(f.slug, m.trigger, m.level, m.held_item, m.min_happiness, m.time_of_day, m.relative_physical_stats)::text
+     from public.pokedex_species s
+     join public.pokedex_species f on f.id = s.evolves_from_id
+     join public.pokedex_evolution_methods m on m.id = s.evolution_method
+    where s.slug = 'hitmonchan'),
+  '(tyrogue,level-up,20,,,,-1)',
+  'a method keeps what Generation II adds: Attack against Defense');
+select is(
+  (select string_agg(s.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s where s.slug in ('steelix', 'umbreon', 'crobat')),
+  'crobat:level-up-happiness-160 umbreon:level-up-happiness-160-night steelix:trade-holding-metal-coat',
+  'an item held in a trade, friendship, and the time of day');
 
 select is((select category from public.pokedex_species where slug = 'mewtwo'), 'legendary', 'a category is one of three, or none');
 

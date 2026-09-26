@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(62);
+select plan(69);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,14 +39,30 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 61,
-  'a national egg holds every Generation I family that evolves by level alone, or not at all');
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'gen1'), 61,
-  'and a Generation I egg the same, while the pokedex holds no other generation');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 129,
+  'a national egg holds the first form of every family up to Generation II');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
-      where s.evolves_from_id is not null or s.slug in ('abra', 'pikachu', 'nidoran-f', 'eevee') $$,
-  'only a first form, and none whose family needs a stone or a trade');
+      where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
+  'and nothing that evolves from anything');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'national' and s.slug in ('pichu', 'pikachu', 'abra', 'eevee', 'zubat', 'onix')),
+  'zubat abra onix eevee pichu',
+  'babies included, and families a stone, a trade or friendship runs through');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'kanto'), 79,
+  'a Kanto egg holds the first form of every family as Kanto''s pokedex lists it');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'kanto' and s.slug in ('pichu', 'pikachu', 'smoochum', 'jynx', 'chikorita')),
+  'pikachu jynx',
+  'so Pikachu rather than Pichu, and nothing from Johto');
+select set_eq(
+  $$ select species_id from public.coder_egg_species where egg_kind = 'johto' $$,
+  $$ select species_id from public.coder_egg_species where egg_kind = 'national' $$,
+  'Gold and Silver''s pokedex lists all 251, so a Johto egg holds what a national one does');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -57,7 +73,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by g.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 11), ('uncommon', 25), ('rare', 12), ('very-rare', 8), ('mythic', 5) $$,
+  $$ values ('common', 24), ('uncommon', 58), ('rare', 24), ('very-rare', 12), ('mythic', 11) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)
@@ -67,6 +83,12 @@ select is(
   'the starters, fossils and Dratini are very rare, legendaries mythic');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
+select is(public.level_up_evolution(79), row(80, 37::smallint)::record,
+  'Slowpoke becomes Slowbro at Lv.37, and the trade to Slowking is left to wait');
+select is_empty($$ select * from public.level_up_evolution(236) $$,
+  'Tyrogue''s Lv.20 asks for Attack against Defense too, so it waits');
+select is_empty($$ select * from public.level_up_evolution(172) $$,
+  'and so does Pichu, on friendship');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   200000000::bigint, 'Medium Fast reaches Lv.50 on 200M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -248,15 +270,41 @@ select is(public.claim(pg_temp.main(), 1), '{"outcome": "not_started"}'::jsonb,
 -- Rolling
 -- ------------------------------------------------------------
 reset role;
-select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'gen1') from generate_series(1, 200);
+select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'kanto') from generate_series(1, 200);
 select is_empty(
   $$ select c.id from public.coder_companions c
       where c.user_id = '00000000-0000-0000-0000-00000000000b'
-        and (c.egg_kind <> 'gen1'
-             or c.species_id not in (select species_id from public.coder_egg_species where egg_kind = 'gen1')) $$,
+        and (c.egg_kind <> 'kanto'
+             or c.species_id not in (select species_id from public.coder_egg_species where egg_kind = 'kanto')) $$,
   'an egg holds only what its kind lists, and remembers its kind');
 select throws_ok($$ select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'nope') $$,
   'P0001', null, 'an egg of a kind that holds nothing is refused');
+
+-- Someone with every family a Kanto egg holds but Mew's, each as its national
+-- first form: Pichu, not Pikachu. With a line never had weighing all but
+-- everything, a Kanto egg is Mew every time unless Pikachu's family, or
+-- another a baby starts, is mistaken for one never had. Each egg is let go
+-- again, or Mew's would be had too.
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000c', 'c@test.local');
+insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny)
+select '00000000-0000-0000-0000-00000000000c', public.pokedex_first_form(g.species_id), 'national', false
+  from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+ where g.egg_kind = 'kanto' and s.slug <> 'mew';
+update public.coder_settings set unowned_line_weight = 100000000;
+create function pg_temp.roll_and_let_go() returns text language plpgsql as $$
+declare
+  egg uuid := public.roll_egg('00000000-0000-0000-0000-00000000000c', 'kanto');
+  species integer;
+begin
+  delete from public.coder_companions c where c.id = egg returning c.species_id into species;
+  return (select slug from public.pokedex_species where id = species);
+end;
+$$;
+select setseed(0.5);
+select is(
+  (select string_agg(distinct pg_temp.roll_and_let_go(), ' ') from generate_series(1, 20)),
+  'mew',
+  'a regional egg''s species is matched to what a person has by family, babies and all');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');

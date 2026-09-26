@@ -407,24 +407,43 @@ export type Database = {
       }
       pokedex_evolution_methods: {
         Row: {
+          held_item: string | null
           id: string
           item: string | null
           level: number | null
+          min_happiness: number | null
+          relative_physical_stats: number | null
+          time_of_day: string | null
           trigger: string
         }
         Insert: {
+          held_item?: string | null
           id: string
           item?: string | null
           level?: number | null
+          min_happiness?: number | null
+          relative_physical_stats?: number | null
+          time_of_day?: string | null
           trigger: string
         }
         Update: {
+          held_item?: string | null
           id?: string
           item?: string | null
           level?: number | null
+          min_happiness?: number | null
+          relative_physical_stats?: number | null
+          time_of_day?: string | null
           trigger?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'pokedex_evolution_methods_held_item_fkey'
+            columns: ['held_item']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'pokedex_evolution_methods_item_fkey'
             columns: ['item']
