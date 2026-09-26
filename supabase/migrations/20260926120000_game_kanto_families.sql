@@ -36,11 +36,10 @@ insert into egg_rarity (slug, rarity) values
   ('nidoran-f', 'common'), ('nidoran-m', 'common'), ('oddish', 'common'), ('bellsprout', 'common'),
   ('poliwag', 'common'), ('geodude', 'common'),
 
-  ('vulpix', 'uncommon'), ('jigglypuff', 'uncommon'), ('growlithe', 'uncommon'), ('abra', 'uncommon'),
-  ('machop', 'uncommon'), ('shellder', 'uncommon'), ('gastly', 'uncommon'), ('exeggcute', 'uncommon'),
-  ('staryu', 'uncommon'),
+  ('vulpix', 'uncommon'), ('jigglypuff', 'uncommon'), ('growlithe', 'uncommon'), ('machop', 'uncommon'),
+  ('shellder', 'uncommon'), ('gastly', 'uncommon'), ('exeggcute', 'uncommon'), ('staryu', 'uncommon'),
 
-  ('pikachu', 'rare'), ('clefairy', 'rare'), ('eevee', 'rare');
+  ('pikachu', 'rare'), ('clefairy', 'rare'), ('abra', 'rare'), ('eevee', 'rare');
 
 create temporary table hatchable as
 select k.id as egg_kind, s.id, s.slug,

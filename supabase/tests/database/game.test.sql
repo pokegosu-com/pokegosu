@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(69);
+select plan(74);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -73,7 +73,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by g.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 24), ('uncommon', 58), ('rare', 24), ('very-rare', 12), ('mythic', 11) $$,
+  $$ values ('common', 26), ('uncommon', 59), ('rare', 19), ('very-rare', 14), ('mythic', 11) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)
@@ -220,6 +220,30 @@ select is(jsonb_array_length(public.box() -> 'eggs'), 1, 'the new egg goes to th
 select is(public.set_main((public.box() -> 'eggs' -> 0 ->> 'id')::uuid), '{"outcome": "set"}'::jsonb,
   'any companion can be the main, an egg included');
 select ok((public.box() -> 'eggs' -> 0 ->> 'is_main')::boolean, 'and the box says so');
+
+reset role;
+select results_eq(
+  $$ select ended_at is null from public.coder_main_periods
+      where user_id = '00000000-0000-0000-0000-00000000000a' order by id $$,
+  $$ values (false), (true) $$,
+  'changing the main closes one period together and opens the next');
+select is(
+  (select companion_id from public.coder_main_periods
+    where user_id = '00000000-0000-0000-0000-00000000000a' and ended_at is null),
+  pg_temp.main(), 'the open one is the main''s');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select public.set_main(pg_temp.main());
+reset role;
+select is((select count(*)::int from public.coder_main_periods where user_id = '00000000-0000-0000-0000-00000000000a'),
+  2, 'choosing the main that already is one goes on with the same period');
+select throws_ok(
+  $$ insert into public.coder_main_periods (companion_id, user_id)
+     select main_companion_id, user_id from public.coder_trainers
+      where user_id = '00000000-0000-0000-0000-00000000000a' $$,
+  '23505', null, 'a person has one open period at most');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select throws_ok($$ select * from public.coder_main_periods $$, '42501', null,
+  'and nobody reads them yet');
 
 -- ★ red, ● blue.
 select is(public.set_markings(pg_temp.main(), (2 << 8 | 1)::smallint), '{"outcome": "set"}'::jsonb,

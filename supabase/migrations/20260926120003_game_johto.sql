@@ -35,36 +35,37 @@ insert into public.coder_egg_kinds (id, ko_name, en_name) values
 -- ============================================================
 -- Rarities for Generation II, by the same rules from how Gold and Silver
 -- hand them over: on the first routes is common, later or in one place or by
--- Headbutt is uncommon, a one-off or a low chance is rare, the starters and
--- Larvitar are very rare, and the legendaries and Celebi are mythic. A baby
+-- Headbutt is uncommon, a one-off or a low chance is rare, the starters,
+-- Larvitar, Togepi and Smeargle are very rare, and the legendaries and Celebi
+-- are mythic; adjusted by feel, as Generation I's were. A baby
 -- is as rare as what it grows into, so an egg is no likelier to hold Elekid
 -- than Electabuzz.
 --
 -- A species already in an egg keeps its tier. At these weights, and a line
 -- never had weighing five times more, half of all people have every national
 -- species but the mythic ones after about 250 eggs, and all 129 after about
--- 610; with Generation I alone it was about 150 and 300.
+-- 620; with Generation I alone it was about 150 and 300.
 -- ============================================================
 create temporary table egg_rarity (slug text primary key, rarity text not null);
 insert into egg_rarity (slug, rarity) values
   ('sentret', 'common'), ('hoothoot', 'common'), ('ledyba', 'common'), ('spinarak', 'common'),
-  ('mareep', 'common'), ('hoppip', 'common'), ('wooper', 'common'),
+  ('hoppip', 'common'), ('wooper', 'common'), ('chinchou', 'common'), ('remoraid', 'common'),
+  ('sunkern', 'common'),
 
-  ('chinchou', 'uncommon'), ('natu', 'uncommon'), ('marill', 'uncommon'), ('aipom', 'uncommon'),
-  ('sunkern', 'uncommon'), ('murkrow', 'uncommon'), ('misdreavus', 'uncommon'), ('unown-a', 'uncommon'),
-  ('wobbuffet', 'uncommon'), ('girafarig', 'uncommon'), ('pineco', 'uncommon'), ('gligar', 'uncommon'),
-  ('snubbull', 'uncommon'), ('qwilfish', 'uncommon'), ('sneasel', 'uncommon'), ('teddiursa', 'uncommon'),
-  ('slugma', 'uncommon'), ('swinub', 'uncommon'), ('remoraid', 'uncommon'), ('mantine', 'uncommon'),
-  ('houndour', 'uncommon'), ('phanpy', 'uncommon'), ('stantler', 'uncommon'), ('miltank', 'uncommon'),
+  ('mareep', 'uncommon'), ('natu', 'uncommon'), ('marill', 'uncommon'), ('aipom', 'uncommon'),
+  ('murkrow', 'uncommon'), ('misdreavus', 'uncommon'), ('unown-a', 'uncommon'), ('wobbuffet', 'uncommon'),
+  ('girafarig', 'uncommon'), ('pineco', 'uncommon'), ('gligar', 'uncommon'), ('snubbull', 'uncommon'),
+  ('qwilfish', 'uncommon'), ('teddiursa', 'uncommon'), ('slugma', 'uncommon'), ('swinub', 'uncommon'),
+  ('mantine', 'uncommon'), ('houndour', 'uncommon'), ('phanpy', 'uncommon'), ('stantler', 'uncommon'),
+  ('miltank', 'uncommon'), ('sudowoodo', 'uncommon'), ('yanma', 'uncommon'), ('dunsparce', 'uncommon'),
+  ('shuckle', 'uncommon'), ('heracross', 'uncommon'),
   ('igglybuff', 'uncommon'), ('smoochum', 'uncommon'), ('elekid', 'uncommon'), ('magby', 'uncommon'),
 
-  ('togepi', 'rare'), ('sudowoodo', 'rare'), ('yanma', 'rare'), ('dunsparce', 'rare'),
-  ('shuckle', 'rare'), ('heracross', 'rare'), ('corsola', 'rare'), ('delibird', 'rare'),
-  ('skarmory', 'rare'), ('smeargle', 'rare'), ('pichu', 'rare'), ('cleffa', 'rare'),
-  ('tyrogue', 'rare'),
+  ('sneasel', 'rare'), ('corsola', 'rare'), ('delibird', 'rare'), ('skarmory', 'rare'),
+  ('pichu', 'rare'), ('cleffa', 'rare'), ('tyrogue', 'rare'),
 
   ('chikorita', 'very-rare'), ('cyndaquil', 'very-rare'), ('totodile', 'very-rare'),
-  ('larvitar', 'very-rare'),
+  ('larvitar', 'very-rare'), ('togepi', 'very-rare'), ('smeargle', 'very-rare'),
 
   ('raikou', 'mythic'), ('entei', 'mythic'), ('suicune', 'mythic'), ('lugia', 'mythic'),
   ('ho-oh', 'mythic'), ('celebi', 'mythic');
