@@ -73,7 +73,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by g.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 26), ('uncommon', 59), ('rare', 19), ('very-rare', 14), ('mythic', 11) $$,
+  $$ values ('common', 27), ('uncommon', 58), ('rare', 19), ('very-rare', 14), ('mythic', 11) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)

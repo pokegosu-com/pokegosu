@@ -50,10 +50,10 @@ create temporary table egg_rarity (slug text primary key, rarity text not null);
 insert into egg_rarity (slug, rarity) values
   ('sentret', 'common'), ('hoothoot', 'common'), ('ledyba', 'common'), ('spinarak', 'common'),
   ('hoppip', 'common'), ('wooper', 'common'), ('chinchou', 'common'), ('remoraid', 'common'),
-  ('sunkern', 'common'),
+  ('sunkern', 'common'), ('unown-a', 'common'),
 
   ('mareep', 'uncommon'), ('natu', 'uncommon'), ('marill', 'uncommon'), ('aipom', 'uncommon'),
-  ('murkrow', 'uncommon'), ('misdreavus', 'uncommon'), ('unown-a', 'uncommon'), ('wobbuffet', 'uncommon'),
+  ('murkrow', 'uncommon'), ('misdreavus', 'uncommon'), ('wobbuffet', 'uncommon'),
   ('girafarig', 'uncommon'), ('pineco', 'uncommon'), ('gligar', 'uncommon'), ('snubbull', 'uncommon'),
   ('qwilfish', 'uncommon'), ('teddiursa', 'uncommon'), ('slugma', 'uncommon'), ('swinub', 'uncommon'),
   ('mantine', 'uncommon'), ('houndour', 'uncommon'), ('phanpy', 'uncommon'), ('stantler', 'uncommon'),
