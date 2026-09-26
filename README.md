@@ -12,10 +12,10 @@ Head to [pokegosu.com](https://pokegosu.com). Everything starts there, and it on
 
 Each app has its own address, and one account works for all of them.
 
-| App                                     | What it does                                                                            |
-| --------------------------------------- | --------------------------------------------------------------------------------------- |
-| [Pokédex](https://pokedex.pokegosu.com) | Look up a Pokémon: its types and how it evolves.                                        |
-| [coder](https://coder.pokegosu.com)     | Raise Pokémon with the tokens your coding agent uses. [Setup](apps/coder-web/README.md) |
+| App                                     | What it does                                          |
+| --------------------------------------- | ----------------------------------------------------- |
+| [Pokédex](https://pokedex.pokegosu.com) | Look up a Pokémon: its types and how it evolves.      |
+| [coder](https://coder.pokegosu.com)     | Raise Pokémon with the tokens your coding agent uses. |
 
 ## Notice
 
