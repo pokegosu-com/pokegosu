@@ -229,6 +229,38 @@ export type Database = {
           },
         ]
       }
+      coder_main_periods: {
+        Row: {
+          companion_id: string
+          ended_at: string | null
+          id: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          companion_id: string
+          ended_at?: string | null
+          id?: never
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          companion_id?: string
+          ended_at?: string | null
+          id?: never
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_main_periods_companion_id_user_id_fkey'
+            columns: ['companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'coder_companions'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       coder_ribbons: {
         Row: {
           en_description: string | null
