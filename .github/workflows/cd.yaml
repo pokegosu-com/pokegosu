@@ -44,11 +44,13 @@ jobs:
   #
   # It is a personal access token, which reaches every project its account
   # does; scoped tokens, which would limit it to this project, are not open to
-  # every account yet. So it lives for one release only: one is made just
-  # before tagging, to expire a day later (see "Releasing" in the README).
-  # Supabase allows thirty days at most anyway. Forgotten or expired, this job
-  # is the first to fail, so nothing ships half way; set a fresh token and
-  # rerun the failed jobs.
+  # every account yet. So it lives for one release only: just before tagging,
+  # make one in the Supabase dashboard (Account, Access Tokens) that expires a
+  # day later, and set it on the environment with
+  # `gh secret set SUPABASE_ACCESS_TOKEN --env production`. Supabase allows
+  # thirty days at most anyway. Forgotten or expired, this job is the first to
+  # fail, so nothing ships half way; set a fresh token and rerun the failed
+  # jobs.
   migrate:
     name: 'Migrate database'
     runs-on: 'ubuntu-latest'
@@ -148,7 +150,9 @@ jobs:
             CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
               -ldflags "-s -w -X main.version=$GITHUB_REF_NAME" \
               -o "build/$name/pokegosu" ./apps/cli/cmd/pokegosu
-            tar -czf "release/$name.tar.gz" -C "build/$name" pokegosu
+            # Apache 2.0 asks for its licence and notice to go with the binary.
+            cp LICENSE NOTICE "build/$name/"
+            tar -czf "release/$name.tar.gz" -C "build/$name" pokegosu LICENSE NOTICE
           done
           cd release && sha256sum *.tar.gz > checksums.txt
       - uses: 'actions/upload-artifact@v7'

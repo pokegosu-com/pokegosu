@@ -1,13 +1,22 @@
-# pokegosu
+# PokeGosu
 
-To install the command line: `curl -fsSL https://pokegosu.com/install-cli.sh | sh`. See [apps/cli](apps/cli/README.md).
+PokeGosu is a collection of Pokémon apps for trainers.
 
-## Releasing
+_Gosu_ (고수) is what Korean gamers call a player who is simply on another level: the one you hope not to meet in a ranked match.
 
-Pushing a version tag ships everything: the CD workflow migrates the database, deploys the Edge Functions and every web app, and publishes a GitHub release with the CLI's binaries once all of it is live.
+## Getting started
 
-1. Create a Supabase access token that expires in a day. It reaches every project the account does, so it should outlive only this release; Supabase allows thirty days at most anyway.
-2. Set it as the `SUPABASE_ACCESS_TOKEN` secret of the `production` environment: `gh secret set SUPABASE_ACCESS_TOKEN --env production`.
-3. Tag `main` with the version and push the tag: `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
+Head to [pokegosu.com](https://pokegosu.com). Everything starts there, and it only takes a minute.
 
-If the token is missing or has expired, the migrate job fails first and nothing ships. Set a fresh one and rerun the failed jobs.
+## Applications
+
+Each app has its own address, and one account works for all of them.
+
+| App                                     | What it does                                          |
+| --------------------------------------- | ----------------------------------------------------- |
+| [Pokédex](https://pokedex.pokegosu.com) | Look up a Pokémon: its types and how it evolves.      |
+| [coder](https://coder.pokegosu.com)     | Raise Pokémon with the tokens your coding agent uses. |
+
+## Notice
+
+PokeGosu is an unofficial fan project, not affiliated with Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon names and images belong to their respective owners.
