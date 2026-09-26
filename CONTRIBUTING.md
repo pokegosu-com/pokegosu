@@ -68,5 +68,5 @@ The repository holds every app and everything they share, and all of it ships to
 
 A few rules keep production and every client in step.
 
-- A migration is never edited. To change the database, add a new one.
+- A migration that has shipped is never edited. To change the database, add a new one.
 - Where the same thing is implemented in more than one language, each language has a small driver in `tests/`, and every driver passes the same cases.
