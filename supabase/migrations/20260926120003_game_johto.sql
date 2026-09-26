@@ -1,23 +1,13 @@
--- Generation II in the game, and eggs that follow the pokedexes.
+-- Generation II in the eggs, and a Johto egg.
 --
--- A national egg holds the first form of every family, babies included, so
--- Pichu hatches from it rather than Pikachu. A regional egg holds the first
--- form as its own pokedex sees it: whatever the pokedex lists without what
--- it evolves from. Kanto lists Pikachu and not Pichu, so a Kanto egg hatches
--- Pikachu. Johto's pokedex, Gold and Silver's, lists all 251, so for now a
--- Johto egg holds what a national one does; the two part when a later
--- generation comes in.
+-- The first form a national egg holds is now a baby where there is one:
+-- Pichu, not Pikachu. A Kanto egg still holds Pikachu, since Kanto's pokedex
+-- does not list Pichu. Johto's pokedex, Gold and Silver's, lists all 251, so
+-- for now a Johto egg holds what a national one does; the two part when a
+-- later generation comes in.
 --
--- Every family can hatch now. Before, a family with a stone or a trade in it
--- was left out whole, so that a button and a level were all any of them ever
--- needed. Generation II hangs a trade or friendship off many Generation I
--- families, Zubat's and Onix's among them, and that rule would have taken
--- them out of every egg. What the game cannot do yet is evolve by anything
--- but a level, so a Pokémon whose next step needs more stays as it is until
--- it can.
---
--- The start and the Lv.50 egg stay national. Regional eggs are here as kinds
--- for a shop to sell, and nothing hands one out yet.
+-- As with Generation I, every family hatches, and one whose next step needs
+-- more than a level waits for the game to support it.
 
 
 -- ============================================================
@@ -38,72 +28,25 @@ as $$
 $$;
 
 
--- ============================================================
--- Egg kinds: national, and a regional one per pokedex. The gen1 kind goes: it
--- was never handed out, and a Kanto egg is what it meant.
--- ============================================================
-delete from public.coder_egg_species where egg_kind = 'gen1';
-delete from public.coder_egg_kinds where id = 'gen1';
-
 insert into public.coder_egg_kinds (id, ko_name, en_name) values
-  ('kanto', '관동 알', 'Kanto Egg'),
   ('johto', '성도 알', 'Johto Egg');
 
 
 -- ============================================================
--- Rarities, by hand. The tiers and the Generation I choices are the ones the
--- game started with; what is new follows the same rules. A Generation II
--- species goes by how Gold and Silver hand it over: on the first routes is
--- common, later or in one place or by Headbutt is uncommon, a one-off or a
--- low chance is rare, the starters and Larvitar are very rare, and the
--- legendaries and Celebi are mythic. A baby is as rare as what it grows into,
--- so an egg is no likelier to hold Elekid than Electabuzz.
+-- Rarities for Generation II, by the same rules from how Gold and Silver
+-- hand them over: on the first routes is common, later or in one place or by
+-- Headbutt is uncommon, a one-off or a low chance is rare, the starters and
+-- Larvitar are very rare, and the legendaries and Celebi are mythic. A baby
+-- is as rare as what it grows into, so an egg is no likelier to hold Elekid
+-- than Electabuzz.
 --
--- At these weights, and a line never had weighing five times more, half of
--- all people have every national species but the mythic ones after about 250
--- eggs, and all 129 after about 610; with Generation I alone it was about 110
--- and 220. A Kanto egg's 79 take about 150 and 300.
---
--- Every species some egg can hold is here, and nothing else is: the check
--- below fails otherwise, rather than going quiet.
+-- A species already in an egg keeps its tier. At these weights, and a line
+-- never had weighing five times more, half of all people have every national
+-- species but the mythic ones after about 250 eggs, and all 129 after about
+-- 610; with Generation I alone it was about 150 and 300.
 -- ============================================================
 create temporary table egg_rarity (slug text primary key, rarity text not null);
 insert into egg_rarity (slug, rarity) values
-  -- Generation I, as the game started with.
-  ('caterpie', 'common'), ('weedle', 'common'), ('pidgey', 'common'), ('rattata', 'common'),
-  ('spearow', 'common'), ('ekans', 'common'), ('zubat', 'common'), ('diglett', 'common'),
-  ('meowth', 'common'), ('goldeen', 'common'), ('magikarp', 'common'),
-
-  ('sandshrew', 'uncommon'), ('paras', 'uncommon'), ('venonat', 'uncommon'), ('psyduck', 'uncommon'),
-  ('mankey', 'uncommon'), ('tentacool', 'uncommon'), ('ponyta', 'uncommon'), ('slowpoke', 'uncommon'),
-  ('magnemite', 'uncommon'), ('doduo', 'uncommon'), ('seel', 'uncommon'), ('grimer', 'uncommon'),
-  ('onix', 'uncommon'), ('krabby', 'uncommon'), ('voltorb', 'uncommon'), ('cubone', 'uncommon'),
-  ('koffing', 'uncommon'), ('rhyhorn', 'uncommon'), ('kangaskhan', 'uncommon'), ('scyther', 'uncommon'),
-  ('jynx', 'uncommon'), ('electabuzz', 'uncommon'), ('magmar', 'uncommon'), ('pinsir', 'uncommon'),
-  ('tauros', 'uncommon'),
-
-  ('farfetchd', 'rare'), ('drowzee', 'rare'), ('hitmonlee', 'rare'), ('hitmonchan', 'rare'),
-  ('lickitung', 'rare'), ('chansey', 'rare'), ('tangela', 'rare'), ('horsea', 'rare'),
-  ('mr-mime', 'rare'), ('lapras', 'rare'), ('ditto', 'rare'), ('snorlax', 'rare'),
-
-  ('bulbasaur', 'very-rare'), ('charmander', 'very-rare'), ('squirtle', 'very-rare'),
-  ('porygon', 'very-rare'), ('omanyte', 'very-rare'), ('kabuto', 'very-rare'),
-  ('aerodactyl', 'very-rare'), ('dratini', 'very-rare'),
-
-  ('articuno', 'mythic'), ('zapdos', 'mythic'), ('moltres', 'mythic'), ('mewtwo', 'mythic'),
-  ('mew', 'mythic'),
-
-  -- Generation I families a stone or a trade used to keep out.
-  ('nidoran-f', 'common'), ('nidoran-m', 'common'), ('oddish', 'common'), ('bellsprout', 'common'),
-  ('poliwag', 'common'), ('geodude', 'common'),
-
-  ('vulpix', 'uncommon'), ('jigglypuff', 'uncommon'), ('growlithe', 'uncommon'), ('abra', 'uncommon'),
-  ('machop', 'uncommon'), ('shellder', 'uncommon'), ('gastly', 'uncommon'), ('exeggcute', 'uncommon'),
-  ('staryu', 'uncommon'),
-
-  ('pikachu', 'rare'), ('clefairy', 'rare'), ('eevee', 'rare'),
-
-  -- Generation II.
   ('sentret', 'common'), ('hoothoot', 'common'), ('ledyba', 'common'), ('spinarak', 'common'),
   ('mareep', 'common'), ('hoppip', 'common'), ('wooper', 'common'),
 
@@ -126,29 +69,31 @@ insert into egg_rarity (slug, rarity) values
   ('raikou', 'mythic'), ('entei', 'mythic'), ('suicune', 'mythic'), ('lugia', 'mythic'),
   ('ho-oh', 'mythic'), ('celebi', 'mythic');
 
--- What each kind can hold: every species the pokedex of the same name lists
--- without what it evolves from. The national pokedex lists everything, so
--- for a national egg that is every species with nothing to evolve from.
 create temporary table hatchable as
-select k.id as egg_kind, s.id, s.slug
+select k.id as egg_kind, s.id, s.slug,
+       coalesce(r.rarity, (select g.rarity from public.coder_egg_species g
+                            where g.species_id = s.id limit 1)) as rarity
   from public.coder_egg_kinds k
   join public.pokedex_entries e on e.dex = k.id
   join public.pokedex_species s on s.id = e.species_id
+  left join egg_rarity r on r.slug = s.slug
  where not exists (select 1 from public.pokedex_entries p
                     where p.dex = k.id and p.species_id = s.evolves_from_id);
 
 do $$
 begin
-  if exists (select slug from hatchable except select slug from egg_rarity)
+  if exists (select 1 from hatchable where rarity is null)
      or exists (select slug from egg_rarity except select slug from hatchable) then
     raise exception 'every species an egg can hold needs a rarity, and every rarity such a species';
   end if;
 end;
 $$;
 
-delete from public.coder_egg_species;
+delete from public.coder_egg_species g
+ where not exists (select 1 from hatchable h where h.egg_kind = g.egg_kind and h.id = g.species_id);
 insert into public.coder_egg_species (egg_kind, species_id, rarity)
-select h.egg_kind, h.id, r.rarity from hatchable h join egg_rarity r using (slug);
+select egg_kind, id, rarity from hatchable
+on conflict (egg_kind, species_id) do nothing;
 
 drop table hatchable, egg_rarity;
 
