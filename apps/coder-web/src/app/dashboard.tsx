@@ -63,7 +63,7 @@ function PokemonPartner({
     to: p.next_level_tokens,
   }
   const toNext = at.to === null ? null : Math.ceil(at.to - shown)
-  const sprite = spriteUrl(p)
+  const sprite = spriteUrl(p, 'large')
 
   return (
     <section
@@ -71,7 +71,7 @@ function PokemonPartner({
       className="border-accent flex items-center gap-8 rounded-lg border p-6"
     >
       <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
-        {/* eslint-disable-next-line @next/next/no-img-element -- animated GIFs from pokedex-web */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- official artwork from pokedex-web */}
         {sprite && <img src={sprite} alt={ko(p)} className="size-40 object-contain" />}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3.5">

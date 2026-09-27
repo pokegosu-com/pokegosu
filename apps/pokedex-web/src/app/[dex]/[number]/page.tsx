@@ -134,7 +134,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const evolutionNames = new Map([...triggers.data!, ...items.data!].map((t) => [t.id, ko(t)]))
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
-  const sprites = p.sprites as { animated?: string; animated_shiny?: string }
+  const sprites = p.sprites as { artwork?: string; artwork_shiny?: string }
   const previous = around.data!.find((e) => e.number === n - 1)
   const next = around.data!.find((e) => e.number === n + 1)
 
@@ -162,7 +162,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
       </nav>
 
       <header className="flex items-center gap-8">
-        <Sprite name={ko(p)} normal={sprites.animated} shiny={sprites.animated_shiny} />
+        <Sprite name={ko(p)} normal={sprites.artwork} shiny={sprites.artwork_shiny} />
         <div className="flex flex-col gap-2">
           <p className="text-muted font-mono text-xs tabular-nums">
             {dexName} {dexNo(n)}
@@ -231,7 +231,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           <h2 className="text-muted text-sm font-medium">진화</h2>
           <ol className="flex flex-wrap items-center gap-3">
             {family.map((f, i) => {
-              const art = (f.sprites as { animated?: string }).animated
+              const art = (f.sprites as { front?: string }).front
               return (
                 <li key={f.id} className="flex items-center gap-3">
                   {/* The first stage shown has nothing before it here, even
@@ -246,10 +246,10 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                     aria-current={f.number === n ? 'page' : undefined}
                     className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                   >
-                    <span className="bg-surface-raised grid size-12 place-items-center rounded-md">
+                    <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
                       {art && (
-                        // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
-                        <img src={art} alt="" className="size-12 object-contain" />
+                        // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
+                        <img src={art} alt="" className="size-24 [image-rendering:pixelated]" />
                       )}
                     </span>
                     {ko(f)}

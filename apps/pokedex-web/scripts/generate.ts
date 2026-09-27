@@ -8,7 +8,7 @@
 // Run it again only to change what is included. The sprite commit is pinned
 // below, so the manifest's hashes stay true until someone moves it.
 //
-// A migration that has been applied never changes, so each run that widens
+// A migration that has been applied never changes, so each run that changes
 // what is included writes a new one, named in MIGRATION below, and leaves the
 // earlier ones alone. It upserts every row rather than inserting the new
 // ones: a later generation reaches back into an earlier one, as Pichu does
@@ -65,7 +65,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260926120002_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260927120002_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -383,8 +383,10 @@ async function main() {
       evolvesFrom: evolution ? evolution.from : null,
       evolution: evolution ? await evolutionOf(evolution.detail) : null,
       sprites: {
-        animated: `/sprites/pokemon/${s.id}.gif`,
-        animated_shiny: `/sprites/pokemon/shiny/${s.id}.gif`,
+        front: `/sprites/pokemon/${s.id}.png`,
+        front_shiny: `/sprites/pokemon/shiny/${s.id}.png`,
+        artwork: `/sprites/pokemon/artwork/${s.id}.png`,
+        artwork_shiny: `/sprites/pokemon/artwork/shiny/${s.id}.png`,
       },
     })
   }
@@ -436,11 +438,17 @@ async function main() {
   const add = async (path: string, source: string) => {
     sprites.push({ path, source, sha256: await sha256Of(source) })
   }
+  // A list shows the 96px front sprite, the one style every generation has
+  // in pixels; a Pokémon's own page shows the official artwork, which every
+  // generation has too and which stays sharp at any size.
   await add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
-  const animated = `${SPRITES_BASE}/versions/generation-v/black-white/animated`
+  const artwork = `${SPRITES_BASE}/other/official-artwork`
   for (const row of rows) {
-    await add(`sprites/pokemon/${row.dexNo}.gif`, `${animated}/${row.dexNo}.gif`)
-    await add(`sprites/pokemon/shiny/${row.dexNo}.gif`, `${animated}/shiny/${row.dexNo}.gif`)
+    const n = row.dexNo
+    await add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${n}.png`)
+    await add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${n}.png`)
+    await add(`sprites/pokemon/artwork/${n}.png`, `${artwork}/${n}.png`)
+    await add(`sprites/pokemon/artwork/shiny/${n}.png`, `${artwork}/shiny/${n}.png`)
   }
 
   await writeFile(

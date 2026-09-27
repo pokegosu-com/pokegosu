@@ -51,7 +51,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 - Every app page, its top bar included, is `max-w-wide` (64rem) with a 24px side gutter, so the left edge stays put between sections. Single-task pages, such as sign-in and device approval, are `max-w-task` (24rem) and centred.
 - Sections are 32 to 40px apart; cards in a grid 8 to 12px.
-- A list of Pokémon is a grid of small tiles with a 48px sprite: 6 across in the box, 8 across in a pokedex. One Pokémon on its own page gets the large sprite, 192px.
+- A list of Pokémon is a grid of small tiles with the 96px pixel sprite at its own size, shrinking only where the grid is too narrow for it: 6 across in the box, 8 across in a pokedex. One Pokémon on its own page gets the official artwork in a 192px slot.
 - Running text inside a wide page stays under about 40rem.
 - Mobile layouts come later; nothing is designed for them yet beyond grids that wrap.
 
@@ -69,7 +69,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: animated GIFs, and the egg as a pixel sprite with `image-rendering: pixelated`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, the official artwork. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 

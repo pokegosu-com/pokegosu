@@ -74,7 +74,7 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
           number,
           name: ko(s),
           types: [s.type1, s.type2].filter((t): t is string => !!t),
-          sprite: (s.sprites as { animated?: string }).animated,
+          sprite: (s.sprites as { front?: string }).front,
         }))}
         types={types.data.sort((a, b) => typeRank(a.id) - typeRank(b.id)).map((t) => [t.id, ko(t)])}
       />

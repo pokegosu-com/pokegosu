@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-/** The large sprite, with the shiny one a press away. */
+/** The official artwork, with the shiny one a press away. */
 export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
   const [showShiny, setShowShiny] = useState(false)
   const src = showShiny ? shiny : normal
@@ -10,7 +10,7 @@ export function Sprite({ name, normal, shiny }: { name: string; normal?: string;
     <div className="flex flex-none flex-col items-center gap-2">
       <span className="bg-surface-raised grid size-48 place-items-center rounded-lg">
         {src && (
-          // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
+          // eslint-disable-next-line @next/next/no-img-element -- official artwork, served as it is
           <img
             src={src}
             alt={showShiny ? `${name} (색이 다른)` : name}
