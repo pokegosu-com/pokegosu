@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 import { accountUrl, apps, type AppId } from './apps'
 
@@ -18,6 +18,73 @@ function MenuIcon() {
         strokeLinecap="round"
         fill="none"
       />
+    </svg>
+  )
+}
+
+const CAP_AT = 'translate(14.5 10.17) rotate(-10) scale(1.2 1.02) translate(-13 -21.5)'
+
+/**
+ * PokeGosu's icon, the Poké Ball in a trainer's cap, drawn as in each app's
+ * icon.svg but without its white disc: on the page, the page is the ground.
+ */
+function PokeGosuIcon() {
+  // Mask ids are document-wide, so each copy gets its own.
+  const id = useId()
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="-1 -8.3 37.8 37.8"
+      aria-hidden="true"
+      className="text-accent"
+    >
+      <defs>
+        <g id={`${id}cap`}>
+          <ellipse cx="13.2" cy="6.2" rx="1.7" ry="2" />
+          <path d="M1.5 23.5C1 14.5 6 7.6 13.5 7.6C20.5 7.6 24.6 12.4 25 19.4Z" />
+          <path d="M19.5 20.2C24 18.6 28.6 19 31.4 21C31 23.4 27.4 24.6 22.6 24.4C19 24.2 16 23 12.5 21.6Z" />
+        </g>
+        <mask
+          id={`${id}under-cap`}
+          maskUnits="userSpaceOnUse"
+          x="-20"
+          y="-20"
+          width="72"
+          height="72"
+        >
+          <rect x="-20" y="-20" width="72" height="72" fill="#fff" />
+          <use
+            href={`#${id}cap`}
+            transform={CAP_AT}
+            stroke="#000"
+            strokeWidth="2.04"
+            strokeLinejoin="round"
+          />
+        </mask>
+        <mask
+          id={`${id}bill-gap`}
+          maskUnits="userSpaceOnUse"
+          x="-20"
+          y="-20"
+          width="72"
+          height="72"
+        >
+          <rect x="-20" y="-20" width="72" height="72" fill="#fff" />
+          <path
+            d="M19.2 19.6C24 18 28.6 18.4 31.6 20.4"
+            fill="none"
+            stroke="#000"
+            strokeWidth="1.2"
+          />
+        </mask>
+      </defs>
+      <g fill="none" stroke="currentColor" strokeWidth="2.6" mask={`url(#${id}under-cap)`}>
+        <circle cx="16" cy="16" r="10.6" />
+        <path d="M5.4 16H12.6M19.4 16H26.6" />
+        <circle cx="16" cy="16" r="3.2" />
+      </g>
+      <use href={`#${id}cap`} transform={CAP_AT} fill="currentColor" mask={`url(#${id}bill-gap)`} />
     </svg>
   )
 }
@@ -97,7 +164,10 @@ export function AppHeader({
             className="bg-surface border-line absolute inset-y-0 left-0 flex w-72 flex-col gap-2 border-r px-3 pt-3 pb-4"
           >
             <div className="flex items-center justify-between pr-2 pb-3 pl-3">
-              <span className="font-semibold tracking-tight">PokeGosu</span>
+              <span className="flex items-center gap-2 font-semibold tracking-tight">
+                <PokeGosuIcon />
+                PokeGosu
+              </span>
               <button
                 type="button"
                 aria-label="닫기"

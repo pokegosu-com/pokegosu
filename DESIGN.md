@@ -70,7 +70,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, the official artwork, through `Artwork`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap, in `accent` on a white tile so it reads on any tab bar: every app has the same `icon.svg`. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, the official artwork, through `Artwork`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap, in `accent`: as the favicon, every app's `icon.svg`, on a white disc so it reads on any tab bar; on the page, without the disc, beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 
