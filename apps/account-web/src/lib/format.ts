@@ -1,16 +1,3 @@
-const compact = new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 })
-const exact = new Intl.NumberFormat('ko-KR')
-
-/** 480,910,116 → "4.8억": how big, at a glance. */
-export function compactTokens(n: number | bigint): string {
-  return compact.format(n)
-}
-
-/** 480,910,116 → "480,910,116": the number itself. */
-export function exactTokens(n: number | bigint | string): string {
-  return exact.format(typeof n === 'string' ? BigInt(n) : n)
-}
-
 /**
  * When something last happened, in the reader's own clock.
  *

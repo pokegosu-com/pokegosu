@@ -23,7 +23,7 @@ export default async function DevicesPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
           <p className="text-muted text-sm">
-            토큰 사용량을 보내는 기기입니다. 새 기기는 그 기기에서{' '}
+            CLI 로 로그인한 기기입니다. 새 기기는{' '}
             <code className="text-ink font-mono text-[13px]">pokegosu auth login</code> 을 실행하면
             추가됩니다.
           </p>
