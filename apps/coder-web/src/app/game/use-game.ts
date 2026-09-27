@@ -13,6 +13,17 @@ type Action =
   | { fn: 'receive_ribbon'; companion_id: string; ribbon_id: string }
   | { fn: 'set_markings'; companion_id: string; markings: number }
 
+/**
+ * What opening the game put into the partner, as claim() answered, for the
+ * screen to say so. The levels are null for an egg.
+ */
+export type Opening = {
+  companion_id: string
+  tokens: number
+  level_before: number | null
+  level_after: number | null
+}
+
 /** What an action answered with; every game function answers with an outcome. */
 export type Outcome = { outcome: string } & Record<string, unknown>
 
@@ -32,6 +43,7 @@ export function useGame() {
   const [busy, setBusy] = useState(false)
   const [last, setLast] = useState<{ action: Action; outcome: Outcome } | null>(null)
   const [curve, setCurve] = useState<Curve>(new Map())
+  const [opening, setOpening] = useState<Opening | null>(null)
   const claimedOnOpen = useRef(false)
 
   const load = useCallback(async () => {
@@ -89,7 +101,16 @@ export function useGame() {
       if (!opened.started || claimedOnOpen.current) return
       claimedOnOpen.current = true
       const tokens = claimable(opened)
-      if (tokens > 0) await act({ fn: 'claim', companion_id: opened.main_companion_id, tokens })
+      if (tokens <= 0) return
+      const companion_id = opened.main_companion_id
+      const outcome = await act({ fn: 'claim', companion_id, tokens })
+      if (cancelled || outcome?.outcome !== 'claimed') return
+      setOpening({
+        companion_id,
+        tokens: Number(outcome.tokens),
+        level_before: (outcome.level_before as number | null) ?? null,
+        level_after: (outcome.level_after as number | null) ?? null,
+      })
     }
     open()
     return () => {
@@ -97,5 +118,5 @@ export function useGame() {
     }
   }, [act])
 
-  return { box, curve, failure, busy, last, act }
+  return { box, curve, failure, busy, last, opening, act }
 }

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 
+import { DisplayName } from './display-name'
+
 export default async function AccountPage() {
   const supabase = await createClient()
   const {
@@ -23,9 +25,11 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-8 px-6 py-24">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {profile.display_name ?? profile.username}
-        </h1>
+        <DisplayName
+          userId={user.id}
+          displayName={profile.display_name}
+          username={profile.username}
+        />
         <p className="text-muted text-sm">@{profile.username}</p>
       </div>
 

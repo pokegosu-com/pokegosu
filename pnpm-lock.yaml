@@ -477,6 +477,13 @@ importers:
         version: 22.20.3
 
   libs/ts/ui:
+    dependencies:
+      '@t3-oss/env-nextjs':
+        specifier: ^0.13.11
+        version: 0.13.11(typescript@5.9.3)(zod@4.6.5)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@types/react':
         specifier: ^19.3.0

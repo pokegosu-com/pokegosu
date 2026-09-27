@@ -809,6 +809,7 @@ export type Database = {
         Args: { api_key_hash: string; claim_hash: string }
         Returns: Json
       }
+      companion_history: { Args: { companion_id: string }; Returns: Json }
       eligible_ribbons: {
         Args: {
           pokemon: Database['public']['Tables']['coder_companions']['Row']

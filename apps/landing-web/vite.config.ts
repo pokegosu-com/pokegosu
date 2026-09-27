@@ -6,6 +6,7 @@ import { resolveAppVersion } from '@pokegosu/config/version'
 // Validates NEXT_PUBLIC_* at build time, the way t3-env recommends importing
 // it from next.config. vinext has already loaded .env files by now.
 import './src/env'
+import '@pokegosu/ui/apps'
 
 export default defineConfig({
   // Shown by @pokegosu/ui/version-footer.

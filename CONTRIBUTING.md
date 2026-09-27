@@ -39,6 +39,7 @@ The apps build with these values:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The project's publishable key                |
 | `NEXT_PUBLIC_ACCOUNT_URL`              | The account app's address                    |
 | `NEXT_PUBLIC_POKEDEX_URL`              | The Pokédex app's address                    |
+| `NEXT_PUBLIC_CODER_URL`                | The Coder app's address                      |
 | `NEXT_PUBLIC_COOKIE_DOMAIN`            | `.<domain>`, so every app shares one sign-in |
 
 ## Directory structure
