@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(17);
+select plan(18);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -108,12 +108,12 @@ select is(
   public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z'),
   '{"from": "2026-09-12T00:00:00Z", "to": "2026-09-13T00:00:00Z", "total": "3206007",
     "providers": [{"provider": "claude_code", "display_name": "Claude Code", "tokens": 3206007}],
-    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": "laptop", "tokens": 3206007,
+    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": null, "tokens": 3206007,
                  "providers": {"claude_code": 3206007}}],
     "hours": [{"hour_bucket": "2026-09-12T13:00:00Z", "tokens": 6000, "providers": {"claude_code": 6000}},
               {"hour_bucket": "2026-09-12T14:00:00Z", "tokens": 3200000, "providers": {"claude_code": 3200000}},
               {"hour_bucket": "2026-09-12T15:00:00Z", "tokens": 7, "providers": {"claude_code": 7}}]}'::jsonb,
-  'usage sums the range per machine and per hour, over the caller''s rows only');
+  'usage sums the range per machine and per hour, over the caller''s rows only, and leaves a deleted machine unnamed');
 
 -- A second agent, written straight into the ledger: ingest is not what is
 -- under test here.
@@ -128,7 +128,7 @@ select is(
   '{"total": "7200000",
     "providers": [{"provider": "other_agent", "display_name": "Other Agent", "tokens": 4000000},
                   {"provider": "claude_code", "display_name": "Claude Code", "tokens": 3200000}],
-    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": "laptop", "tokens": 7200000,
+    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": null, "tokens": 7200000,
                  "providers": {"claude_code": 3200000, "other_agent": 4000000}}],
     "hours": [{"hour_bucket": "2026-09-12T14:00:00Z", "tokens": 7200000,
                "providers": {"claude_code": 3200000, "other_agent": 4000000}}]}'::jsonb,
@@ -142,6 +142,10 @@ select pg_temp.as_person('00000000-0000-0000-0000-00000000000b');
 select is(
   public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z') ->> 'total', '9',
   'another account sees only its own');
+
+select is(
+  public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z') -> 'devices' -> 0 ->> 'device_name', 'desktop',
+  'a machine still in use keeps its name');
 
 select throws_ok(
   $$ select public.usage('2026-09-13T00:00:00Z', '2026-09-12T00:00:00Z') $$,

@@ -11,7 +11,6 @@ type Device = {
   id: string
   name: string
   last_sync_at: string | null
-  revoked_at: string | null
   created_at: string
 }
 
@@ -27,8 +26,6 @@ export function DeviceRow({ device }: { device: Device }) {
   const [confirmingRetire, setConfirmingRetire] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const retired = device.revoked_at !== null
 
   async function update(values: { name?: string; revoked_at?: string }) {
     setBusy(true)
@@ -80,7 +77,7 @@ export function DeviceRow({ device }: { device: Device }) {
             </button>
           </form>
         ) : (
-          <span className={retired ? 'text-muted line-through' : 'font-medium'}>{device.name}</span>
+          <span className="font-medium">{device.name}</span>
         )}
 
         {!editing && (
@@ -88,14 +85,12 @@ export function DeviceRow({ device }: { device: Device }) {
             <button onClick={() => setEditing(true)} className="text-muted hover:text-ink">
               이름 변경
             </button>
-            {!retired && (
-              <button
-                onClick={() => setConfirmingRetire(true)}
-                className="text-danger hover:underline"
-              >
-                폐기
-              </button>
-            )}
+            <button
+              onClick={() => setConfirmingRetire(true)}
+              className="text-danger hover:underline"
+            >
+              삭제
+            </button>
           </span>
         )}
       </div>
@@ -113,28 +108,13 @@ export function DeviceRow({ device }: { device: Device }) {
             <When at={device.created_at} />
           </dd>
         </div>
-        {retired && (
-          <div className="flex gap-1">
-            <dt>폐기</dt>
-            <dd>
-              <When at={device.revoked_at} />
-            </dd>
-          </div>
-        )}
       </dl>
-
-      {retired && (
-        <p className="text-muted text-xs">
-          이 기기에서 새 코드로 <code>pokegosu auth login</code> 을 다시 하면 기록을 그대로 둔 채
-          되살아납니다.
-        </p>
-      )}
 
       {confirmingRetire && (
         <div className="space-y-2 rounded-md bg-danger-surface px-3 py-2 text-danger">
           <p>
-            이 기기의 키가 바로 막힙니다. 지금까지의 기록은 남습니다. 폐기는 되돌릴 수 없고, 다시
-            쓰려면 그 기기에서 새로 로그인해야 합니다.
+            이 기기의 키가 바로 막히고 목록에서 사라집니다. 삭제는 되돌릴 수 없고, 그 기기를 다시
+            쓰려면 새 기기로 등록해야 합니다.
           </p>
           <div className="flex gap-3">
             <button
@@ -146,7 +126,7 @@ export function DeviceRow({ device }: { device: Device }) {
               }}
               className="font-medium disabled:opacity-50"
             >
-              폐기
+              삭제
             </button>
             <button onClick={() => setConfirmingRetire(false)}>취소</button>
           </div>

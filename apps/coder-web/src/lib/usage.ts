@@ -10,6 +10,7 @@ export type Usage = {
   providers: { provider: string; display_name: string; tokens: number }[]
   devices: {
     device_id: string
+    /** Null once the machine is deleted: its tokens still count, its name is gone. */
     device_name: string | null
     tokens: number
     providers: ByProvider

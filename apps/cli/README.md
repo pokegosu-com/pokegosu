@@ -24,7 +24,7 @@ go install github.com/pokegosu-com/pokegosu/apps/cli/cmd/pokegosu@latest
 
 That build says `dev` for its version, since the version is written in only when the release is built.
 
-To uninstall, run `pokegosu coder hook uninstall claude-code`, then delete the binary, and `~/.config/pokegosu` with it if you are done with the settings. Retire the machine in the account first, so its key stops working.
+To uninstall, run `pokegosu coder hook uninstall claude-code`, then delete the binary, and `~/.config/pokegosu` with it if you are done with the settings. Delete the machine in the account first, so its key stops working.
 
 ## Using it
 
@@ -74,7 +74,7 @@ So an open session reports every fifteen minutes or so, and a closing one report
 
 - A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and the server ignores those hours whoever sends them.
 - `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
-- A machine is enrolled once. Its id lives in the settings, so a machine that was retired, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
+- A machine is enrolled once. Its id lives in the settings, so a machine that was deleted, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
 `pokegosu completion <shell>` prints a completion script for bash, zsh, fish or PowerShell; `pokegosu completion zsh --help` says where to put it.

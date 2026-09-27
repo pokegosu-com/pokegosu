@@ -8,10 +8,13 @@ export default async function DevicesPage() {
   const supabase = await createClient()
 
   // RLS limits this to the reader's own machines; the key digest is not
-  // granted, so it could not be selected even by mistake.
+  // granted, so it could not be selected even by mistake. A deleted machine
+  // is gone for good, so it is not listed; its row stays only so the usage
+  // it sent keeps counting.
   const { data: devices, error } = await supabase
     .from('devices')
-    .select('id, name, last_sync_at, revoked_at, created_at')
+    .select('id, name, last_sync_at, created_at')
+    .is('revoked_at', null)
     .order('created_at')
 
   return (

@@ -142,7 +142,7 @@ export function UsageView() {
               {week.devices.map((d) => (
                 <li key={d.device_id} className="flex flex-col gap-1.5">
                   <p className="flex items-baseline justify-between gap-3 text-[13px]">
-                    <span>{d.device_name ?? '이름 없는 기기'}</span>
+                    <span>{d.device_name ?? '(deleted-device)'}</span>
                     <span className="font-mono text-xs tabular-nums">
                       {compactTokens(d.tokens)}
                     </span>
