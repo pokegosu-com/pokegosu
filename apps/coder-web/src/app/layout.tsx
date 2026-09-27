@@ -1,16 +1,14 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 
+import { AppHeader } from '@pokegosu/ui/app-shell'
 import { Fonts } from '@pokegosu/ui/fonts'
 import { VersionFooter } from '@pokegosu/ui/version-footer'
-
-import { env } from '@/env'
 
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'coder',
-  description: '코딩 에이전트 토큰 사용량',
+  title: 'PokeGosu Coder',
+  description: '코딩 에이전트 토큰으로 포켓몬 키우기',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
@@ -20,25 +18,16 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <Fonts />
       </head>
       <body className="bg-surface text-ink flex min-h-full flex-col antialiased">
-        <header className="border-line border-b">
-          <nav className="mx-auto flex w-full max-w-3xl items-center gap-6 px-6 py-4 text-sm">
-            <Link href="/" className="font-semibold tracking-tight">
-              coder
-            </Link>
-            <Link href="/box" className="text-muted hover:text-ink">
-              박스
-            </Link>
-            <a
-              href={`${env.NEXT_PUBLIC_ACCOUNT_URL}/devices`}
-              className="text-muted hover:text-ink"
-            >
-              기기
-            </a>
-            <a href={env.NEXT_PUBLIC_ACCOUNT_URL} className="text-muted hover:text-ink ml-auto">
-              계정
-            </a>
-          </nav>
-        </header>
+        {/* Machines are the account's; Coder only reads what they sent. */}
+        <AppHeader
+          app="coder"
+          name="PokeGosu Coder"
+          sections={[
+            { label: '대시보드', href: '/' },
+            { label: '박스', href: '/box' },
+            { label: '사용량', href: '/usage' },
+          ]}
+        />
         {children}
         <VersionFooter />
       </body>

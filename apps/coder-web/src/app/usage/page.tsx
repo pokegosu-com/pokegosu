@@ -1,9 +1,9 @@
-import { Dashboard } from './dashboard'
+import { UsageView } from './usage'
 
-export default function DashboardPage() {
+export default function UsagePage() {
   return (
     <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-10 px-6 py-10">
-      <Dashboard />
+      <UsageView />
     </main>
   )
 }

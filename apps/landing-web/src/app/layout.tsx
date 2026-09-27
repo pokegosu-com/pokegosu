@@ -6,8 +6,8 @@ import { VersionFooter } from '@pokegosu/ui/version-footer'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'pokegosu',
-  description: 'pokegosu',
+  title: 'PokeGosu',
+  description: '트레이너를 위한 포켓몬 앱 모음',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

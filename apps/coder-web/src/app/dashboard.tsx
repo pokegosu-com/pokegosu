@@ -1,69 +1,266 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-import { createClient } from '@pokegosu/supabase/client'
+import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { env } from '@/env'
-import { compactTokens, exactTokens } from '@/lib/format'
+import { exactTokens } from '@/lib/format'
+import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
+import { hoursOf, loadUsage, providerColors, startOfWeek, sum, type Usage } from '@/lib/usage'
 
-/** What the usage function answers with. */
-type Usage = {
-  from: string
-  to: string
-  total: string
-  devices: { device_id: string; device_name: string | null; tokens: number }[]
-  hours: { hour_bucket: string; tokens: number }[]
+import { HourChart, Legend } from './charts'
+import { useCountUp } from './game/count-up'
+import { useGame, type Opening } from './game/use-game'
+
+/** A level's worth of climbing takes this long, however many tokens it is. */
+const MS_PER_LEVEL = 350
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">
+      {children}
+    </p>
+  )
 }
 
-const HOUR = 60 * 60 * 1000
-
-/** The server keeps hours in UTC, so every range has to start on one. */
-function floorHour(at: Date): Date {
-  return new Date(Math.floor(at.getTime() / HOUR) * HOUR)
+/** "+18,240 토큰 · Lv.13 → Lv.15": what opening the page put into the partner. */
+function OpeningLine({ opening }: { opening: Opening }) {
+  const levels =
+    opening.level_before !== null && opening.level_after !== opening.level_before
+      ? ` · Lv.${opening.level_before} → Lv.${opening.level_after}`
+      : ''
+  return (
+    <p className="flex items-baseline gap-2 text-sm">
+      <span className="text-accent font-mono font-medium tabular-nums">
+        +{exactTokens(opening.tokens)} 토큰
+      </span>
+      <span className="text-muted">지난 방문 이후{levels}</span>
+    </p>
+  )
 }
 
-/** Monday 00:00 of this week, on the reader's clock. */
-function startOfWeek(now: Date): Date {
-  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  day.setDate(day.getDate() - ((day.getDay() + 6) % 7))
-  return day
+function PokemonPartner({
+  box,
+  curve,
+  opening,
+}: {
+  box: Extract<Box, { started: true }>
+  curve: Curve
+  opening: Opening | null
+}) {
+  const p = box.pokemon.find((c) => c.id === box.main_companion_id)!
+  // The claim lands all at once; the partner climbs to it a level at a time,
+  // along the same curve the server used.
+  const { shown } = useCountUp(p.tokens, (from, to) => {
+    const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
+    const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
+    return Math.min(8000, Math.max(600, (b - a + 1) * MS_PER_LEVEL))
+  })
+  const at = levelAt(curve, p.growth_rate, shown) ?? {
+    level: p.level,
+    from: p.level_tokens,
+    to: p.next_level_tokens,
+  }
+  const toNext = at.to === null ? null : Math.ceil(at.to - shown)
+  const sprite = spriteUrl(p)
+
+  return (
+    <section
+      aria-label="파트너"
+      className="border-accent flex items-center gap-8 rounded-lg border p-6"
+    >
+      <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element -- animated GIFs from pokedex-web */}
+        {sprite && <img src={sprite} alt={ko(p)} className="size-40 object-contain" />}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+        <div className="space-y-1">
+          <p className="text-accent text-xs font-medium">파트너</p>
+          <p className="flex items-baseline gap-2">
+            {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
+            <span className="text-3xl font-semibold tracking-tight">{ko(p)}</span>
+            <span className="text-muted font-mono text-xs">
+              No.{String(p.dex_no).padStart(3, '0')}
+            </span>
+          </p>
+        </div>
+        <p className="flex gap-1">
+          {p.types.map((t) => (
+            <TypeChip key={t.id} id={t.id} name={ko(t)} />
+          ))}
+        </p>
+        <div className="space-y-1.5">
+          <p className="flex items-baseline justify-between font-mono text-xs tabular-nums">
+            <span className="text-base font-medium">Lv.{at.level}</span>
+            <span className="text-muted">
+              {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 토큰`}
+            </span>
+          </p>
+          <ProgressBar
+            value={shown - at.from}
+            max={(at.to ?? shown) - at.from}
+            label="다음 레벨까지"
+            size="lg"
+          />
+        </div>
+        {opening?.companion_id === p.id && <OpeningLine opening={opening} />}
+        <Link href={`/box/${p.id}`} className="text-accent hover:text-ink text-sm">
+          자세히 보기 →
+        </Link>
+      </div>
+    </section>
+  )
 }
 
-function localDate(at: Date): string {
-  return `${at.getFullYear()}-${at.getMonth() + 1}-${at.getDate()}`
+function EggPartner({
+  box,
+  opening,
+}: {
+  box: Extract<Box, { started: true }>
+  opening: Opening | null
+}) {
+  const egg = box.eggs.find((c) => c.id === box.main_companion_id)!
+  const { shown } = useCountUp(egg.tokens, () => 1500)
+  return (
+    <section
+      aria-label="파트너"
+      className="border-accent flex items-center gap-8 rounded-lg border p-6"
+    >
+      <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}
+        <img src={eggSpriteUrl} alt="알" className="size-24 [image-rendering:pixelated]" />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+        <div className="space-y-1">
+          <p className="text-accent text-xs font-medium">파트너</p>
+          <p className="text-3xl font-semibold tracking-tight">알</p>
+          <p className="text-muted text-sm">{eggHint(egg)}</p>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-muted text-right font-mono text-xs tabular-nums">
+            {exactTokens(Math.floor(shown))} / {exactTokens(egg.tokens_needed)} 토큰
+          </p>
+          <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
+        </div>
+        {opening?.companion_id === egg.id && <OpeningLine opening={opening} />}
+        <Link href={`/box/${egg.id}`} className="text-accent hover:text-ink text-sm">
+          자세히 보기 →
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+const STEPS = [
+  {
+    title: 'PokeGosu CLI 설치',
+    command: 'curl -fsSL https://pokegosu.com/install-cli.sh | sh',
+    hint: '~/.local/bin 에 설치되고, sudo 는 필요 없습니다.',
+  },
+  {
+    title: '이 기기를 계정에 연결',
+    command: 'pokegosu auth login',
+    hint: '브라우저가 열리면 터미널의 코드와 같은지 확인하고 등록하세요.',
+  },
+  {
+    title: '기록을 보내는 훅 확인',
+    command: 'pokegosu coder hook doctor',
+    hint: '이벤트마다 훅이 있는지, 로그 폴더가 있는지 확인하고, 문제가 있으면 고치는 방법을 알려줍니다.',
+  },
+]
+
+function Command({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="bg-surface-raised flex items-center gap-2 rounded-md py-2 pr-2 pl-3">
+      <code className="flex-1 font-mono text-[13px]">{command}</code>
+      <button
+        type="button"
+        onClick={() =>
+          navigator.clipboard
+            .writeText(command)
+            .then(() => setCopied(true))
+            .catch(() => {})
+        }
+        className="border-line-strong hover:border-ink rounded-md border px-3 py-1.5 text-xs font-medium"
+      >
+        {copied ? '복사함' : '복사'}
+      </button>
+    </div>
+  )
+}
+
+function Empty() {
+  return (
+    <section className="flex flex-col gap-8">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">아직 기록이 없습니다</h1>
+        <p className="text-muted">
+          코딩 에이전트를 쓰는 기기를 연결하면, 에이전트가 쓴 토큰이 여기에 쌓이고 포켓몬이
+          자랍니다.
+        </p>
+      </div>
+      <ol className="border-line divide-line divide-y rounded-lg border">
+        {STEPS.map((s, i) => (
+          <li key={s.command} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 p-4">
+            <span className="text-muted font-mono text-sm leading-6 font-medium">{i + 1}</span>
+            <div className="space-y-2">
+              <p className="text-sm leading-6 font-medium">{s.title}</p>
+              <Command command={s.command} />
+              <p className="text-muted text-xs">{s.hint}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function Today({ usage, now }: { usage: Usage; now: Date }) {
+  const hours = hoursOf(usage, now)
+  const colors = providerColors(usage.providers)
+  const order = usage.providers.map((p) => p.provider)
+  const total = hours.reduce((a, h) => a + sum(h), 0)
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-muted text-sm font-medium">오늘 시간별</h2>
+        <span className="font-mono text-sm font-medium tabular-nums">
+          {exactTokens(total)} 토큰
+        </span>
+      </div>
+      {usage.providers.length > 1 && <Legend providers={usage.providers} colors={colors} />}
+      <HourChart hours={hours} colors={colors} order={order} until={now.getHours()} />
+      <Link href="/usage" className="text-accent hover:text-ink self-end text-sm">
+        사용량 전체 보기 →
+      </Link>
+    </section>
+  )
 }
 
 /**
- * Today and this week are the same hourly rows summed over different spans, so
- * the week is fetched once and the day is taken from inside it.
- *
- * "Today" and "this week" are the reader's, which the server cannot know, so
- * this runs in the browser. In a zone offset by part of an hour, local
- * midnight falls inside a UTC hour; that hour is counted whole.
+ * The partner first, and today's usage by hour beneath it. Opening this page
+ * claims the tokens earned since the last visit, so the partner is seen
+ * climbing.
  */
 export function Dashboard() {
-  const [shown, setShown] = useState<{ usage: Usage; at: Date } | null>(null)
+  const game = useGame()
+  const { box, curve, busy, act, opening } = game
+  const [week, setWeek] = useState<{ usage: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-
     async function load() {
-      const at = new Date()
-      const { data, error } = await createClient().rpc('usage', {
-        range_start: floorHour(startOfWeek(at)).toISOString(),
-        range_end: new Date(floorHour(at).getTime() + HOUR).toISOString(),
-      })
-      if (cancelled) return
-      if (error) {
-        setFailure(error.message)
-        return
+      const now = new Date()
+      try {
+        const usage = await loadUsage(startOfWeek(now), now)
+        if (!cancelled) setWeek({ usage, now })
+      } catch (error) {
+        if (!cancelled) setFailure((error as Error).message)
       }
-      setFailure(null)
-      setShown({ usage: data as Usage, at })
     }
-
     load()
     // A machine syncs every few minutes; a minute is fresh enough to watch.
     const timer = setInterval(load, 60_000)
@@ -73,99 +270,39 @@ export function Dashboard() {
     }
   }, [])
 
-  if (failure) {
-    return <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">{failure}</p>
-  }
-  if (!shown) {
-    return <p className="text-muted text-sm">불러오는 중…</p>
+  const problem = failure ?? game.failure
+  if (!box || !week) {
+    return problem ? <Notice>{problem}</Notice> : <p className="text-muted text-sm">불러오는 중…</p>
   }
 
-  const { usage, at } = shown
-  const midnight = floorHour(new Date(at.getFullYear(), at.getMonth(), at.getDate()))
-  const today = usage.hours
-    .filter((h) => new Date(h.hour_bucket) >= midnight)
-    .reduce((sum, h) => sum + h.tokens, 0)
-
-  const monday = startOfWeek(at)
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(monday)
-    day.setDate(monday.getDate() + i)
-    return { day, tokens: 0 }
-  })
-  const byDate = new Map(days.map((d) => [localDate(d.day), d]))
-  for (const h of usage.hours) {
-    const entry = byDate.get(localDate(new Date(h.hour_bucket)))
-    if (entry) entry.tokens += h.tokens
-  }
-  const busiest = Math.max(1, ...days.map((d) => d.tokens))
-
-  if (usage.devices.length === 0 && usage.hours.length === 0) {
-    return (
-      <section className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">아직 기록이 없습니다</h1>
-        <p className="text-muted text-sm">
-          기기에서 <code>pokegosu auth login</code> 을 실행해{' '}
-          <a href={`${env.NEXT_PUBLIC_ACCOUNT_URL}/devices/add`} className="text-accent underline">
-            계정에서 승인
-          </a>
-          한 다음, <code>pokegosu coder sync</code> 를 실행하세요.
-        </p>
-      </section>
-    )
-  }
+  const nothingYet = week.usage.hours.length === 0 && BigInt(box.balance) === 0n
+  if (nothingYet && !box.started) return <Empty />
 
   return (
     <>
-      <section className="grid grid-cols-2 gap-4">
-        <Figure label="오늘" tokens={today} />
-        <Figure label="이번 주" tokens={Number(usage.total)} exact={usage.total} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-muted text-sm font-medium">요일별</h2>
-        <ol className="space-y-2">
-          {days.map(({ day, tokens }) => (
-            <li key={localDate(day)} className="flex items-center gap-3 text-sm">
-              <span className="text-muted w-8">
-                {day.toLocaleDateString('ko-KR', { weekday: 'short' })}
-              </span>
-              <span className="bg-surface-raised h-2 flex-1 overflow-hidden rounded-full">
-                <span
-                  className="bg-accent block h-full rounded-full"
-                  style={{ width: `${(tokens / busiest) * 100}%` }}
-                />
-              </span>
-              <span className="w-16 text-right tabular-nums" title={exactTokens(tokens)}>
-                {tokens ? compactTokens(tokens) : '—'}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-muted text-sm font-medium">기기별 (이번 주)</h2>
-        <ul className="border-line divide-line divide-y rounded-lg border text-sm">
-          {usage.devices.map((d) => (
-            <li key={d.device_id} className="flex justify-between gap-4 px-4 py-3">
-              <span>{d.device_name ?? '이름 없는 기기'}</span>
-              <span className="tabular-nums" title={exactTokens(d.tokens)}>
-                {compactTokens(d.tokens)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {problem && <Notice>{problem}</Notice>}
+      {!box.started ? (
+        <section className="border-line space-y-3 rounded-lg border p-6">
+          <p className="text-sm">
+            지금까지 쓴 토큰{' '}
+            <span className="font-mono tabular-nums">{exactTokens(box.balance)}</span> 이 기다리고
+            있습니다. 알을 받아 시작하세요.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => act({ fn: 'start_game' })}
+            className="bg-accent text-surface rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            알 받기
+          </button>
+        </section>
+      ) : box.pokemon.some((p) => p.id === box.main_companion_id) ? (
+        <PokemonPartner box={box} curve={curve} opening={opening} />
+      ) : (
+        <EggPartner box={box} opening={opening} />
+      )}
+      {week.usage.hours.length === 0 ? <Empty /> : <Today usage={week.usage} now={week.now} />}
     </>
-  )
-}
-
-function Figure({ label, tokens, exact }: { label: string; tokens: number; exact?: string }) {
-  return (
-    <div className="border-line space-y-1 rounded-lg border px-4 py-3">
-      <p className="text-muted text-sm">{label}</p>
-      <p className="text-3xl font-semibold tracking-tight tabular-nums">{compactTokens(tokens)}</p>
-      <p className="text-muted text-xs tabular-nums">{exactTokens(exact ?? tokens)} 토큰</p>
-    </div>
   )
 }

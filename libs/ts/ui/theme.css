@@ -108,5 +108,4 @@
   /* Every app page, top bar and content alike, so the left edge never moves. */
   --container-wide: 64rem;
   --container-task: 24rem;
-  --container-prose: 42rem;
 }

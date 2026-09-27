@@ -33,7 +33,7 @@ export type Outcome = { outcome: string } & Record<string, unknown>
  *
  * Opening the game is what invests tokens: the first load claims into the main
  * companion everything that fits, in one go. Watching it fill is the
- * cards' doing, counting up along the curve. Everything after that is a
+ * screen's doing, counting up along the curve. Everything after that is a
  * button, and every button reloads the box, since what one changes can change
  * what others offer.
  */

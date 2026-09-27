@@ -1,0 +1,33 @@
+import { exactTokens } from '@/lib/format'
+import { ko, type Box } from '@/lib/game'
+
+import type { Outcome } from './use-game'
+
+function nameOf(box: Box | null, speciesId: unknown): string {
+  const found = box?.started ? box.pokemon.find((p) => p.species_id === speciesId) : undefined
+  return found ? ko(found) : '포켓몬'
+}
+
+/** One line for what the last button did, in the games' voice where they have one. */
+export function say(box: Box | null, fn: string, o: Outcome): string | null {
+  switch (`${fn}:${o.outcome}`) {
+    case 'claim:claimed':
+      return o.level_before === null
+        ? `알이 토큰 ${exactTokens(Number(o.tokens))} 만큼 자랐다.`
+        : o.level_after !== o.level_before
+          ? `토큰 ${exactTokens(Number(o.tokens))} 을 얻었다! Lv.${o.level_before} → Lv.${o.level_after}`
+          : `토큰 ${exactTokens(Number(o.tokens))} 을 얻었다!`
+    case 'hatch:hatched':
+      return `${o.is_shiny ? '✨ ' : ''}알에서 ${nameOf(box, o.species_id)}이(가) 태어났다!`
+    case 'evolve:evolved':
+      return `축하합니다! ${nameOf(box, o.to)}(으)로 진화했다!`
+    case 'receive_egg:received':
+      return '알을 받았다! 알 박스에 들어갔다.'
+    case 'receive_ribbon:received':
+      return '리본을 받았다!'
+    case 'start_game:started':
+      return '알을 받았다! 토큰을 쓰면 알이 자란다.'
+    default:
+      return null
+  }
+}
