@@ -1,0 +1,14 @@
+{
+  "rollups": [
+    {
+      "provider": "codex",
+      "hour_bucket": "2025-05-12T14:00:00Z",
+      "tokens": 330
+    },
+    {
+      "provider": "codex",
+      "hour_bucket": "2025-05-12T15:00:00Z",
+      "tokens": 1100
+    }
+  ]
+}

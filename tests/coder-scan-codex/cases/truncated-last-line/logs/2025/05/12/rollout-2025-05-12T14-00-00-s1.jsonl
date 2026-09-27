@@ -1,0 +1,5 @@
+{"timestamp":"2025-05-12T14:00:00.000Z","type":"session_meta","payload":{"id":"s1","cwd":"/home/user/demo","originator":"codex_cli_rs","cli_version":"0.144.0","source":"cli"}}
+{"timestamp":"2025-05-12T14:00:00.500Z","type":"turn_context","payload":{"cwd":"/home/user/demo","approval_policy":"on-request","model":"gpt-5-codex"}}
+{"timestamp":"2025-05-12T14:05:00.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"first"}]}}
+{"timestamp":"2025-05-12T14:05:00.100Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":100,"cached_input_tokens":60,"output_tokens":10,"reasoning_output_tokens":4,"total_tokens":110},"total_token_usage":{"input_tokens":100,"cached_input_tokens":60,"output_tokens":10,"reasoning_output_tokens":4,"total_tokens":110},"model_context_window":272000}}}
+{"timestamp":"2025-05-12T14:40:00.100Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"

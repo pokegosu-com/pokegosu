@@ -12,12 +12,13 @@ import (
 
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider/claudecode"
+	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider/codex"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
 
 // Providers returns every provider the client knows how to read.
 func Providers() []provider.Provider {
-	return []provider.Provider{claudecode.New()}
+	return []provider.Provider{claudecode.New(), codex.New()}
 }
 
 // Options configures a scan.

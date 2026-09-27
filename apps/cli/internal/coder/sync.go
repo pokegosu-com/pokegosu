@@ -105,7 +105,7 @@ func sync(opts SyncOptions, settingsPath string) (int, error) {
 		return 0, fmt.Errorf("not logged in: run pokegosu auth login first")
 	}
 
-	selected, err := selectProviders(opts.Providers)
+	selected, err := selectProviders(opts.Providers, opts.Paths)
 	if err != nil {
 		return 0, err
 	}

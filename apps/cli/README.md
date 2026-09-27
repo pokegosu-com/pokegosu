@@ -73,7 +73,8 @@ So an open session reports every fifteen minutes or so, and a closing one report
 | `pokegosu coder hook doctor`                | Checks the folder the hooks log to is there, and each event has a hook that runs a binary that is still there; says how to fix it if not |
 
 - A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and the server ignores those hours whoever sends them.
-- `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
+- A sync reads every agent it knows: Claude Code (`~/.claude/projects`, or under `CLAUDE_CONFIG_DIR`) and Codex (`~/.codex/sessions` and `archived_sessions`, or under `CODEX_HOME`). Only Claude Code has a hook, so Codex usage goes up with the next sync Claude Code runs, or one you run yourself.
+- `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong. `--path` reads another directory instead, and needs `--provider claude_code` or `--provider codex` to say whose logs it holds.
 - A machine is enrolled once. Its id lives in the settings, so a machine that was deleted, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
@@ -83,8 +84,8 @@ Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGO
 
 ## Tests
 
-| What                                 | How                                   |
-| ------------------------------------ | ------------------------------------- |
-| Unit tests                           | `moon run cli:test`                   |
-| The libraries it is built from       | `moon run go-auth:test go-coder:test` |
-| The parser, against the shared cases | `moon run coder-scan-claude-code:go`  |
+| What                                  | How                                                      |
+| ------------------------------------- | -------------------------------------------------------- |
+| Unit tests                            | `moon run cli:test`                                      |
+| The libraries it is built from        | `moon run go-auth:test go-coder:test`                    |
+| The parsers, against the shared cases | `moon run coder-scan-claude-code:go coder-scan-codex:go` |

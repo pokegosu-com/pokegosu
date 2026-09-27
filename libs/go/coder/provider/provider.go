@@ -1,7 +1,7 @@
 // Package provider defines what a log parser has to offer the scanner.
 //
-// Providers are the coding agents whose logs we read: claude_code today,
-// Codex and Gemini CLI later. Each one owns its log location and its own
+// Providers are the coding agents whose logs we read: claude_code and codex
+// today, Gemini CLI later. Each one owns its log location and its own
 // quirks; everything downstream of Parse is shared.
 package provider
 
