@@ -85,17 +85,19 @@ select ok((select count(*) = 3 from public.coder_egg_species g join public.poked
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
 select results_eq(
-  $$ select g.rarity, count(*)::int
+  $$ select sr.rarity, count(*)::int
        from public.coder_egg_species g
-       join public.coder_egg_rarities r on r.id = g.rarity
+       join public.coder_species_rarities sr on sr.species_id = g.species_id
+       join public.coder_egg_rarities r on r.id = sr.rarity
       where g.egg_kind = 'national'
-      group by g.rarity, r.weight
+      group by sr.rarity, r.weight
       order by r.weight desc $$,
   $$ values ('common', 36), ('uncommon', 95), ('rare', 30), ('very-rare', 20), ('mythic', 21) $$,
   'every species an egg can hold has a tier');
 select is(
-  (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
      from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
     where g.egg_kind = 'national' and s.slug in ('pidgey', 'charmander', 'omanyte', 'dratini', 'snorlax', 'mewtwo')),
   'charmander:very-rare pidgey:common omanyte:very-rare snorlax:rare dratini:very-rare mewtwo:mythic',
   'the starters, fossils and Dratini are very rare, legendaries mythic');

@@ -166,17 +166,14 @@ export type Database = {
       coder_egg_species: {
         Row: {
           egg_kind: string
-          rarity: string
           species_id: number
         }
         Insert: {
           egg_kind: string
-          rarity: string
           species_id: number
         }
         Update: {
           egg_kind?: string
-          rarity?: string
           species_id?: number
         }
         Relationships: [
@@ -188,18 +185,18 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'coder_egg_species_rarity_fkey'
-            columns: ['rarity']
-            isOneToOne: false
-            referencedRelation: 'coder_egg_rarities'
-            referencedColumns: ['id']
-          },
-          {
             foreignKeyName: 'coder_egg_species_species_id_fkey'
             columns: ['species_id']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_egg_species_species_id_rarity_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'coder_species_rarities'
+            referencedColumns: ['species_id']
           },
         ]
       }
@@ -305,6 +302,36 @@ export type Database = {
           unowned_line_weight?: number
         }
         Relationships: []
+      }
+      coder_species_rarities: {
+        Row: {
+          rarity: string
+          species_id: number
+        }
+        Insert: {
+          rarity: string
+          species_id: number
+        }
+        Update: {
+          rarity?: string
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_species_rarities_rarity_fkey'
+            columns: ['rarity']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_rarities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_species_rarities_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: true
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
       }
       coder_trainers: {
         Row: {
