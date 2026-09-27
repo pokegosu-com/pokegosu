@@ -1,7 +1,7 @@
-const compact = new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 })
+const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })
 const exact = new Intl.NumberFormat('ko-KR')
 
-/** 480,910,116 → "4.8억": how big, at a glance. */
+/** 480,910,116 → "480.9M": how big, at a glance, in K, M, B and T rather than 만 and 억. */
 export function compactTokens(n: number | bigint): string {
   return compact.format(n)
 }
