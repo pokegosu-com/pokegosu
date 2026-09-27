@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { accountUrl, apps, type AppId } from './apps'
+import { PokeGosuIcon } from './icon'
 
 export type Section = { label: string; href: string }
 
@@ -97,7 +98,10 @@ export function AppHeader({
             className="bg-surface border-line absolute inset-y-0 left-0 flex w-72 flex-col gap-2 border-r px-3 pt-3 pb-4"
           >
             <div className="flex items-center justify-between pr-2 pb-3 pl-3">
-              <span className="font-semibold tracking-tight">PokeGosu</span>
+              <span className="flex items-center gap-2 font-semibold tracking-tight">
+                <PokeGosuIcon />
+                PokeGosu
+              </span>
               <button
                 type="button"
                 aria-label="닫기"

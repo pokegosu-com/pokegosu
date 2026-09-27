@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { AppHeader } from '@pokegosu/ui/app-shell'
 import { Fonts } from '@pokegosu/ui/fonts'
+import { faviconUrl } from '@pokegosu/ui/icon'
 import { VersionFooter } from '@pokegosu/ui/version-footer'
 
 import { DEXES, ko, pokedex } from '@/lib/pokedex'
@@ -11,6 +12,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'PokeGosu Pokédex',
   description: '포켓몬 찾아보기',
+  icons: { icon: faviconUrl },
 }
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
