@@ -86,7 +86,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 
 ## Behaviour
 
-**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
+**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. The name is not a link: the first section is home. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
 
 **Every screen has four states.** Design each before it ships.
 

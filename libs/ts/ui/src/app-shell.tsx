@@ -73,9 +73,8 @@ export function AppHeader({
             >
               <MenuIcon />
             </button>
-            <Link href="/" className="font-semibold tracking-tight">
-              {name}
-            </Link>
+            {/* Not a link: the first section is already the way home. */}
+            <span className="font-semibold tracking-tight">{name}</span>
           </span>
           {sections.map((s) => (
             <Link
