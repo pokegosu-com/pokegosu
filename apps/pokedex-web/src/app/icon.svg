@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- The shiny sparkle from Artwork, in accent, for PokeGosu as a whole, so every app carries the same one. -->
+  <style>
+    path { fill: oklch(0.55 0.2 264); }
+    @media (prefers-color-scheme: dark) { path { fill: oklch(0.7 0.16 264); } }
+  </style>
+  <path d="M8 0 9.6 6.4 16 8 9.6 9.6 8 16 6.4 9.6 0 8 6.4 6.4Z"/>
+</svg>
