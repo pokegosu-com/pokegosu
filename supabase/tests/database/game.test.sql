@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(78);
+select plan(84);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 129,
-  'a national egg holds the first form of every family up to Generation II');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 202,
+  'a national egg holds the first form of every family up to Generation III');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -59,10 +59,28 @@ select is(
     where g.egg_kind = 'kanto' and s.slug in ('pichu', 'pikachu', 'smoochum', 'jynx', 'chikorita')),
   'pikachu jynx',
   'so Pikachu rather than Pichu, and nothing from Johto');
-select set_eq(
-  $$ select species_id from public.coder_egg_species where egg_kind = 'johto' $$,
-  $$ select species_id from public.coder_egg_species where egg_kind = 'national' $$,
-  'Gold and Silver''s pokedex lists all 251, so a Johto egg holds what a national one does');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'johto'), 129,
+  'a Johto egg holds the first form of every family up to Generation II');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'johto' and s.slug in ('marill', 'wobbuffet', 'azurill', 'wynaut', 'treecko')),
+  'marill wobbuffet',
+  'so Marill rather than Azurill, and nothing from Hoenn');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'national' and s.slug in ('marill', 'wobbuffet', 'azurill', 'wynaut')),
+  'azurill wynaut',
+  'where a national egg holds Generation III''s babies');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'hoenn'), 105,
+  'a Hoenn egg holds the first form of every family as Hoenn''s pokedex lists it');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'hoenn' and s.slug in ('pichu', 'zubat', 'bulbasaur', 'chikorita', 'treecko')),
+  'zubat pichu treecko',
+  'Generation III''s and those from before that Hoenn''s pokedex lists');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -73,7 +91,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by g.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 27), ('uncommon', 58), ('rare', 19), ('very-rare', 14), ('mythic', 11) $$,
+  $$ values ('common', 36), ('uncommon', 95), ('rare', 30), ('very-rare', 20), ('mythic', 21) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || g.rarity, ' ' order by s.id)
@@ -89,6 +107,10 @@ select is_empty($$ select * from public.level_up_evolution(236) $$,
   'Tyrogue''s Lv.20 asks for Attack against Defense too, so it waits');
 select is_empty($$ select * from public.level_up_evolution(172) $$,
   'and so does Pichu, on friendship');
+select is_empty($$ select * from public.level_up_evolution(265) $$,
+  'Wurmple''s Lv.7 hangs on its personality, so it waits rather than always becoming Silcoon');
+select is(public.level_up_evolution(290), row(291, 20::smallint)::record,
+  'Nincada becomes Ninjask at Lv.20, and Shedinja is left to wait');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   200000000::bigint, 'Medium Fast reaches Lv.50 on 200M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
