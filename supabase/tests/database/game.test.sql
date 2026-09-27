@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(84);
+select plan(85);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -92,7 +92,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 36), ('uncommon', 95), ('rare', 30), ('very-rare', 20), ('mythic', 21) $$,
+  $$ values ('common', 36), ('uncommon', 89), ('rare', 37), ('very-rare', 19), ('mythic', 21) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -101,6 +101,12 @@ select is(
     where g.egg_kind = 'national' and s.slug in ('pidgey', 'charmander', 'omanyte', 'dratini', 'snorlax', 'mewtwo')),
   'charmander:very-rare pidgey:common omanyte:very-rare snorlax:rare dratini:very-rare mewtwo:mythic',
   'the starters, fossils and Dratini are very rare, legendaries mythic');
+select is(
+  (select string_agg(distinct r.rarity, ' ')
+     from public.coder_species_rarities r join public.pokedex_species s on s.id = r.species_id
+    where s.category = 'baby'),
+  'rare',
+  'every baby is rare, whatever it grows into');
 select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
 select is(public.level_up_evolution(79), row(80, 37::smallint)::record,
