@@ -37,7 +37,7 @@ function PokeGosuIcon() {
       height="20"
       viewBox="-1 -8.3 37.8 37.8"
       aria-hidden="true"
-      className="text-accent"
+      className="text-ink"
     >
       <defs>
         <g id={`${id}cap`}>
