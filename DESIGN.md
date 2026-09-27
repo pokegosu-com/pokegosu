@@ -71,6 +71,17 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 There is no icon set. Sprites come from pokedex-web: animated GIFs, and the egg as a pixel sprite with `image-rendering: pixelated`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes. An icon-only button has an `aria-label` and a `title`.
 
+## Components
+
+Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thing again.
+
+| Import                   | What it is                                                                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections, and the app drawer it opens. Each app's layout places it once. |
+| `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                      |
+| `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, and `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link).   |
+| `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                            |
+
 ## Behaviour
 
 **Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
