@@ -20,7 +20,7 @@ const PHYSICAL_STATS: Record<number, string> = {
 }
 
 /**
- * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 160 · 밤",
+ * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
  * "금속코트 지닌 채 통신교환".
  */
 function takes(method: Method | undefined, names: Map<string, string>): string {
@@ -30,7 +30,9 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   else if (method.held_item)
     parts.push(`${names.get(method.held_item)} 지닌 채 ${names.get(method.trigger)}`)
   else if (method.trigger === 'level-up' && method.level) parts.push(`Lv.${method.level}`)
-  if (method.min_happiness) parts.push(`친밀도 ${method.min_happiness}`)
+  // Without the number: the games ask 220 up to Generation VII and 160 since,
+  // the same for every species in a game, and PokéAPI mixes the two.
+  if (method.min_happiness) parts.push('친밀도')
   if (method.time_of_day) parts.push(method.time_of_day === 'day' ? '낮' : '밤')
   if (method.relative_physical_stats !== null)
     parts.push(PHYSICAL_STATS[method.relative_physical_stats])
