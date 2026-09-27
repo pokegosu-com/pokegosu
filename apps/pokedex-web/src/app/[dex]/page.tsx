@@ -6,7 +6,7 @@ import { ko, pokedex } from '@/lib/pokedex'
 import { DexGrid } from './grid'
 
 /** The pokedexes, in the order the tabs show them: national first, then by generation. */
-const DEXES = ['national', 'kanto', 'johto']
+const DEXES = ['national', 'kanto', 'johto', 'hoenn']
 
 /** The games' order of types, which the table does not keep. */
 const TYPE_ORDER = [

@@ -15,6 +15,8 @@ type Method = {
   min_happiness: number | null
   time_of_day: string | null
   relative_physical_stats: number | null
+  min_beauty: number | null
+  chance: number | null
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -25,7 +27,7 @@ const PHYSICAL_STATS: Record<number, string> = {
 
 /**
  * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
- * "금속코트 지닌 채 통신교환".
+ * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%".
  */
 function takes(method: Method | undefined, names: Map<string, string>): string {
   if (!method) return ''
@@ -40,6 +42,9 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   if (method.time_of_day) parts.push(method.time_of_day === 'day' ? '낮' : '밤')
   if (method.relative_physical_stats !== null)
     parts.push(PHYSICAL_STATS[method.relative_physical_stats])
+  if (method.min_beauty) parts.push('아름다움')
+  // Which half is fixed for each Pokémon, by its personality value.
+  if (method.chance) parts.push(`성격값 ${method.chance}%`)
   return parts.join(' · ') || (names.get(method.trigger) ?? '')
 }
 
@@ -96,7 +101,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     db
       .from('pokedex_evolution_methods')
       .select(
-        'id, trigger, level, item, held_item, min_happiness, time_of_day, relative_physical_stats',
+        'id, trigger, level, item, held_item, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance',
       ),
     typeNames(),
   ])

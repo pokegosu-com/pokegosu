@@ -33,8 +33,8 @@ const POKEAPI_NOTICE =
 const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
-/** Generations I and II: national dex numbers 1 to 251, in their default forms. */
-const LAST_DEX_NO = 251
+/** Generations I to III: national dex numbers 1 to 386, in their default forms. */
+const LAST_DEX_NO = 386
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -61,11 +61,18 @@ const POKEDEXES: Record<
     names: { ko: '성도도감', en: 'Johto Pokédex' },
     versions: ['heartgold', 'soulsilver', 'crystal', 'gold', 'silver'],
   },
+  // Ruby, Sapphire and Emerald's, not Omega Ruby and Alpha Sapphire's, which
+  // lists Generation IV to VI species too.
+  hoenn: {
+    apiId: 4,
+    names: { ko: '호연도감', en: 'Hoenn Pokédex' },
+    versions: ['omega-ruby', 'alpha-sapphire', 'emerald', 'ruby', 'sapphire'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260927120002_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260927120004_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -103,6 +110,11 @@ type EvolutionDetail = {
   min_happiness: number | null
   time_of_day: string
   relative_physical_stats: number | null
+  min_beauty: number | null
+  condition_expression: {
+    percentage_chance: number | null
+    variables: Named[]
+  } | null
   required_pokemon_form: Named | null
   evolved_pokemon_form: Named | null
   region: Named | null
@@ -151,6 +163,7 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   'level-up': '레벨업',
   'use-item': '도구 사용',
   trade: '통신교환',
+  shed: '탈피',
 }
 
 const triggers = new Map<string, Record<string, string>>()
@@ -165,6 +178,8 @@ type Evolution = {
   happiness: number | null
   timeOfDay: string | null
   physicalStats: number | null
+  beauty: number | null
+  chance: number | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -182,6 +197,8 @@ const KNOWN_CONDITIONS = new Set([
   'min_happiness',
   'time_of_day',
   'relative_physical_stats',
+  'min_beauty',
+  'condition_expression',
   'required_pokemon_form',
   'version_group',
   'is_default',
@@ -192,6 +209,30 @@ const PHYSICAL_STATS: Record<number, string> = {
   1: 'attack-above-defense',
   0: 'attack-equals-defense',
   [-1]: 'attack-below-defense',
+}
+
+/**
+ * The variables a condition_expression may hang on that make it a share of
+ * Pokémon, fixed for each one: its personality value, or its encryption
+ * constant, which took that over in Generation VI.
+ */
+const PERSONALITY = new Set(['personality-value', 'encryption-constant'])
+
+/**
+ * The share of Pokémon that go this way, as Wurmple's half to Silcoon and
+ * half to Cascoon. PokéAPI writes it as an expression over a variable; any
+ * other expression fails here, as a condition without a column does.
+ */
+function chanceOf(detail: EvolutionDetail): number | null {
+  const expression = detail.condition_expression
+  if (!expression) return null
+  if (
+    expression.percentage_chance === null ||
+    !expression.variables.every((v) => PERSONALITY.has(v.name))
+  ) {
+    throw new Error(`an evolution condition species has no column for: ${JSON.stringify(detail)}`)
+  }
+  return expression.percentage_chance
 }
 
 /**
@@ -219,7 +260,7 @@ async function nameItem(item: string) {
 
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I and II ask; anything
+ * A method has a column for each condition Generations I to III ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -247,6 +288,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   const happiness = detail.min_happiness ?? null
   const timeOfDay = detail.time_of_day || null
   const physicalStats = detail.relative_physical_stats ?? null
+  const beauty = detail.min_beauty ?? null
+  const chance = chanceOf(detail)
   const id = [
     trigger,
     level,
@@ -255,11 +298,24 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     happiness && `happiness-${happiness}`,
     timeOfDay,
     physicalStats !== null && PHYSICAL_STATS[physicalStats],
+    beauty && `beauty-${beauty}`,
+    chance && `chance-${chance}`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
   if (!methods.has(id)) {
-    methods.set(id, { id, trigger, level, item, heldItem, happiness, timeOfDay, physicalStats })
+    methods.set(id, {
+      id,
+      trigger,
+      level,
+      item,
+      heldItem,
+      happiness,
+      timeOfDay,
+      physicalStats,
+      beauty,
+      chance,
+    })
   }
   return methods.get(id)!
 }
@@ -538,6 +594,8 @@ async function main() {
         'min_happiness',
         'time_of_day',
         'relative_physical_stats',
+        'min_beauty',
+        'chance',
       ],
       ['id'],
       [...methods.values()]
@@ -545,7 +603,8 @@ async function main() {
         .map(
           (m) =>
             `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)},` +
-            ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)})`,
+            ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)},` +
+            ` ${sql(m.beauty)}, ${sql(m.chance)})`,
         ),
     ),
     '',

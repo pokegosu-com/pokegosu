@@ -439,30 +439,36 @@ export type Database = {
       }
       pokedex_evolution_methods: {
         Row: {
+          chance: number | null
           held_item: string | null
           id: string
           item: string | null
           level: number | null
+          min_beauty: number | null
           min_happiness: number | null
           relative_physical_stats: number | null
           time_of_day: string | null
           trigger: string
         }
         Insert: {
+          chance?: number | null
           held_item?: string | null
           id: string
           item?: string | null
           level?: number | null
+          min_beauty?: number | null
           min_happiness?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trigger: string
         }
         Update: {
+          chance?: number | null
           held_item?: string | null
           id?: string
           item?: string | null
           level?: number | null
+          min_beauty?: number | null
           min_happiness?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
