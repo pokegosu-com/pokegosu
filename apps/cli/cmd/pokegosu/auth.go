@@ -31,7 +31,7 @@ pasted, and the machine's key is handed to this machine alone.
 Settings are written to ~/.config/pokegosu/config.json, readable only by you.
 
 A machine is enrolled once. Its id lives in those settings, so a machine that
-needs a new key — one that was retired, or that lost its settings — enrols as
+needs a new key — one that was deleted, or that lost its settings — enrols as
 a new machine, and the old one keeps the history it earned.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {

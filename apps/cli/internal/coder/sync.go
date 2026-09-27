@@ -205,11 +205,11 @@ func report(quiet bool, result scan.Result) {
 func explainSync(err error) error {
 	switch {
 	case coderapi.KeyRefused(err):
-		// A key the server does not know and a machine somebody retired read
+		// A key the server does not know and a machine somebody deleted read
 		// the same from here, and the way out of both is the same: a machine
 		// is enrolled once, so this one starts again as a new machine.
 		return fmt.Errorf("the server refused this machine's key: %s; "+
-			"it may have been retired in the web. Delete this machine's settings "+
+			"it may have been deleted in the web. Delete this machine's settings "+
 			"and run pokegosu auth login to enrol it as a new machine",
 			err)
 	case coderapi.GatewayRefused(err):
