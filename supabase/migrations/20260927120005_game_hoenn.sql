@@ -39,40 +39,41 @@ insert into public.coder_egg_kinds (id, ko_name, en_name) values
 -- ============================================================
 -- Rarities for Generation III, by the same rules from how Ruby, Sapphire and
 -- Emerald hand them over: on the first routes is common, later or in one
--- place is uncommon, a one-off or a low chance is rare, the starters, Bagon
--- and Beldum are very rare, and the legendaries, Jirachi and Deoxys are
--- mythic. A baby is as rare as what it grows into.
+-- place is uncommon, a one-off or a low chance is rare, the starters,
+-- Feebas, Bagon and Beldum are very rare, and the legendaries, Jirachi and Deoxys are
+-- mythic. A baby is as rare as what it grows into. The tiers were then
+-- adjusted by feel, as Generation I's and II's were.
 --
 -- A species already in an egg keeps its tier, and one from before that only
 -- a Hoenn egg holds as a first form takes the tier it has in another egg.
 -- At these weights, and a line never had weighing five times more, half of
 -- all people have every national species but the mythic ones after about 420
--- eggs, and all 202 after about 1,130; with Generation II it was about 250 and
+-- eggs, and all 202 after about 1,100; with Generation II it was about 250 and
 -- 620. A Hoenn egg's 105 take about 190 and 480.
 -- ============================================================
 create temporary table egg_rarity (slug text primary key, rarity text not null);
 insert into egg_rarity (slug, rarity) values
-  ('poochyena', 'common'), ('zigzagoon', 'common'), ('wurmple', 'common'), ('lotad', 'common'),
-  ('seedot', 'common'), ('taillow', 'common'), ('wingull', 'common'), ('whismur', 'common'),
-  ('electrike', 'common'), ('spoink', 'common'),
+  ('poochyena', 'common'), ('zigzagoon', 'common'), ('wurmple', 'common'), ('seedot', 'common'),
+  ('taillow', 'common'), ('wingull', 'common'), ('shroomish', 'common'), ('whismur', 'common'),
+  ('spoink', 'common'),
 
-  ('surskit', 'uncommon'), ('shroomish', 'uncommon'), ('slakoth', 'uncommon'), ('nincada', 'uncommon'),
-  ('makuhita', 'uncommon'), ('nosepass', 'uncommon'), ('skitty', 'uncommon'), ('sableye', 'uncommon'),
-  ('mawile', 'uncommon'), ('aron', 'uncommon'), ('meditite', 'uncommon'), ('plusle', 'uncommon'),
-  ('minun', 'uncommon'), ('volbeat', 'uncommon'), ('illumise', 'uncommon'), ('roselia', 'uncommon'),
-  ('gulpin', 'uncommon'), ('carvanha', 'uncommon'), ('wailmer', 'uncommon'), ('numel', 'uncommon'),
-  ('torkoal', 'uncommon'), ('spinda', 'uncommon'), ('trapinch', 'uncommon'), ('cacnea', 'uncommon'),
-  ('swablu', 'uncommon'), ('zangoose', 'uncommon'), ('seviper', 'uncommon'), ('lunatone', 'uncommon'),
-  ('solrock', 'uncommon'), ('barboach', 'uncommon'), ('corphish', 'uncommon'), ('baltoy', 'uncommon'),
-  ('shuppet', 'uncommon'), ('duskull', 'uncommon'), ('tropius', 'uncommon'), ('snorunt', 'uncommon'),
-  ('spheal', 'uncommon'), ('clamperl', 'uncommon'), ('luvdisc', 'uncommon'),
-  ('azurill', 'uncommon'), ('wynaut', 'uncommon'),
+  ('lotad', 'uncommon'), ('slakoth', 'uncommon'), ('nincada', 'uncommon'), ('makuhita', 'uncommon'),
+  ('nosepass', 'uncommon'), ('skitty', 'uncommon'), ('sableye', 'uncommon'), ('mawile', 'uncommon'),
+  ('aron', 'uncommon'), ('meditite', 'uncommon'), ('electrike', 'uncommon'), ('plusle', 'uncommon'),
+  ('minun', 'uncommon'), ('volbeat', 'uncommon'), ('illumise', 'uncommon'), ('gulpin', 'uncommon'),
+  ('carvanha', 'uncommon'), ('wailmer', 'uncommon'), ('numel', 'uncommon'), ('torkoal', 'uncommon'),
+  ('spinda', 'uncommon'), ('cacnea', 'uncommon'), ('zangoose', 'uncommon'), ('seviper', 'uncommon'),
+  ('lunatone', 'uncommon'), ('solrock', 'uncommon'), ('barboach', 'uncommon'), ('corphish', 'uncommon'),
+  ('baltoy', 'uncommon'), ('shuppet', 'uncommon'), ('duskull', 'uncommon'), ('tropius', 'uncommon'),
+  ('snorunt', 'uncommon'), ('spheal', 'uncommon'), ('clamperl', 'uncommon'), ('luvdisc', 'uncommon'),
+  ('ralts', 'uncommon'), ('azurill', 'uncommon'), ('wynaut', 'uncommon'),
 
-  ('ralts', 'rare'), ('feebas', 'rare'), ('castform', 'rare'), ('kecleon', 'rare'), ('chimecho', 'rare'),
-  ('absol', 'rare'), ('relicanth', 'rare'), ('lileep', 'rare'), ('anorith', 'rare'),
+  ('surskit', 'rare'), ('roselia', 'rare'), ('trapinch', 'rare'), ('swablu', 'rare'),
+  ('castform', 'rare'), ('kecleon', 'rare'), ('chimecho', 'rare'), ('absol', 'rare'),
+  ('relicanth', 'rare'), ('lileep', 'rare'), ('anorith', 'rare'),
 
-  ('treecko', 'very-rare'), ('torchic', 'very-rare'), ('mudkip', 'very-rare'), ('bagon', 'very-rare'),
-  ('beldum', 'very-rare'),
+  ('treecko', 'very-rare'), ('torchic', 'very-rare'), ('mudkip', 'very-rare'), ('feebas', 'very-rare'),
+  ('bagon', 'very-rare'), ('beldum', 'very-rare'),
 
   ('regirock', 'mythic'), ('regice', 'mythic'), ('registeel', 'mythic'), ('latias', 'mythic'),
   ('latios', 'mythic'), ('kyogre', 'mythic'), ('groudon', 'mythic'), ('rayquaza', 'mythic'),
