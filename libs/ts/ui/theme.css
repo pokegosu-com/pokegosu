@@ -115,8 +115,8 @@
    floats while its shadow narrows beneath it, and hops when it is touched.
    A shiny one sparkles as it hops. */
 @theme {
-  --animate-idle: idle 3.2s ease-in-out infinite;
-  --animate-idle-shadow: idle-shadow 3.2s ease-in-out infinite;
+  --animate-idle: idle 2.5s ease-in-out infinite;
+  --animate-idle-shadow: idle-shadow 2.5s ease-in-out infinite;
   --animate-hop: hop 0.5s cubic-bezier(0.3, 0, 0.3, 1);
   --animate-sparkle: sparkle 0.7s ease-out both;
 
