@@ -3,8 +3,7 @@
 
    The raw values live on :root so the dark variant can swap them; @theme inline
    then points the Tailwind tokens at those variables rather than at fixed
-   colours. The design system that explains each one lives at
-   https://claude.ai/artifact/Jf7aaAUgU6ppUpKRJsxqH7. */
+   colours. DESIGN.md at the repository root says where each one is used. */
 
 /* Points Tailwind at this package's components. Apps reach it through
    node_modules, which Tailwind skips, and a plain './src' resolves through
