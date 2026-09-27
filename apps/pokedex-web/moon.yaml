@@ -28,8 +28,9 @@ tasks:
     outputs:
       - 'public/sprites/**/*'
 
-  # Reads PokéAPI and rewrites sprites.json and the species migration. Run by
-  # hand when what is included changes; never by CI.
+  # Reads PokéAPI, rewrites sprites.json and writes the species migration the
+  # script names, a new one each time what is included widens. Run by hand;
+  # never by CI.
   generate:
     command: 'node scripts/generate.ts'
     preset: 'utility'

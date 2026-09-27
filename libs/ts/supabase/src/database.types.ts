@@ -229,6 +229,38 @@ export type Database = {
           },
         ]
       }
+      coder_main_periods: {
+        Row: {
+          companion_id: string
+          ended_at: string | null
+          id: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          companion_id: string
+          ended_at?: string | null
+          id?: never
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          companion_id?: string
+          ended_at?: string | null
+          id?: never
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_main_periods_companion_id_user_id_fkey'
+            columns: ['companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'coder_companions'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       coder_ribbons: {
         Row: {
           en_description: string | null
@@ -407,24 +439,43 @@ export type Database = {
       }
       pokedex_evolution_methods: {
         Row: {
+          held_item: string | null
           id: string
           item: string | null
           level: number | null
+          min_happiness: number | null
+          relative_physical_stats: number | null
+          time_of_day: string | null
           trigger: string
         }
         Insert: {
+          held_item?: string | null
           id: string
           item?: string | null
           level?: number | null
+          min_happiness?: number | null
+          relative_physical_stats?: number | null
+          time_of_day?: string | null
           trigger: string
         }
         Update: {
+          held_item?: string | null
           id?: string
           item?: string | null
           level?: number | null
+          min_happiness?: number | null
+          relative_physical_stats?: number | null
+          time_of_day?: string | null
           trigger?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'pokedex_evolution_methods_held_item_fkey'
+            columns: ['held_item']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'pokedex_evolution_methods_item_fkey'
             columns: ['item']

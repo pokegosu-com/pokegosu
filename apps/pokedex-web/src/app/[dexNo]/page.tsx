@@ -3,14 +3,40 @@ import { notFound } from 'next/navigation'
 
 import { dexNo, ko, pokedex, typeNames } from '@/lib/pokedex'
 
-type Method = { trigger: string; level: number | null; item: string | null }
+type Method = {
+  trigger: string
+  level: number | null
+  item: string | null
+  held_item: string | null
+  min_happiness: number | null
+  time_of_day: string | null
+  relative_physical_stats: number | null
+}
 
-/** What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "통신교환". */
+const PHYSICAL_STATS: Record<number, string> = {
+  1: '공격 > 방어',
+  0: '공격 = 방어',
+  [-1]: '공격 < 방어',
+}
+
+/**
+ * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
+ * "금속코트 지닌 채 통신교환".
+ */
 function takes(method: Method | undefined, names: Map<string, string>): string {
   if (!method) return ''
-  if (method.trigger === 'level-up' && method.level) return `Lv.${method.level}`
-  if (method.item) return `${names.get(method.item)} 사용`
-  return names.get(method.trigger) ?? ''
+  const parts: string[] = []
+  if (method.item) parts.push(`${names.get(method.item)} 사용`)
+  else if (method.held_item)
+    parts.push(`${names.get(method.held_item)} 지닌 채 ${names.get(method.trigger)}`)
+  else if (method.trigger === 'level-up' && method.level) parts.push(`Lv.${method.level}`)
+  // Without the number: the games ask 220 up to Generation VII and 160 since,
+  // the same for every species in a game, and PokéAPI mixes the two.
+  if (method.min_happiness) parts.push('친밀도')
+  if (method.time_of_day) parts.push(method.time_of_day === 'day' ? '낮' : '밤')
+  if (method.relative_physical_stats !== null)
+    parts.push(PHYSICAL_STATS[method.relative_physical_stats])
+  return parts.join(' · ') || (names.get(method.trigger) ?? '')
 }
 
 function gender(rate: number): string {
@@ -53,7 +79,11 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
     db.from('pokedex_kinds').select('id, ko_name, en_name'),
     db.from('pokedex_evolution_triggers').select('id, ko_name, en_name'),
     db.from('pokedex_items').select('id, ko_name, en_name'),
-    db.from('pokedex_evolution_methods').select('id, trigger, level, item'),
+    db
+      .from('pokedex_evolution_methods')
+      .select(
+        'id, trigger, level, item, held_item, min_happiness, time_of_day, relative_physical_stats',
+      ),
     typeNames(),
   ])
   for (const result of [forms, all, kinds, triggers, items, methods]) {
@@ -74,9 +104,15 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
     const row = rows.get(id)
     return row?.evolves_from_id ? firstOf(row.evolves_from_id) : id
   }
+  const stageOf = (id: number): number => {
+    const row = rows.get(id)
+    return row?.evolves_from_id ? stageOf(row.evolves_from_id) + 1 : 0
+  }
+  // By stage before number: a baby came in a later generation, so Pichu's
+  // number is higher than Raichu's, yet it comes first.
   const family = [...rows.values()]
     .filter((f) => firstOf(f.id) === firstOf(p.id))
-    .sort((a, b) => a.number - b.number)
+    .sort((a, b) => stageOf(a.id) - stageOf(b.id) || a.number - b.number)
   const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
   const evolutionNames = new Map([...triggers.data!, ...items.data!].map((t) => [t.id, ko(t)]))
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))

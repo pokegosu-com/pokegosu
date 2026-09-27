@@ -7,6 +7,12 @@
 //
 // Run it again only to change what is included. The sprite commit is pinned
 // below, so the manifest's hashes stay true until someone moves it.
+//
+// A migration that has been applied never changes, so each run that widens
+// what is included writes a new one, named in MIGRATION below, and leaves the
+// earlier ones alone. It upserts every row rather than inserting the new
+// ones: a later generation reaches back into an earlier one, as Pichu does
+// into Pikachu's row, and the newest migration always says all of it.
 
 import { createHash } from 'node:crypto'
 import { writeFile } from 'node:fs/promises'
@@ -27,8 +33,8 @@ const POKEAPI_NOTICE =
 const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
-/** Generation I: national dex numbers 1 to 151, in their default forms. */
-const LAST_DEX_NO = 151
+/** Generations I and II: national dex numbers 1 to 251, in their default forms. */
+const LAST_DEX_NO = 251
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -47,11 +53,19 @@ const POKEDEXES: Record<
     names: { ko: '관동도감', en: 'Kanto Pokédex' },
     versions: ['lets-go-pikachu', 'lets-go-eevee', 'firered', 'leafgreen', 'yellow', 'red', 'blue'],
   },
+  // Gold, Silver and Crystal's, not HeartGold and SoulSilver's, which lists
+  // Generation IV species too. None of these games has Korean entries in
+  // PokéAPI, so Korean falls back to the newest.
+  johto: {
+    apiId: 3,
+    names: { ko: '성도도감', en: 'Johto Pokédex' },
+    versions: ['heartgold', 'soulsilver', 'crystal', 'gold', 'silver'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260923120001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260926120002_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -88,7 +102,11 @@ type EvolutionDetail = {
   held_item: Named | null
   min_happiness: number | null
   time_of_day: string
-}
+  relative_physical_stats: number | null
+  required_pokemon_form: Named | null
+  evolved_pokemon_form: Named | null
+  region: Named | null
+} & Record<string, unknown>
 type ChainLink = {
   species: Named
   evolution_details: EvolutionDetail[]
@@ -138,18 +156,79 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
 const triggers = new Map<string, Record<string, string>>()
 const items = new Map<string, Record<string, string>>()
 
-type Evolution = { id: string; trigger: string; level: number | null; item: string | null }
+type Evolution = {
+  id: string
+  trigger: string
+  level: number | null
+  item: string | null
+  heldItem: string | null
+  happiness: number | null
+  timeOfDay: string | null
+  physicalStats: number | null
+}
 
 const methods = new Map<string, Evolution>()
 
 /**
+ * What a detail may say that evolution_methods has a column for. PokéAPI
+ * also says which games a detail is from, and whether it is the usual way;
+ * neither changes what it takes.
+ */
+const KNOWN_CONDITIONS = new Set([
+  'trigger',
+  'min_level',
+  'item',
+  'held_item',
+  'min_happiness',
+  'time_of_day',
+  'relative_physical_stats',
+  'required_pokemon_form',
+  'version_group',
+  'is_default',
+])
+
+/** How relative_physical_stats reads in a method's id, Attack against Defense. */
+const PHYSICAL_STATS: Record<number, string> = {
+  1: 'attack-above-defense',
+  0: 'attack-equals-defense',
+  [-1]: 'attack-below-defense',
+}
+
+/**
+ * The detail for a species' own default form. PokéAPI lists a regional form's
+ * way beside it, such as Alolan Rattata evolving only at night, which starts
+ * from another form or ends in one; those are that form's to keep.
+ */
+function ownWay(details: EvolutionDetail[], from: string): EvolutionDetail | undefined {
+  return details.find(
+    (d) =>
+      !d.region &&
+      !d.evolved_pokemon_form &&
+      (!d.required_pokemon_form || d.required_pokemon_form.name === from),
+  )
+}
+
+async function nameItem(item: string) {
+  if (items.has(item)) return
+  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item}`)
+  items.set(
+    item,
+    localise(fetched.names, (n) => n.name),
+  )
+}
+
+/**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for a level and for an item, which is all Generation
- * I asks; anything else fails here rather than being dropped, so a wider
- * table grows the columns it needs.
+ * A method has a column for each condition Generations I and II ask; anything
+ * else fails here rather than being dropped, so a wider table grows the
+ * columns it needs.
  */
 async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
-  if (detail.held_item || detail.min_happiness || detail.time_of_day) {
+  const unknown = Object.entries(detail).filter(
+    ([key, value]) =>
+      !KNOWN_CONDITIONS.has(key) && value !== null && value !== '' && value !== false,
+  )
+  if (unknown.length > 0) {
     throw new Error(`an evolution condition species has no column for: ${JSON.stringify(detail)}`)
   }
   const trigger = detail.trigger.name
@@ -162,16 +241,26 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     triggers.set(trigger, { ...localise(fetched.names, (n) => n.name), ko })
   }
   const item = detail.item?.name ?? null
-  if (item && !items.has(item)) {
-    const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item}`)
-    items.set(
-      item,
-      localise(fetched.names, (n) => n.name),
-    )
-  }
+  const heldItem = detail.held_item?.name ?? null
+  for (const named of [item, heldItem]) if (named) await nameItem(named)
   const level = detail.min_level ?? null
-  const id = [trigger, level, item].filter((part) => part !== null).join('-')
-  if (!methods.has(id)) methods.set(id, { id, trigger, level, item })
+  const happiness = detail.min_happiness ?? null
+  const timeOfDay = detail.time_of_day || null
+  const physicalStats = detail.relative_physical_stats ?? null
+  const id = [
+    trigger,
+    level,
+    item,
+    heldItem && `holding-${heldItem}`,
+    happiness && `happiness-${happiness}`,
+    timeOfDay,
+    physicalStats !== null && PHYSICAL_STATS[physicalStats],
+  ]
+    .filter((part) => part !== null && part !== false)
+    .join('-')
+  if (!methods.has(id)) {
+    methods.set(id, { id, trigger, level, item, heldItem, happiness, timeOfDay, physicalStats })
+  }
   return methods.get(id)!
 }
 
@@ -213,6 +302,20 @@ function sql(value: unknown): string {
   return `'${text.replaceAll("'", "''")}'`
 }
 
+/** Rows into a table, each replacing the one already under its key. */
+function upsert(table: string, columns: string[], key: string[], values: string[]): string {
+  const rest = columns.filter((c) => !key.includes(c))
+  const onConflict =
+    rest.length === 0
+      ? 'do nothing'
+      : `do update set\n  ${rest.map((c) => `${c} = excluded.${c}`).join(',\n  ')}`
+  return [
+    `insert into public.${table} (${columns.join(', ')}) values`,
+    values.join(',\n'),
+    `on conflict (${key.join(', ')}) ${onConflict};`,
+  ].join('\n')
+}
+
 async function sha256Of(url: string): Promise<string> {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`${url}: ${response.status}`)
@@ -236,8 +339,11 @@ async function main() {
       for (const next of link.evolves_to) {
         const from = idOf(link.species)
         const to = idOf(next.species)
-        if (from <= LAST_DEX_NO && to <= LAST_DEX_NO && next.evolution_details[0]) {
-          reached.set(to, { from, detail: next.evolution_details[0] })
+        const detail = ownWay(next.evolution_details, link.species.name)
+        if (from <= LAST_DEX_NO && to <= LAST_DEX_NO) {
+          if (!detail)
+            throw new Error(`no way of its own from ${link.species.name} to ${next.species.name}`)
+          reached.set(to, { from, detail })
         }
         walk(next)
       }
@@ -363,53 +469,109 @@ async function main() {
     `-- ${POKEAPI_NOTICE}`,
     '-- The licence is in LICENSES/PokeAPI-BSD-3-Clause.txt.',
     '--',
-    `-- ${rows.length} forms, the default form of every Generation I species, and`,
-    `-- their entries in the ${Object.keys(POKEDEXES).join(' and ')} pokedexes.`,
+    `-- ${rows.length} forms, the default form of every species up to national No.${LAST_DEX_NO},`,
+    `-- and their entries in the ${Object.keys(POKEDEXES).join(', ')} pokedexes. Every row is`,
+    '-- upserted, so this says all of it whatever the migrations before it said.',
     '',
-    'insert into public.pokedex_types (id, ko_name, en_name) values',
-    typeIds
-      .map((id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`)
-      .join(',\n') + ';',
+    upsert(
+      'pokedex_types',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      typeIds.map(
+        (id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`,
+      ),
+    ),
     '',
-    'insert into public.pokedex_growth_rates (id) values',
-    rates.map((r) => `  (${sql(r)})`).join(',\n') + ';',
+    upsert(
+      'pokedex_growth_rates',
+      ['id'],
+      ['id'],
+      rates.map((r) => `  (${sql(r)})`),
+    ),
     '',
-    'insert into public.pokedex_experience_levels (growth_rate, level, exp) values',
-    rates
-      .flatMap((rate) =>
+    upsert(
+      'pokedex_experience_levels',
+      ['growth_rate', 'level', 'exp'],
+      ['growth_rate', 'level'],
+      rates.flatMap((rate) =>
         levels
           .get(rate)!
           .sort((a, b) => a.level - b.level)
           .map((l) => `  (${sql(rate)}, ${l.level}, ${l.experience})`),
-      )
-      .join(',\n') + ';',
+      ),
+    ),
     '',
-    'insert into public.pokedex_evolution_triggers (id, ko_name, en_name) values',
-    [...triggers]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
-      .join(',\n') + ';',
+    upsert(
+      'pokedex_evolution_triggers',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...triggers]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
     '',
-    'insert into public.pokedex_items (id, ko_name, en_name) values',
-    [...items]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
-      .join(',\n') + ';',
+    upsert(
+      'pokedex_items',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...items]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
     '',
-    'insert into public.pokedex_evolution_methods (id, trigger, level, item) values',
-    [...methods.values()]
-      .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
-      .map((m) => `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)})`)
-      .join(',\n') + ';',
+    upsert(
+      'pokedex_evolution_methods',
+      [
+        'id',
+        'trigger',
+        'level',
+        'item',
+        'held_item',
+        'min_happiness',
+        'time_of_day',
+        'relative_physical_stats',
+      ],
+      ['id'],
+      [...methods.values()]
+        .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }))
+        .map(
+          (m) =>
+            `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)},` +
+            ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)})`,
+        ),
+    ),
     '',
-    'insert into public.pokedex_species (',
-    '  id, slug, ko_name, en_name, ko_genus, en_genus, generation, category,',
-    '  type1, type2, hp, attack, defense, special_attack, special_defense, speed, height, weight,',
-    '  growth_rate, capture_rate, hatch_counter, gender_rate,',
-    '  evolves_from_id, evolution_method, sprites',
-    ') values',
-    ordered
-      .map((r) =>
+    upsert(
+      'pokedex_species',
+      [
+        'id',
+        'slug',
+        'ko_name',
+        'en_name',
+        'ko_genus',
+        'en_genus',
+        'generation',
+        'category',
+        'type1',
+        'type2',
+        'hp',
+        'attack',
+        'defense',
+        'special_attack',
+        'special_defense',
+        'speed',
+        'height',
+        'weight',
+        'growth_rate',
+        'capture_rate',
+        'hatch_counter',
+        'gender_rate',
+        'evolves_from_id',
+        'evolution_method',
+        'sprites',
+      ],
+      ['id'],
+      ordered.map((r) =>
         [
           `  (${r.id}, ${sql(r.slug)}, ${sql(r.names.ko)}, ${sql(r.names.en)}, ${sql(r.genus.ko)}, ${sql(r.genus.en)},` +
             ` ${r.generation}, ${sql(r.category)},`,
@@ -418,21 +580,27 @@ async function main() {
           `   ${sql(r.growthRate)}, ${r.captureRate}, ${r.hatchCounter}, ${r.genderRate},`,
           `   ${sql(r.evolvesFrom)}, ${sql(r.evolution?.id)}, ${sql(r.sprites)})`,
         ].join('\n'),
-      )
-      .join(',\n') + ';',
+      ),
+    ),
     '',
-    'insert into public.pokedex_kinds (id, ko_name, en_name) values',
-    Object.entries(POKEDEXES)
-      .map(([id, { names }]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`)
-      .join(',\n') + ';',
+    upsert(
+      'pokedex_kinds',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      Object.entries(POKEDEXES).map(
+        ([id, { names }]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`,
+      ),
+    ),
     '',
-    'insert into public.pokedex_entries (dex, number, species_id, is_default, ko_description, en_description) values',
-    entries
-      .map(
+    upsert(
+      'pokedex_entries',
+      ['dex', 'number', 'species_id', 'is_default', 'ko_description', 'en_description'],
+      ['dex', 'species_id'],
+      entries.map(
         (e) =>
           `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, true, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
-      )
-      .join(',\n') + ';',
+      ),
+    ),
     '',
   ]
   await writeFile(MIGRATION, out.join('\n'))
