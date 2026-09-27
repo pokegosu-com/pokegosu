@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(16);
+select plan(17);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -107,14 +107,35 @@ select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 select is(
   public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z'),
   '{"from": "2026-09-12T00:00:00Z", "to": "2026-09-13T00:00:00Z", "total": "3206007",
-    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": "laptop", "tokens": 3206007}],
-    "hours": [{"hour_bucket": "2026-09-12T13:00:00Z", "tokens": 6000},
-              {"hour_bucket": "2026-09-12T14:00:00Z", "tokens": 3200000},
-              {"hour_bucket": "2026-09-12T15:00:00Z", "tokens": 7}]}'::jsonb,
+    "providers": [{"provider": "claude_code", "display_name": "Claude Code", "tokens": 3206007}],
+    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": "laptop", "tokens": 3206007,
+                 "providers": {"claude_code": 3206007}}],
+    "hours": [{"hour_bucket": "2026-09-12T13:00:00Z", "tokens": 6000, "providers": {"claude_code": 6000}},
+              {"hour_bucket": "2026-09-12T14:00:00Z", "tokens": 3200000, "providers": {"claude_code": 3200000}},
+              {"hour_bucket": "2026-09-12T15:00:00Z", "tokens": 7, "providers": {"claude_code": 7}}]}'::jsonb,
   'usage sums the range per machine and per hour, over the caller''s rows only');
 
+-- A second agent, written straight into the ledger: ingest is not what is
+-- under test here.
+reset role;
+insert into public.providers (id, display_name) values ('other_agent', 'Other Agent');
+insert into public.usage_rollups (user_id, device_id, provider, hour_bucket, tokens) values
+  ('00000000-0000-0000-0000-00000000000a', '11111111-1111-1111-1111-111111111111', 'other_agent',
+   '2026-09-12T14:00:00Z', 4000000);
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 select is(
-  public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z') ->> 'total', '3206007',
+  public.usage('2026-09-12T14:00:00Z', '2026-09-12T15:00:00Z') - 'from' - 'to',
+  '{"total": "7200000",
+    "providers": [{"provider": "other_agent", "display_name": "Other Agent", "tokens": 4000000},
+                  {"provider": "claude_code", "display_name": "Claude Code", "tokens": 3200000}],
+    "devices": [{"device_id": "11111111-1111-1111-1111-111111111111", "device_name": "laptop", "tokens": 7200000,
+                 "providers": {"claude_code": 3200000, "other_agent": 4000000}}],
+    "hours": [{"hour_bucket": "2026-09-12T14:00:00Z", "tokens": 7200000,
+               "providers": {"claude_code": 3200000, "other_agent": 4000000}}]}'::jsonb,
+  'each sum is split by coding agent, busiest agent first');
+
+select is(
+  public.usage('2026-09-12T00:00:00Z', '2026-09-13T00:00:00Z') ->> 'total', '7206007',
   'a retired machine''s history still counts');
 
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000b');
@@ -131,12 +152,12 @@ select throws_ok(
   '22023', 'range_start and range_end must be on the hour in UTC', 'a range off the hour is refused');
 
 select lives_ok(
-  $$ select public.usage('2026-08-14T00:00:00Z', '2026-09-13T00:00:00Z') $$,
-  'thirty days is the longest range');
+  $$ select public.usage('2026-08-13T00:00:00Z', '2026-09-13T00:00:00Z') $$,
+  'thirty-one days, the longest month, is the longest range');
 
 select throws_ok(
-  $$ select public.usage('2026-08-13T23:00:00Z', '2026-09-13T00:00:00Z') $$,
-  '22023', 'the range is longer than 30 days', 'an hour past thirty days is refused');
+  $$ select public.usage('2026-08-12T23:00:00Z', '2026-09-13T00:00:00Z') $$,
+  '22023', 'the range is longer than 31 days', 'an hour past thirty-one days is refused');
 
 select * from finish();
 rollback;

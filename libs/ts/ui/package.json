@@ -3,10 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
+    "./apps": "./src/apps.ts",
     "./theme.css": "./theme.css",
     "./version-footer": "./src/version-footer.tsx"
   },
   "devDependencies": {
     "@types/react": "^19.3.0"
+  },
+  "type": "module",
+  "dependencies": {
+    "@t3-oss/env-nextjs": "^0.13.11",
+    "zod": "^4.6.5"
   }
 }

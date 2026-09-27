@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(74);
+select plan(78);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -244,6 +244,19 @@ select throws_ok(
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 select throws_ok($$ select * from public.coder_main_periods $$, '42501', null,
   'and nobody reads them yet');
+select is(
+  jsonb_array_length(public.companion_history(pg_temp.main()) -> 'main_periods'), 1,
+  'a companion''s history reads its own periods as partner');
+select ok(
+  (public.companion_history(pg_temp.main()) -> 'main_periods' -> 0 -> 'ended_at') = 'null'::jsonb,
+  'the one still going has no end');
+select is(
+  public.companion_history(pg_temp.main()) -> 'egg_kind' ->> 'ko_name', '전국 알',
+  'and says which egg it came from');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000b');
+select is(public.companion_history(pg_temp.main()),
+  '{"outcome": "not_found"}'::jsonb, 'someone else''s companion is not found');
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 -- ★ red, ● blue.
 select is(public.set_markings(pg_temp.main(), (2 << 8 | 1)::smallint), '{"outcome": "set"}'::jsonb,

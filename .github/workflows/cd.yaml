@@ -104,6 +104,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: '${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}'
           NEXT_PUBLIC_COOKIE_DOMAIN: '${{ vars.NEXT_PUBLIC_COOKIE_DOMAIN }}'
           NEXT_PUBLIC_POKEDEX_URL: '${{ vars.NEXT_PUBLIC_POKEDEX_URL }}'
+          NEXT_PUBLIC_CODER_URL: '${{ vars.NEXT_PUBLIC_CODER_URL }}'
 
   # Deploys every function under supabase/functions, after the migrations it
   # calls into, with the verify_jwt settings in supabase/config.toml, on the

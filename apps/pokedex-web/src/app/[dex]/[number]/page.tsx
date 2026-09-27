@@ -56,26 +56,36 @@ const STATS = [
   ['speed', '스피드'],
 ] as const
 
-export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
-  const n = Number((await params).dexNo)
+export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
+  const { dex, number } = await params
+  const n = Number(number)
   if (!Number.isInteger(n) || n < 1) notFound()
 
   const db = pokedex()
-  const [forms, all, kinds, triggers, items, methods, types] = await Promise.all([
+  const [forms, all, around, kinds, triggers, items, methods, types] = await Promise.all([
     db
       .from('pokedex_entries')
       .select('is_default, species:pokedex_species(*)')
-      .eq('dex', 'national')
+      .eq('dex', dex)
       .eq('number', n)
       .order('is_default', { ascending: false }),
-    // Every form, small enough to take whole: the family is found by following
-    // evolves_from_id, and each links by its national number.
+    // Every form in this pokedex, small enough to take whole: the family is
+    // found by following evolves_from_id, and each links by its number here.
+    // A stage this pokedex does not list is left out: Kanto's has no Pichu.
     db
       .from('pokedex_entries')
       .select(
         'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
       )
-      .eq('dex', 'national'),
+      .eq('dex', dex),
+    // The numbers either side, in the same pokedex.
+    db
+      .from('pokedex_entries')
+      .select('number, species:pokedex_species(ko_name, en_name)')
+      .eq('dex', dex)
+      .eq('is_default', true)
+      .in('number', [n - 1, n + 1])
+      .order('number'),
     db.from('pokedex_kinds').select('id, ko_name, en_name'),
     db.from('pokedex_evolution_triggers').select('id, ko_name, en_name'),
     db.from('pokedex_items').select('id, ko_name, en_name'),
@@ -86,17 +96,21 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
       ),
     typeNames(),
   ])
-  for (const result of [forms, all, kinds, triggers, items, methods]) {
+  for (const result of [forms, all, around, kinds, triggers, items, methods]) {
     if (result.error) throw result.error
   }
+  const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
+  const dexName = kindNames.get(dex)
+  if (!dexName) notFound()
   const p = forms.data?.[0]?.species
   if (!p) notFound()
 
-  // Every pokedex's entry for the form shown.
+  // This pokedex's entry for the form shown; each pokedex writes its own.
   const entriesOf = await db
     .from('pokedex_entries')
     .select('dex, number, ko_description, en_description')
     .eq('species_id', p.id)
+    .eq('dex', dex)
   if (entriesOf.error) throw entriesOf.error
 
   const rows = new Map(all.data!.map(({ number, species }) => [species.id, { ...species, number }]))
@@ -113,18 +127,29 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
   const family = [...rows.values()]
     .filter((f) => firstOf(f.id) === firstOf(p.id))
     .sort((a, b) => stageOf(a.id) - stageOf(b.id) || a.number - b.number)
-  const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
   const evolutionNames = new Map([...triggers.data!, ...items.data!].map((t) => [t.id, ko(t)]))
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
   const sprites = p.sprites as { animated?: string; animated_shiny?: string }
+  const previous = around.data!.find((e) => e.number === n - 1)
+  const next = around.data!.find((e) => e.number === n + 1)
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
       <nav className="text-muted text-sm">
-        <Link href="/" className="hover:text-ink">
-          ← 목록
+        <Link href={`/${dex}`} className="hover:text-ink">
+          ← {dexName}
         </Link>
+        {previous && (
+          <Link href={`/${dex}/${previous.number}`} className="hover:text-ink ml-6">
+            {dexNo(previous.number)} {ko(previous.species)}
+          </Link>
+        )}
+        {next && (
+          <Link href={`/${dex}/${next.number}`} className="hover:text-ink ml-6">
+            {ko(next.species)} {dexNo(next.number)} →
+          </Link>
+        )}
       </nav>
 
       <header className="flex items-center gap-6">
@@ -143,7 +168,9 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
           )}
         </span>
         <div className="space-y-1">
-          <p className="text-muted text-sm tabular-nums">{dexNo(n)}</p>
+          <p className="text-muted text-sm tabular-nums">
+            {dexName} {dexNo(n)}
+          </p>
           <h1 className="text-3xl font-semibold tracking-tight">{ko(p)}</h1>
           <p className="text-muted text-sm">
             {p.ko_genus ?? p.en_genus}
@@ -210,17 +237,19 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
         <section className="space-y-3">
           <h2 className="text-muted text-sm font-medium">진화</h2>
           <ol className="flex flex-wrap items-center gap-3 text-sm">
-            {family.map((f) => {
+            {family.map((f, i) => {
               const art = (f.sprites as { animated?: string }).animated
               return (
                 <li key={f.id} className="flex items-center gap-3">
-                  {f.evolution_method && (
+                  {/* The first stage shown has nothing before it here, even
+                      where it evolves from one this pokedex leaves out. */}
+                  {i > 0 && f.evolution_method && (
                     <span className="text-muted text-xs">
                       → {takes(methodOf.get(f.evolution_method), evolutionNames)}
                     </span>
                   )}
                   <Link
-                    href={`/${f.number}`}
+                    href={`/${dex}/${f.number}`}
                     className={`flex flex-col items-center rounded-lg border px-3 py-2 ${f.number === n ? 'border-accent' : 'border-muted/20 hover:border-muted'}`}
                   >
                     {art && (
