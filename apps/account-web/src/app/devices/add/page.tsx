@@ -2,7 +2,7 @@ import { CodeForm } from './code-form'
 
 export default function AddMachinePage() {
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-24">
+    <main className="mx-auto flex w-full max-w-task flex-1 flex-col justify-center gap-6 px-6 py-24">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">기기 추가</h1>
         <p className="text-muted text-sm">

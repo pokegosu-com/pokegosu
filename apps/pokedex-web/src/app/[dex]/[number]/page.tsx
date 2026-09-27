@@ -1,7 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
+
 import { dexNo, ko, pokedex, typeNames } from '@/lib/pokedex'
+
+import { Sprite } from './sprite'
 
 type Method = {
   trigger: string
@@ -134,41 +138,33 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const previous = around.data!.find((e) => e.number === n - 1)
   const next = around.data!.find((e) => e.number === n + 1)
 
+  const statTotal = STATS.reduce((sum, [key]) => sum + p[key], 0)
+
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
-      <nav className="text-muted text-sm">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-8">
+      <nav className="text-muted flex justify-between gap-4 text-sm">
         <Link href={`/${dex}`} className="hover:text-ink">
           ← {dexName}
         </Link>
-        {previous && (
-          <Link href={`/${dex}/${previous.number}`} className="hover:text-ink ml-6">
-            {dexNo(previous.number)} {ko(previous.species)}
-          </Link>
-        )}
-        {next && (
-          <Link href={`/${dex}/${next.number}`} className="hover:text-ink ml-6">
-            {ko(next.species)} {dexNo(next.number)} →
-          </Link>
-        )}
-      </nav>
-
-      <header className="flex items-center gap-6">
-        <span className="flex items-end gap-2">
-          {sprites.animated && (
-            // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
-            <img src={sprites.animated} alt={ko(p)} className="h-24 w-24 object-contain" />
+        <span className="flex gap-5">
+          {previous && (
+            <Link href={`/${dex}/${previous.number}`} className="hover:text-ink">
+              <span className="font-mono text-xs">{dexNo(previous.number)}</span>{' '}
+              {ko(previous.species)}
+            </Link>
           )}
-          {sprites.animated_shiny && (
-            // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
-            <img
-              src={sprites.animated_shiny}
-              alt={`${ko(p)} (색이 다른)`}
-              className="h-24 w-24 object-contain"
-            />
+          {next && (
+            <Link href={`/${dex}/${next.number}`} className="hover:text-ink">
+              {ko(next.species)} <span className="font-mono text-xs">{dexNo(next.number)}</span> →
+            </Link>
           )}
         </span>
-        <div className="space-y-1">
-          <p className="text-muted text-sm tabular-nums">
+      </nav>
+
+      <header className="flex items-center gap-8">
+        <Sprite name={ko(p)} normal={sprites.animated} shiny={sprites.animated_shiny} />
+        <div className="flex flex-col gap-2">
+          <p className="text-muted font-mono text-xs tabular-nums">
             {dexName} {dexNo(n)}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">{ko(p)}</h1>
@@ -176,67 +172,64 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
             {p.ko_genus ?? p.en_genus}
             {p.category && ` · ${CATEGORIES[p.category]}`}
           </p>
-          <p className="flex gap-1 text-xs">
-            {[p.type1, p.type2].filter(Boolean).map((t) => (
-              <span key={t} className="border-muted/30 rounded border px-1.5 py-0.5">
-                {types.get(t!)}
-              </span>
-            ))}
+          <p className="flex gap-1">
+            {[p.type1, p.type2]
+              .filter((t): t is string => !!t)
+              .map((t) => (
+                <TypeChip key={t} id={t} name={types.get(t) ?? t} />
+              ))}
           </p>
+          {entries.map((e) => (
+            <p key={e.dex} className="mt-2 max-w-xl leading-relaxed">
+              {e.ko_description ?? e.en_description}
+            </p>
+          ))}
         </div>
       </header>
 
-      <section className="space-y-3">
-        {entries
-          .sort((a, b) =>
-            a.dex === 'national' ? -1 : b.dex === 'national' ? 1 : a.dex.localeCompare(b.dex),
-          )
-          .map((e) => (
-            <div key={e.dex} className="space-y-1">
-              <p className="text-muted text-xs">
-                {kindNames.get(e.dex)} {dexNo(e.number)}
-              </p>
-              <p className="leading-relaxed">{e.ko_description ?? e.en_description}</p>
-            </div>
-          ))}
-      </section>
-
-      <section className="grid gap-8 sm:grid-cols-2">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt className="text-muted">키</dt>
-          <dd className="tabular-nums">{(p.height / 10).toFixed(1)} m</dd>
-          <dt className="text-muted">몸무게</dt>
-          <dd className="tabular-nums">{(p.weight / 10).toFixed(1)} kg</dd>
-          <dt className="text-muted">성비</dt>
-          <dd className="tabular-nums">{gender(p.gender_rate)}</dd>
-          <dt className="text-muted">포획률</dt>
-          <dd className="tabular-nums">{p.capture_rate}</dd>
-          <dt className="text-muted">부화</dt>
-          <dd className="tabular-nums">{p.hatch_counter} 사이클</dd>
-          <dt className="text-muted">첫 등장</dt>
-          <dd className="tabular-nums">{p.generation}세대</dd>
-        </dl>
-
-        <dl className="grid grid-cols-[auto_2rem_1fr] items-center gap-x-3 gap-y-2 text-sm">
-          {STATS.map(([key, label]) => (
-            <div key={key} className="contents">
-              <dt className="text-muted">{label}</dt>
-              <dd className="text-right tabular-nums">{p[key]}</dd>
-              <dd className="bg-muted/15 h-1.5 overflow-hidden rounded-full">
-                <span
-                  className="bg-accent block h-full rounded-full"
-                  style={{ width: `${Math.min(100, (p[key] / 180) * 100)}%` }}
-                />
-              </dd>
-            </div>
-          ))}
-        </dl>
+      <section className="grid gap-10 sm:grid-cols-2">
+        <div className="space-y-3">
+          <h2 className="text-muted text-sm font-medium">정보</h2>
+          <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-y-2 text-sm">
+            <dt className="text-muted">키</dt>
+            <dd className="font-mono text-[13px]">{(p.height / 10).toFixed(1)} m</dd>
+            <dt className="text-muted">몸무게</dt>
+            <dd className="font-mono text-[13px]">{(p.weight / 10).toFixed(1)} kg</dd>
+            <dt className="text-muted">성비</dt>
+            <dd className="font-mono text-[13px]">{gender(p.gender_rate)}</dd>
+            <dt className="text-muted">포획률</dt>
+            <dd className="font-mono text-[13px]">{p.capture_rate}</dd>
+            <dt className="text-muted">부화</dt>
+            <dd className="font-mono text-[13px]">{p.hatch_counter} 사이클</dd>
+            <dt className="text-muted">첫 등장</dt>
+            <dd className="font-mono text-[13px]">{p.generation}세대</dd>
+          </dl>
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-muted text-sm font-medium">종족값</h2>
+          <dl className="grid grid-cols-[4rem_2rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
+            {STATS.map(([key, label]) => (
+              <div key={key} className="contents">
+                <dt className="text-muted">{label}</dt>
+                <dd className="text-right font-mono text-[13px]">{p[key]}</dd>
+                <dd>
+                  <ProgressBar value={p[key]} max={180} label={label} />
+                </dd>
+              </div>
+            ))}
+            <dt className="text-muted border-line border-t pt-2">합계</dt>
+            <dd className="border-line border-t pt-2 text-right font-mono text-[13px] font-medium">
+              {statTotal}
+            </dd>
+            <dd className="border-line h-full border-t" />
+          </dl>
+        </div>
       </section>
 
       {family.length > 1 && (
         <section className="space-y-3">
           <h2 className="text-muted text-sm font-medium">진화</h2>
-          <ol className="flex flex-wrap items-center gap-3 text-sm">
+          <ol className="flex flex-wrap items-center gap-3">
             {family.map((f, i) => {
               const art = (f.sprites as { animated?: string }).animated
               return (
@@ -250,13 +243,17 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                   )}
                   <Link
                     href={`/${dex}/${f.number}`}
-                    className={`flex flex-col items-center rounded-lg border px-3 py-2 ${f.number === n ? 'border-accent' : 'border-muted/20 hover:border-muted'}`}
+                    aria-current={f.number === n ? 'page' : undefined}
+                    className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                   >
-                    {art && (
-                      // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
-                      <img src={art} alt="" className="h-12 w-12 object-contain" />
-                    )}
-                    <span>{ko(f)}</span>
+                    <span className="bg-surface-raised grid size-12 place-items-center rounded-md">
+                      {art && (
+                        // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
+                        <img src={art} alt="" className="size-12 object-contain" />
+                      )}
+                    </span>
+                    {ko(f)}
+                    <span className="text-muted font-mono text-[11px]">{dexNo(f.number)}</span>
                   </Link>
                 </li>
               )
@@ -270,23 +267,13 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           <h2 className="text-muted text-sm font-medium">모습</h2>
           <ul className="flex flex-wrap gap-2 text-sm">
             {forms.data!.map(({ species: f }) => (
-              <li key={f.id} className="border-muted/20 rounded border px-2 py-1">
+              <li key={f.id} className="border-line rounded border px-2 py-1">
                 {ko(f)}
               </li>
             ))}
           </ul>
         </section>
       )}
-
-      <section className="space-y-3">
-        <h2 className="text-muted text-sm font-medium">이름</h2>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-          <dt className="text-muted">한국어</dt>
-          <dd lang="ko">{p.ko_name}</dd>
-          <dt className="text-muted">English</dt>
-          <dd lang="en">{p.en_name}</dd>
-        </dl>
-      </section>
     </main>
   )
 }

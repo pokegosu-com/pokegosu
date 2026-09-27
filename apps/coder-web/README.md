@@ -1,8 +1,8 @@
-# coder
+# PokeGosu Coder
 
 Raise Pokémon with the tokens your coding agent spends.
 
-coder counts the tokens your coding agent uses on every machine you work on, and turns them into experience for your Pokémon. Work on a laptop, a server and a container, and it all goes to the same box. Claude Code is the agent it reads today.
+PokeGosu Coder counts the tokens your coding agent uses on every machine you work on, and turns them into experience for your Pokémon. Work on a laptop, a server and a container, and it all goes to the same box. Claude Code is the agent it reads today.
 
 ## Getting started
 

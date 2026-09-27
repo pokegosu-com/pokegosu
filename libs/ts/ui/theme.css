@@ -3,7 +3,7 @@
 
    The raw values live on :root so the dark variant can swap them; @theme inline
    then points the Tailwind tokens at those variables rather than at fixed
-   colours. */
+   colours. DESIGN.md at the repository root says where each one is used. */
 
 /* Points Tailwind at this package's components. Apps reach it through
    node_modules, which Tailwind skips, and a plain './src' resolves through
@@ -11,24 +11,100 @@
 @source '../../../libs/ts/ui/src';
 
 :root {
+  /* The interface: neutrals and one blue. */
   --surface: oklch(1 0 0);
+  --surface-raised: oklch(0.975 0 0);
   --ink: oklch(0.21 0 0);
   --muted: oklch(0.55 0 0);
   --accent: oklch(0.55 0.2 264);
+  --line: oklch(0.91 0 0);
+  /* 3:1 on surface, so it can be the only edge of a control. */
+  --line-strong: oklch(0.64 0 0);
+  --danger: oklch(0.505 0.213 27.518);
+  --danger-surface: oklch(0.971 0.013 17.38);
+
+  /* The game's own colours: the only ones allowed to be loud. */
+  --mark-blue: oklch(0.685 0.169 237.323);
+  --mark-red: oklch(0.645 0.246 16.439);
+  --ribbon-surface: oklch(0.769 0.188 70.08 / 0.15);
+
+  /* Coding agents in usage charts, told apart by lightness as well as hue. */
+  --provider-claude-code: oklch(0.64 0.15 45);
+  --provider-2: oklch(0.5 0.09 195);
+  --provider-3: oklch(0.78 0.12 95);
+
+  /* A type's colour is only ever a dot beside its name. */
+  --type-normal: oklch(0.68 0.03 100);
+  --type-fire: oklch(0.66 0.19 40);
+  --type-water: oklch(0.62 0.15 250);
+  --type-electric: oklch(0.82 0.16 92);
+  --type-grass: oklch(0.68 0.16 140);
+  --type-ice: oklch(0.8 0.09 200);
+  --type-fighting: oklch(0.55 0.18 25);
+  --type-poison: oklch(0.55 0.15 320);
+  --type-ground: oklch(0.7 0.11 80);
+  --type-flying: oklch(0.72 0.09 280);
+  --type-psychic: oklch(0.65 0.2 0);
+  --type-bug: oklch(0.7 0.16 120);
+  --type-rock: oklch(0.6 0.08 85);
+  --type-ghost: oklch(0.5 0.1 295);
+  --type-dragon: oklch(0.5 0.2 280);
+  --type-dark: oklch(0.42 0.03 50);
+  --type-steel: oklch(0.7 0.03 240);
+  --type-fairy: oklch(0.78 0.1 350);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --surface: oklch(0.19 0 0);
+    --surface-raised: oklch(0.23 0 0);
     --ink: oklch(0.97 0 0);
     --muted: oklch(0.65 0 0);
     --accent: oklch(0.7 0.16 264);
+    --line: oklch(0.3 0 0);
+    --line-strong: oklch(0.5 0 0);
+    --danger: oklch(0.76 0.13 25);
+    --danger-surface: oklch(0.27 0.06 25);
+
+    --provider-claude-code: oklch(0.72 0.14 45);
+    --provider-2: oklch(0.72 0.1 195);
+    --provider-3: oklch(0.55 0.1 95);
+
+    /* The darker types would vanish on the dark ground. */
+    --type-water: oklch(0.7 0.14 250);
+    --type-fighting: oklch(0.64 0.18 25);
+    --type-poison: oklch(0.66 0.15 320);
+    --type-rock: oklch(0.68 0.08 85);
+    --type-ghost: oklch(0.64 0.11 295);
+    --type-dragon: oklch(0.64 0.18 280);
+    --type-dark: oklch(0.6 0.03 50);
+
+    color-scheme: dark;
   }
 }
 
 @theme inline {
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-mark-blue: var(--mark-blue);
+  --color-mark-red: var(--mark-red);
+  --color-ribbon-surface: var(--ribbon-surface);
+  --color-provider-claude-code: var(--provider-claude-code);
+  --color-provider-2: var(--provider-2);
+  --color-provider-3: var(--provider-3);
+
+  /* Loaded by <Fonts /> in each app's layout. */
+  --font-sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Every app page, top bar and content alike, so the left edge never moves. */
+  --container-wide: 64rem;
+  --container-task: 24rem;
 }

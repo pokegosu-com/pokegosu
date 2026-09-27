@@ -19,19 +19,21 @@ export default async function ApprovePage({ params }: PageProps<'/devices/add/[c
   const pending = data as Pending | null
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-24">
+    <main className="mx-auto flex w-full max-w-task flex-1 flex-col justify-center gap-6 px-6 py-24">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">기기 추가</h1>
         <p className="text-muted font-mono text-sm tracking-[0.2em]">{decodeURIComponent(code)}</p>
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p>
+        <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
+          {error.message}
+        </p>
       )}
 
       {pending?.outcome === 'pending' ? (
         <>
-          <dl className="border-muted/25 divide-muted/25 divide-y rounded-lg border text-sm">
+          <dl className="border-line divide-line divide-y rounded-lg border text-sm">
             <div className="flex justify-between gap-4 px-4 py-3">
               <dt className="text-muted">기기</dt>
               <dd className="font-medium">{pending.device_name}</dd>

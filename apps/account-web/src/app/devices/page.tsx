@@ -15,16 +15,25 @@ export default async function DevicesPage() {
     .order('created_at')
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-12">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
-        <Link href="/devices/add" className="text-accent text-sm underline">
-          기기 추가
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-6 px-6 py-10">
+      <div className="flex items-start justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
+          <p className="text-muted text-sm">
+            토큰 사용량을 보내는 기기입니다. 새 기기는 그 기기에서{' '}
+            <code className="text-ink font-mono text-[13px]">pokegosu auth login</code> 을 실행하면
+            추가됩니다.
+          </p>
+        </div>
+        <Link href="/devices/add" className="text-accent hover:text-ink flex-none text-sm">
+          코드로 추가
         </Link>
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p>
+        <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
+          {error.message}
+        </p>
       )}
 
       {devices && devices.length === 0 && (
@@ -35,7 +44,7 @@ export default async function DevicesPage() {
       )}
 
       {devices && devices.length > 0 && (
-        <ul className="border-muted/25 divide-muted/25 divide-y rounded-lg border">
+        <ul className="border-line divide-line divide-y rounded-lg border">
           {devices.map((device) => (
             <DeviceRow key={device.id} device={device} />
           ))}

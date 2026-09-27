@@ -44,14 +44,24 @@ export function DisplayName({
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">{displayName ?? username}</h1>
         <button
           type="button"
+          aria-label="이름 변경"
+          title="이름 변경"
           onClick={() => setEditing(true)}
-          className="text-muted hover:text-ink text-sm"
+          className="text-muted hover:text-ink hover:bg-surface-raised grid size-8 place-items-center rounded-md"
         >
-          이름 변경
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+              d="M10.5 2.5l3 3L6 13H3v-3z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </div>
     )
@@ -66,7 +76,7 @@ export function DisplayName({
           maxLength={100}
           autoFocus
           aria-label="이름"
-          className="border-muted/40 rounded-md border px-3 py-1.5 text-lg"
+          className="border-line-strong rounded-md border px-3 py-1.5 text-lg"
         />
         <button type="submit" disabled={saving} className="text-accent text-sm disabled:opacity-50">
           저장
@@ -82,7 +92,7 @@ export function DisplayName({
           취소
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
     </form>
   )
 }

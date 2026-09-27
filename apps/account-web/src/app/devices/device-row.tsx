@@ -63,7 +63,7 @@ export function DeviceRow({ device }: { device: Device }) {
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
               autoFocus
-              className="border-muted/40 flex-1 rounded-md border px-2 py-1"
+              className="border-line-strong flex-1 rounded-md border px-2 py-1"
             />
             <button type="submit" disabled={busy} className="text-accent disabled:opacity-50">
               저장
@@ -91,7 +91,7 @@ export function DeviceRow({ device }: { device: Device }) {
             {!retired && (
               <button
                 onClick={() => setConfirmingRetire(true)}
-                className="text-red-600 hover:text-red-700"
+                className="text-danger hover:underline"
               >
                 폐기
               </button>
@@ -131,7 +131,7 @@ export function DeviceRow({ device }: { device: Device }) {
       )}
 
       {confirmingRetire && (
-        <div className="space-y-2 rounded-md bg-red-50 px-3 py-2 text-red-800">
+        <div className="space-y-2 rounded-md bg-danger-surface px-3 py-2 text-danger">
           <p>
             이 기기의 키가 바로 막힙니다. 지금까지의 기록은 남습니다. 폐기는 되돌릴 수 없고, 다시
             쓰려면 그 기기에서 새로 로그인해야 합니다.
@@ -153,7 +153,7 @@ export function DeviceRow({ device }: { device: Device }) {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
     </li>
   )
 }

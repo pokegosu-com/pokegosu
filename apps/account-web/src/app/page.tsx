@@ -23,31 +23,33 @@ export default async function AccountPage() {
   if (!profile?.username) redirect('/onboarding')
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-8 px-6 py-24">
-      <div className="space-y-1">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-10">
+      <header className="space-y-1">
         <DisplayName
           userId={user.id}
           displayName={profile.display_name}
           username={profile.username}
         />
-        <p className="text-muted text-sm">@{profile.username}</p>
-      </div>
+        <p className="text-muted font-mono text-[13px]">@{profile.username}</p>
+      </header>
 
-      <dl className="border-muted/25 divide-muted/25 divide-y rounded-lg border text-sm">
-        <div className="flex justify-between gap-4 px-4 py-3">
+      <dl className="border-line border-t text-sm">
+        <div className="border-line grid grid-cols-[10rem_minmax(0,1fr)] gap-4 border-b py-3.5">
           <dt className="text-muted">이메일</dt>
           <dd>{user.email}</dd>
         </div>
-        <div className="flex justify-between gap-4 px-4 py-3">
+        <div className="border-line grid grid-cols-[10rem_minmax(0,1fr)] gap-4 border-b py-3.5">
           <dt className="text-muted">가입일</dt>
-          <dd>{new Date(user.created_at).toLocaleDateString('ko-KR')}</dd>
+          <dd className="font-mono text-[13px]">
+            {new Date(user.created_at).toLocaleDateString('ko-KR')}
+          </dd>
         </div>
       </dl>
 
       <form action="/auth/signout" method="post">
         <button
           type="submit"
-          className="border-muted/40 rounded-md border px-4 py-2 text-sm font-medium"
+          className="border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium"
         >
           로그아웃
         </button>

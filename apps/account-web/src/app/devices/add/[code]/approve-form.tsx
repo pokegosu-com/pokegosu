@@ -57,7 +57,7 @@ export function ApproveForm({ code, deviceName }: { code: string; deviceName: st
       >
         {busy ? '승인하는 중…' : '승인'}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   )
 }

@@ -51,7 +51,7 @@ export function LoginForm({ returnTo }: { returnTo: string | null }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="border-muted/40 w-full rounded-md border px-3 py-2 text-sm"
+          className="border-line-strong w-full rounded-md border px-3 py-2 text-sm"
         />
       </label>
 
@@ -63,7 +63,7 @@ export function LoginForm({ returnTo }: { returnTo: string | null }) {
         {status.kind === 'sending' ? '보내는 중…' : '로그인 링크 받기'}
       </button>
 
-      {status.kind === 'error' && <p className="text-sm text-red-600">{status.message}</p>}
+      {status.kind === 'error' && <p className="text-sm text-danger">{status.message}</p>}
     </form>
   )
 }
