@@ -58,7 +58,6 @@ export function PokemonTile({
   sprite,
   partner = false,
   shiny = false,
-  egg = false,
   task = false,
 }: {
   href: string
@@ -68,7 +67,6 @@ export function PokemonTile({
   sprite?: string
   partner?: boolean
   shiny?: boolean
-  egg?: boolean
   /** An action waits: evolve, hatch, an egg, a ribbon. */
   task?: boolean
 }) {
@@ -86,14 +84,12 @@ export function PokemonTile({
           className="bg-accent absolute top-2 right-2 size-1.5 rounded-full"
         />
       )}
-      <span className="bg-surface-raised mb-1 grid size-12 place-items-center rounded-md">
+      {/* 96px, the sprite's own size, where the tile is wide enough; a narrow
+          grid shrinks it rather than cropping it. */}
+      <span className="bg-surface-raised mb-1 grid aspect-square w-full max-w-24 place-items-center rounded-md">
         {sprite && (
-          // eslint-disable-next-line @next/next/no-img-element -- animated GIFs and a pixel egg, served as they are
-          <img
-            src={sprite}
-            alt=""
-            className={`size-12 object-contain ${egg ? '[image-rendering:pixelated]' : ''}`}
-          />
+          // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
+          <img src={sprite} alt="" className="size-full [image-rendering:pixelated]" />
         )}
       </span>
       <span className="max-w-full truncate text-[13px] font-medium">

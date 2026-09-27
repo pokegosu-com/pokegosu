@@ -306,7 +306,7 @@ export function BoxView() {
                   href={`/box/${item.id}`}
                   name={item.name}
                   caption={`Lv.${item.p.level}`}
-                  sprite={spriteUrl(item.p)}
+                  sprite={spriteUrl(item.p, 'small')}
                   partner={item.id === box.main_companion_id}
                   shiny={item.p.is_shiny}
                   task={hasTask(item)}
@@ -318,7 +318,6 @@ export function BoxView() {
                   caption={`${exactTokens(item.e.tokens)} / ${exactTokens(item.e.tokens_needed)}`}
                   sprite={eggSpriteUrl}
                   partner={item.id === box.main_companion_id}
-                  egg
                   task={hasTask(item)}
                 />
               )}

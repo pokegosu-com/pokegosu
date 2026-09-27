@@ -27,6 +27,7 @@
   --mark-blue: oklch(0.685 0.169 237.323);
   --mark-red: oklch(0.645 0.246 16.439);
   --ribbon-surface: oklch(0.769 0.188 70.08 / 0.15);
+  --sparkle: oklch(0.86 0.17 90);
 
   /* Coding agents in usage charts, told apart by lightness as well as hue. */
   --provider-claude-code: oklch(0.64 0.15 45);
@@ -96,6 +97,7 @@
   --color-mark-blue: var(--mark-blue);
   --color-mark-red: var(--mark-red);
   --color-ribbon-surface: var(--ribbon-surface);
+  --color-sparkle: var(--sparkle);
   --color-provider-claude-code: var(--provider-claude-code);
   --color-provider-2: var(--provider-2);
   --color-provider-3: var(--provider-3);
@@ -107,4 +109,66 @@
   /* Every app page, top bar and content alike, so the left edge never moves. */
   --container-wide: 64rem;
   --container-task: 24rem;
+}
+
+/* The official artwork is a still, so a Pokémon on its own page idles: it
+   floats while its shadow narrows beneath it, and hops when it is touched.
+   A shiny one sparkles as it hops. */
+@theme {
+  --animate-idle: idle 2.5s ease-in-out infinite;
+  --animate-idle-shadow: idle-shadow 2.5s ease-in-out infinite;
+  --animate-hop: hop 0.5s cubic-bezier(0.3, 0, 0.3, 1);
+  --animate-sparkle: sparkle 0.7s ease-out both;
+
+  @keyframes idle {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    50% {
+      transform: translateY(-6px) scale(0.99, 1.01);
+    }
+  }
+  @keyframes idle-shadow {
+    0%,
+    100% {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scaleX(0.82);
+      opacity: 0.6;
+    }
+  }
+  @keyframes sparkle {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    40% {
+      transform: scale(1) rotate(45deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(0) rotate(90deg);
+      opacity: 0;
+    }
+  }
+  @keyframes hop {
+    0% {
+      transform: translateY(0) scale(1, 1);
+    }
+    20% {
+      transform: translateY(0) scale(1.06, 0.92);
+    }
+    50% {
+      transform: translateY(-18px) scale(0.96, 1.05);
+    }
+    80% {
+      transform: translateY(0) scale(1.04, 0.96);
+    }
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+  }
 }

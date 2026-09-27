@@ -30,7 +30,7 @@ export type Pokemon = {
   dex_no: number
   ko_name: string | null
   en_name: string | null
-  sprites: { animated?: string; animated_shiny?: string }
+  sprites: Sprites
   growth_rate: string
   types: ({ id: string } & Named)[]
   is_shiny: boolean
@@ -57,9 +57,31 @@ export function ko(named: Named): string {
   return named.ko_name ?? named.en_name ?? ''
 }
 
-/** species keeps sprite paths; pokedex-web serves them. */
-export function spriteUrl(pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>): string | undefined {
-  const path = pokemon.is_shiny ? pokemon.sprites.animated_shiny : pokemon.sprites.animated
+/** The paths pokedex_species.sprites keeps, on pokedex-web. */
+export type Sprites = {
+  front?: string
+  front_shiny?: string
+  artwork?: string
+  artwork_shiny?: string
+}
+
+/**
+ * The pixel front sprite for a list, the official artwork for a Pokémon on its
+ * own. species keeps the paths; pokedex-web serves them.
+ */
+export function spriteUrl(
+  pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>,
+  size: 'small' | 'large',
+): string | undefined {
+  const { sprites, is_shiny } = pokemon
+  const path =
+    size === 'small'
+      ? is_shiny
+        ? sprites.front_shiny
+        : sprites.front
+      : is_shiny
+        ? sprites.artwork_shiny
+        : sprites.artwork
   return path && `${env.NEXT_PUBLIC_POKEDEX_URL}${path}`
 }
 

@@ -6,6 +6,7 @@
   "exports": {
     "./apps": "./src/apps.ts",
     "./app-shell": "./src/app-shell.tsx",
+    "./artwork": "./src/artwork.tsx",
     "./pokemon": "./src/pokemon.tsx",
     "./fonts": "./src/fonts.tsx",
     "./theme.css": "./theme.css",

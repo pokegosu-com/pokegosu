@@ -2,22 +2,15 @@
 
 import { useState } from 'react'
 
-/** The large sprite, with the shiny one a press away. */
+import { Artwork } from '@pokegosu/ui/artwork'
+
+/** The official artwork, with the shiny one a press away. */
 export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
   const [showShiny, setShowShiny] = useState(false)
   const src = showShiny ? shiny : normal
   return (
     <div className="flex flex-none flex-col items-center gap-2">
-      <span className="bg-surface-raised grid size-48 place-items-center rounded-lg">
-        {src && (
-          // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
-          <img
-            src={src}
-            alt={showShiny ? `${name} (색이 다른)` : name}
-            className="size-40 object-contain"
-          />
-        )}
-      </span>
+      <Artwork src={src} alt={showShiny ? `${name} (색이 다른)` : name} shiny={showShiny} />
       {shiny && (
         <div
           role="group"
