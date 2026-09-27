@@ -4,7 +4,7 @@ import "testing"
 
 func TestSelectProviders(t *testing.T) {
 	t.Run("none means all", func(t *testing.T) {
-		got, err := selectProviders(nil)
+		got, err := selectProviders(nil, nil)
 		if err != nil {
 			t.Fatalf("selectProviders: %v", err)
 		}
@@ -14,7 +14,7 @@ func TestSelectProviders(t *testing.T) {
 	})
 
 	t.Run("by id", func(t *testing.T) {
-		got, err := selectProviders([]string{"claude_code"})
+		got, err := selectProviders([]string{"claude_code"}, nil)
 		if err != nil {
 			t.Fatalf("selectProviders: %v", err)
 		}
@@ -27,12 +27,36 @@ func TestSelectProviders(t *testing.T) {
 	// hands a directory to whichever providers are selected, and a typo
 	// would report zero tokens for logs that are right there.
 	t.Run("unknown id", func(t *testing.T) {
-		_, err := selectProviders([]string{"codex"})
+		_, err := selectProviders([]string{"gemini_cli"}, nil)
 		if err == nil {
 			t.Fatal("selectProviders succeeded, want an error naming the known providers")
 		}
-		if want := "claude_code"; !contains(err.Error(), want) {
-			t.Errorf("error = %q, want it to list %q", err, want)
+		for _, want := range []string{"claude_code", "codex"} {
+			if !contains(err.Error(), want) {
+				t.Errorf("error = %q, want it to list %q", err, want)
+			}
+		}
+	})
+
+	// A directory of logs belongs to one agent, so --path alone cannot say
+	// which parser should read it.
+	t.Run("path without a provider", func(t *testing.T) {
+		_, err := selectProviders(nil, []string{"/logs"})
+		if err == nil {
+			t.Fatal("selectProviders succeeded, want an error asking for --provider")
+		}
+		if want := "--provider"; !contains(err.Error(), want) {
+			t.Errorf("error = %q, want it to mention %q", err, want)
+		}
+	})
+
+	t.Run("path with a provider", func(t *testing.T) {
+		got, err := selectProviders([]string{"codex"}, []string{"/logs"})
+		if err != nil {
+			t.Fatalf("selectProviders: %v", err)
+		}
+		if len(got) != 1 || got[0].ID() != "codex" {
+			t.Errorf("got %v, want the codex provider", got)
 		}
 	})
 }

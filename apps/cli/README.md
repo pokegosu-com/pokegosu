@@ -24,7 +24,7 @@ go install github.com/pokegosu-com/pokegosu/apps/cli/cmd/pokegosu@latest
 
 That build says `dev` for its version, since the version is written in only when the release is built.
 
-To uninstall, run `pokegosu coder hook uninstall claude-code`, then delete the binary, and `~/.config/pokegosu` with it if you are done with the settings. Delete the machine in the account first, so its key stops working.
+To uninstall, run `pokegosu coder hook uninstall claude-code codex`, then delete the binary, and `~/.config/pokegosu` with it if you are done with the settings. Delete the machine in the account first, so its key stops working.
 
 ## Using it
 
@@ -51,7 +51,7 @@ For a deployment other than the default, give its address: `pokegosu auth login 
 Then have your coding agent run the sync:
 
 ```sh
-pokegosu coder hook install claude-code
+pokegosu coder hook install claude-code   # and/or codex
 ```
 
 That adds hooks to Claude Code's user settings (`~/.claude/settings.json`, or under `CLAUDE_CONFIG_DIR`), and changes nothing else there:
@@ -65,15 +65,18 @@ pokegosu coder sync --jsonl --no-fail --min-interval 15m >> ~/.config/pokegosu/h
 
 So an open session reports every fifteen minutes or so, and a closing one reports what is left. The agent is what writes the logs, so the sync runs wherever it does — a laptop, a server, a container with no cron or systemd — and when no agent is running there is nothing new to send. `--no-fail` keeps a failed sync from interrupting the session; `--jsonl` prints how each sync went as a line of JSON, which the hook appends to its log. The hooks run this binary by its full path, so after moving it, install them again.
 
-| Command                                     | Does                                                                                                                                     |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `pokegosu coder hook install claude-code`   | Adds the hooks, or replaces them                                                                                                         |
-| `pokegosu coder hook uninstall claude-code` | Removes the hooks, and nothing else                                                                                                      |
-| `pokegosu coder hook logs claude-code`      | The syncs the hooks ran, and how each went (`-n` for more)                                                                               |
-| `pokegosu coder hook doctor`                | Checks the folder the hooks log to is there, and each event has a hook that runs a binary that is still there; says how to fix it if not |
+`pokegosu coder hook install codex` adds the same two hooks to Codex's user hooks (`~/.codex/hooks.json`, or under `CODEX_HOME`), logging to `hook.codex.jsonl`. Two things differ. Codex runs a hook from that file only once you trust it, and asks the next time it starts; until you do, the hooks do not run. And Codex gives a closing session's hooks three seconds at most, so that hook starts the sync in the background and returns, and the sync finishes after Codex has gone.
+
+| Command                                 | Does                                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pokegosu coder hook install <agent>`   | Adds the hooks, or replaces them                                                                                                         |
+| `pokegosu coder hook uninstall <agent>` | Removes the hooks, and nothing else                                                                                                      |
+| `pokegosu coder hook logs <agent>`      | The syncs the hooks ran, and how each went (`-n` for more)                                                                               |
+| `pokegosu coder hook doctor`            | Checks the folder the hooks log to is there, and each event has a hook that runs a binary that is still there; says how to fix it if not |
 
 - A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and the server ignores those hours whoever sends them.
-- `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong.
+- A sync reads every agent it knows: Claude Code (`~/.claude/projects`, or under `CLAUDE_CONFIG_DIR`) and Codex (`~/.codex/sessions` and `archived_sessions`, or under `CODEX_HOME`). Whichever agent's hook runs a sync, it sends both.
+- `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong. `--path` reads another directory instead, and needs `--provider claude_code` or `--provider codex` to say whose logs it holds.
 - A machine is enrolled once. Its id lives in the settings, so a machine that was deleted, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
@@ -83,8 +86,8 @@ Settings live in `~/.config/pokegosu/config.json`, readable only by you; `POKEGO
 
 ## Tests
 
-| What                                 | How                                   |
-| ------------------------------------ | ------------------------------------- |
-| Unit tests                           | `moon run cli:test`                   |
-| The libraries it is built from       | `moon run go-auth:test go-coder:test` |
-| The parser, against the shared cases | `moon run coder-scan-claude-code:go`  |
+| What                                  | How                                                      |
+| ------------------------------------- | -------------------------------------------------------- |
+| Unit tests                            | `moon run cli:test`                                      |
+| The libraries it is built from        | `moon run go-auth:test go-coder:test`                    |
+| The parsers, against the shared cases | `moon run coder-scan-claude-code:go coder-scan-codex:go` |

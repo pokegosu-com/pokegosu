@@ -8,7 +8,8 @@
 // nothing new to send, and nothing runs.
 //
 // An agent here is one whose logs coder can read; a hook on an agent coder
-// cannot read would sync nothing. Claude Code is the one there is.
+// cannot read would sync nothing. Claude Code and Codex are the ones there
+// are.
 package hooks
 
 import "fmt"
@@ -48,10 +49,14 @@ type Agent interface {
 	// Uninstall removes this program's hooks, and only those, and returns
 	// the file it wrote.
 	Uninstall() (string, error)
+
+	// AfterInstall is what a person still has to do before the hooks run,
+	// or nothing.
+	AfterInstall() string
 }
 
 // Agents is every agent hooks can be installed in.
-var Agents = []Agent{claudeCode{}}
+var Agents = []Agent{claudeCode, codex}
 
 // Find returns the agent with this ID.
 func Find(id string) (Agent, error) {

@@ -26,9 +26,8 @@ type ScanOptions struct {
 	// Paths read these directories instead of the default log locations.
 	Paths []string
 
-	// Providers read only these agents' logs, by id. Needed alongside Paths
-	// once there is more than one provider, since a log directory belongs to
-	// one agent.
+	// Providers read only these agents' logs, by id. Needed alongside Paths,
+	// since a log directory belongs to one agent.
 	Providers []string
 }
 
@@ -42,7 +41,7 @@ func Scan(opts ScanOptions) error {
 		return fmt.Errorf("unknown format %q: want text or json", opts.Format)
 	}
 
-	selected, err := selectProviders(opts.Providers)
+	selected, err := selectProviders(opts.Providers, opts.Paths)
 	if err != nil {
 		return err
 	}
@@ -73,30 +72,40 @@ func Scan(opts ScanOptions) error {
 // selectProviders resolves --provider values to parsers. No values means
 // every provider, which is what a plain scan does.
 //
-// --path applies to whichever providers are selected, so naming one matters
-// as soon as there is more than a single provider: a log directory belongs to
-// one agent, and handing it to another agent's parser is meaningless at best.
-func selectProviders(ids []string) ([]provider.Provider, error) {
+// --path applies to whichever providers are selected, so it needs one named:
+// a log directory belongs to one agent, and handing it to another agent's
+// parser is meaningless at best.
+func selectProviders(ids, paths []string) ([]provider.Provider, error) {
 	if len(ids) == 0 {
+		if len(paths) > 0 && len(scan.Providers()) > 1 {
+			return nil, fmt.Errorf("--path needs --provider to say whose logs it holds: %s",
+				strings.Join(providerIDs(), ", "))
+		}
 		return nil, nil
 	}
 
 	known := make(map[string]provider.Provider, len(scan.Providers()))
-	var names []string
 	for _, p := range scan.Providers() {
 		known[p.ID()] = p
-		names = append(names, p.ID())
 	}
 
 	var selected []provider.Provider
 	for _, id := range ids {
 		p, ok := known[id]
 		if !ok {
-			return nil, fmt.Errorf("unknown provider %q: want one of %s", id, strings.Join(names, ", "))
+			return nil, fmt.Errorf("unknown provider %q: want one of %s", id, strings.Join(providerIDs(), ", "))
 		}
 		selected = append(selected, p)
 	}
 	return selected, nil
+}
+
+func providerIDs() []string {
+	var ids []string
+	for _, p := range scan.Providers() {
+		ids = append(ids, p.ID())
+	}
+	return ids
 }
 
 // parseSince accepts a plain UTC date or a full RFC3339 timestamp.

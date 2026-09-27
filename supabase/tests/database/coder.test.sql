@@ -88,7 +88,7 @@ select isnt(
 select pg_temp.as_edge_function();
 select is(
   public.ingest(pg_temp.h('key-a'), '[{"provider": "nope", "hour_bucket": "2026-09-12T14:00:00Z", "tokens": 1}]'),
-  '{"outcome": "unknown_provider", "provider": "nope", "known": ["claude_code"]}'::jsonb,
+  '{"outcome": "unknown_provider", "provider": "nope", "known": ["claude_code", "codex"]}'::jsonb,
   'an unknown provider is named, with the ones that exist');
 
 -- Retiring is the account's doing; coder only has to stop taking the key.

@@ -42,7 +42,7 @@ anywhere. Run it first when a number looks wrong.`,
 	f.StringArrayVar(&opts.Paths, "path", nil,
 		"read `DIR` instead of the default log location (repeatable)")
 	f.StringArrayVar(&opts.Providers, "provider", nil,
-		"read only the logs of provider `ID` (repeatable); needed with --path once there is more than one")
+		"read only the logs of provider `ID`, claude_code or codex (repeatable); needed with --path")
 	return cmd
 }
 
@@ -55,7 +55,7 @@ func newSyncCmd() *cobra.Command {
 		Short: "Upload what has changed since the last run",
 		Long: `Reads the local agent logs and uploads the hourly rollups that have changed
 since the last run. One pass, then it exits. "pokegosu coder hook install
-claude-code" has Claude Code run it for you.
+claude-code codex" has your agents run it for you.
 
 A sync reports nothing from before this machine was enrolled: what the logs
 hold from before then is nobody's business but this machine's. The server
@@ -101,6 +101,6 @@ Run "pokegosu auth login" first: sync needs the settings it writes.`,
 	f.StringArrayVar(&opts.Paths, "path", nil,
 		"read `DIR` instead of the default log location (repeatable)")
 	f.StringArrayVar(&opts.Providers, "provider", nil,
-		"read only the logs of provider `ID` (repeatable); needed with --path once there is more than one")
+		"read only the logs of provider `ID`, claude_code or codex (repeatable); needed with --path")
 	return cmd
 }
