@@ -151,7 +151,7 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
           </p>
           <p className="flex gap-1 text-xs">
             {[p.type1, p.type2].filter(Boolean).map((t) => (
-              <span key={t} className="border-muted/30 rounded border px-1.5 py-0.5">
+              <span key={t} className="border-line rounded border px-1.5 py-0.5">
                 {types.get(t!)}
               </span>
             ))}
@@ -195,7 +195,7 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
             <div key={key} className="contents">
               <dt className="text-muted">{label}</dt>
               <dd className="text-right tabular-nums">{p[key]}</dd>
-              <dd className="bg-muted/15 h-1.5 overflow-hidden rounded-full">
+              <dd className="bg-surface-raised h-1.5 overflow-hidden rounded-full">
                 <span
                   className="bg-accent block h-full rounded-full"
                   style={{ width: `${Math.min(100, (p[key] / 180) * 100)}%` }}
@@ -221,7 +221,7 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
                   )}
                   <Link
                     href={`/${f.number}`}
-                    className={`flex flex-col items-center rounded-lg border px-3 py-2 ${f.number === n ? 'border-accent' : 'border-muted/20 hover:border-muted'}`}
+                    className={`flex flex-col items-center rounded-lg border px-3 py-2 ${f.number === n ? 'border-accent' : 'border-line hover:border-line-strong'}`}
                   >
                     {art && (
                       // eslint-disable-next-line @next/next/no-img-element -- animated GIFs, served as they are
@@ -241,7 +241,7 @@ export default async function Entry({ params }: PageProps<'/[dexNo]'>) {
           <h2 className="text-muted text-sm font-medium">모습</h2>
           <ul className="flex flex-wrap gap-2 text-sm">
             {forms.data!.map(({ species: f }) => (
-              <li key={f.id} className="border-muted/20 rounded border px-2 py-1">
+              <li key={f.id} className="border-line rounded border px-2 py-1">
                 {ko(f)}
               </li>
             ))}

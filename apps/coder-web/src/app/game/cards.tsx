@@ -34,12 +34,12 @@ function climbTime(curve: Curve, growthRate: string, from: number, to: number): 
 const button =
   'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50 bg-accent text-surface'
 const quiet =
-  'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50 border border-muted/40 hover:border-muted'
+  'rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50 border border-line-strong hover:border-line-strong'
 
 function Bar({ value, max }: { value: number; max: number }) {
   const share = max > 0 ? Math.min(1, value / max) : 1
   return (
-    <span className="bg-muted/15 block h-1.5 overflow-hidden rounded-full">
+    <span className="bg-surface-raised block h-1.5 overflow-hidden rounded-full">
       <span className="bg-accent block h-full rounded-full" style={{ width: `${share * 100}%` }} />
     </span>
   )
@@ -65,7 +65,7 @@ export function Marks({
             disabled={disabled}
             onClick={() => onChange(cycleMark(markings, i))}
             className={
-              color === 1 ? 'text-sky-500' : color === 2 ? 'text-rose-500' : 'text-muted/40'
+              color === 1 ? 'text-mark-blue' : color === 2 ? 'text-mark-red' : 'text-muted/40'
             }
             aria-label={`${mark} ${['끔', '파랑', '빨강'][color]}`}
           >
@@ -102,7 +102,7 @@ export function PokemonCard({
   const toNext = at.to === null ? null : Math.ceil(at.to - shown)
   return (
     <article
-      className={`space-y-3 rounded-lg border px-4 py-3 ${p.is_main ? 'border-accent' : 'border-muted/25'}`}
+      className={`space-y-3 rounded-lg border px-4 py-3 ${p.is_main ? 'border-accent' : 'border-line'}`}
     >
       <header className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- animated GIFs from pokedex-web */}
@@ -118,7 +118,7 @@ export function PokemonCard({
           </p>
           <p className="text-muted flex gap-1 text-xs">
             {p.types.map((t) => (
-              <span key={t.id} className="border-muted/30 rounded border px-1">
+              <span key={t.id} className="border-line rounded border px-1">
                 {ko(t)}
               </span>
             ))}
@@ -149,7 +149,7 @@ export function PokemonCard({
       {p.ribbons.length > 0 && (
         <p className="flex flex-wrap gap-1 text-xs">
           {p.ribbons.map((r) => (
-            <span key={r.id} className="rounded bg-amber-500/15 px-1.5 py-0.5">
+            <span key={r.id} className="rounded bg-ribbon-surface px-1.5 py-0.5">
               🎀 {ko(r)}
             </span>
           ))}
@@ -209,7 +209,7 @@ export function EggCard({ egg, act, busy }: { egg: Egg; act: Act; busy: boolean 
   const ready = !climbing && egg.tokens >= egg.tokens_needed
   return (
     <article
-      className={`space-y-3 rounded-lg border px-4 py-3 ${egg.is_main ? 'border-accent' : 'border-muted/25'}`}
+      className={`space-y-3 rounded-lg border px-4 py-3 ${egg.is_main ? 'border-accent' : 'border-line'}`}
     >
       <header className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}

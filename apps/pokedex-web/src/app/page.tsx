@@ -24,7 +24,7 @@ export default async function Pokedex() {
             <li key={number}>
               <Link
                 href={`/${number}`}
-                className="border-muted/20 hover:border-muted flex flex-col items-center gap-1 rounded-lg border px-2 py-3 text-xs"
+                className="border-line hover:border-line-strong flex flex-col items-center gap-1 rounded-lg border px-2 py-3 text-xs"
               >
                 <span className="flex h-16 items-end">
                   {sprites.animated && (

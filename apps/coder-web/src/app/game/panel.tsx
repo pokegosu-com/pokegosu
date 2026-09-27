@@ -41,13 +41,13 @@ function say(box: Box | null, fn: string, o: Outcome): string | null {
 export function Panel({ game }: { game: Game }) {
   const { box, curve, busy, last, act, failure } = game
   if (failure) {
-    return <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{failure}</p>
+    return <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">{failure}</p>
   }
   if (!box) return <p className="text-muted text-sm">불러오는 중…</p>
 
   if (!box.started) {
     return (
-      <section className="border-muted/25 space-y-3 rounded-lg border px-4 py-4">
+      <section className="border-line space-y-3 rounded-lg border px-4 py-4">
         <p className="text-sm">
           지금까지 쓴 토큰{' '}
           <span className="tabular-nums">{compactTokens(BigInt(box.balance))}</span> 이 기다리고
@@ -87,7 +87,7 @@ export function Panel({ game }: { game: Game }) {
             type="button"
             disabled={busy}
             onClick={() => act({ fn: 'claim', companion_id: box.main_companion_id, tokens })}
-            className="border-muted/40 hover:border-muted rounded-md border px-3 py-1.5 font-medium disabled:opacity-50"
+            className="border-line-strong hover:border-line-strong rounded-md border px-3 py-1.5 font-medium disabled:opacity-50"
           >
             메인에게 주기
           </button>
