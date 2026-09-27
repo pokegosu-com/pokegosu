@@ -55,7 +55,7 @@ func newSyncCmd() *cobra.Command {
 		Short: "Upload what has changed since the last run",
 		Long: `Reads the local agent logs and uploads the hourly rollups that have changed
 since the last run. One pass, then it exits. "pokegosu coder hook install
-claude-code" has Claude Code run it for you.
+claude-code codex" has your agents run it for you.
 
 A sync reports nothing from before this machine was enrolled: what the logs
 hold from before then is nobody's business but this machine's. The server

@@ -41,11 +41,11 @@ const binary = "/home/someone/.local/bin/pokegosu"
 func TestInstallIntoNoSettings(t *testing.T) {
 	path := claudeHome(t)
 
-	if _, err := (claudeCode{}).Install(binary); err != nil {
+	if _, err := claudeCode.Install(binary); err != nil {
 		t.Fatal(err)
 	}
 	// The log's directory is there for the shell to open the log in.
-	log, _ := (claudeCode{}).LogPath()
+	log, _ := claudeCode.LogPath()
 	if info, err := os.Stat(filepath.Dir(log)); err != nil || !info.IsDir() {
 		t.Errorf("no directory for %s", log)
 	}
@@ -97,7 +97,7 @@ func TestInstallKeepsEverythingElse(t *testing.T) {
   "permissions": {"allow": ["Bash(ls)"]}
 }`)
 
-	if _, err := (claudeCode{}).Install(binary); err != nil {
+	if _, err := claudeCode.Install(binary); err != nil {
 		t.Fatal(err)
 	}
 	got := read(t, path)
@@ -122,7 +122,7 @@ func TestInstallKeepsEverythingElse(t *testing.T) {
 // pointing at the new place.
 func TestInstallAgainReplaces(t *testing.T) {
 	path := claudeHome(t)
-	c := claudeCode{}
+	c := claudeCode
 
 	if _, err := c.Install("/old/place/pokegosu"); err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func TestInstallAgainReplaces(t *testing.T) {
 func TestUninstallTakesOnlyItsOwn(t *testing.T) {
 	path := claudeHome(t)
 	write(t, path, `{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify-send done"}]}]}}`)
-	c := claudeCode{}
+	c := claudeCode
 
 	if _, err := c.Install(binary); err != nil {
 		t.Fatal(err)
@@ -171,7 +171,7 @@ func TestUninstallTakesOnlyItsOwn(t *testing.T) {
 func TestUninstallLeavesNoEmptyHooks(t *testing.T) {
 	path := claudeHome(t)
 	write(t, path, `{"model": "opus"}`)
-	c := claudeCode{}
+	c := claudeCode
 
 	if _, err := c.Install(binary); err != nil {
 		t.Fatal(err)
@@ -190,7 +190,7 @@ func TestBrokenSettingsAreLeftAlone(t *testing.T) {
 	path := claudeHome(t)
 	write(t, path, `{"model": "opus",`)
 
-	if _, err := (claudeCode{}).Install(binary); err == nil {
+	if _, err := claudeCode.Install(binary); err == nil {
 		t.Fatal("Install accepted settings it could not read")
 	}
 	if got := read(t, path); got != `{"model": "opus",` {
@@ -210,7 +210,7 @@ func TestALinkStaysALink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := (claudeCode{}).Install(binary); err != nil {
+	if _, err := claudeCode.Install(binary); err != nil {
 		t.Fatal(err)
 	}
 	if info, err := os.Lstat(path); err != nil || info.Mode()&os.ModeSymlink == 0 {
@@ -222,7 +222,7 @@ func TestALinkStaysALink(t *testing.T) {
 }
 
 func TestPathsWithSpacesAreQuoted(t *testing.T) {
-	c := claudeCode{}
+	c := claudeCode
 	got := c.hookFor("SessionEnd", "/Users/some one/bin/pokegosu", "/Users/some one/.config/pokegosu/hook.claude-code.jsonl").Command
 	want := "'/Users/some one/bin/pokegosu' coder sync --jsonl --no-fail >> '/Users/some one/.config/pokegosu/hook.claude-code.jsonl'"
 	if got != want {
@@ -235,7 +235,7 @@ func TestPathsWithSpacesAreQuoted(t *testing.T) {
 
 // A sync somebody put in by hand is theirs; uninstall leaves it.
 func TestAHandWrittenSyncIsNotOurs(t *testing.T) {
-	if (claudeCode{}).ours("pokegosu coder sync --jsonl >> ~/my-sync.jsonl") {
+	if claudeCode.ours("pokegosu coder sync --jsonl >> ~/my-sync.jsonl") {
 		t.Error("a plain sync was taken for one Install wrote")
 	}
 }
@@ -243,9 +243,9 @@ func TestAHandWrittenSyncIsNotOurs(t *testing.T) {
 // doctor checks the binary a hook runs, so it has to read it back out of
 // the command, quotes and all.
 func TestExecutableReadsBackWhatWasWritten(t *testing.T) {
-	c := claudeCode{}
+	c := claudeCode
 	for _, path := range []string{binary, "/Users/some one/bin/pokegosu", "/tmp/it's/pokegosu"} {
-		for _, event := range claudeCodeEvents {
+		for _, event := range claudeCode.events {
 			if got := Executable(c.hookFor(event, path, "/tmp/log.jsonl").Command); got != path {
 				t.Errorf("Executable(%s hook for %q) = %q", event, path, got)
 			}

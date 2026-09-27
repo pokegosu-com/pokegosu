@@ -66,7 +66,7 @@ func newHookInstallCmd() *cobra.Command {
 		Long: `Adds the hooks to an agent's settings, leaving everything else in them as it
 was. Installing again replaces them, which is what to do after moving the
 pokegosu binary: the hooks run it by its full path.`,
-		Example: "  pokegosu coder hook install claude-code",
+		Example: "  pokegosu coder hook install claude-code codex",
 		Args:    needAgent,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return installHooks(args)
@@ -89,6 +89,9 @@ func installHooks(ids []string) error {
 			return fmt.Errorf("%s: %w", a.Name(), err)
 		}
 		fmt.Printf("%s will run sync: hooks written to %s\n", a.Name(), path)
+		if note := a.AfterInstall(); note != "" {
+			fmt.Printf("  %s\n", note)
+		}
 	}
 	return nil
 }

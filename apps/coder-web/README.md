@@ -6,15 +6,15 @@ PokeGosu Coder counts the tokens your coding agent uses on every machine you wor
 
 ## Getting started
 
-Sign in at [pokegosu.com](https://pokegosu.com). Then, on each machine you code on, install the command line, enrol the machine in your account, and have Claude Code run the sync:
+Sign in at [pokegosu.com](https://pokegosu.com). Then, on each machine you code on, install the command line, enrol the machine in your account, and have your agent run the sync:
 
 ```sh
 curl -fsSL https://pokegosu.com/install-cli.sh | sh
 pokegosu auth login
-pokegosu coder hook install claude-code
+pokegosu coder hook install claude-code   # or codex, or both
 ```
 
-From then on, every Claude Code session on that machine reports as it goes, and [coder.pokegosu.com](https://coder.pokegosu.com) is where you play. Each sync reads Codex's logs too; there is no Codex hook yet, so on a machine that only runs Codex, run `pokegosu coder sync` yourself. To see what a machine would send without sending it, run `pokegosu coder scan`.
+From then on, every session on that machine reports as it goes, and [coder.pokegosu.com](https://coder.pokegosu.com) is where you play. Codex asks you to trust its hooks the next time it starts; they run once you do. To see what a machine would send without sending it, run `pokegosu coder scan`.
 
 Other ways to install, and how to uninstall, are in the [command line's README](../cli/README.md).
 
