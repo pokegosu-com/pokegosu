@@ -96,7 +96,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 | Loading | The page's shape, or 불러오는 중… in `muted` for a single line. Never a lone spinner.                          |
 | Empty   | A heading that says what is missing, and the one next step as a link or a command to copy. Never a blank list. |
 | Error   | A notice in `danger` on `danger-surface` above whatever did load, saying what failed and what to do.           |
-| Ready   | The summary first (the partner, today's tokens), then the detail.                                              |
+| Ready   | The summary first (the partner, the last 24 hours' tokens), then the detail.                                   |
 
 **Actions.**
 

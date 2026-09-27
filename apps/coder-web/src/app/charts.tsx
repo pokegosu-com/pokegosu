@@ -32,13 +32,14 @@ export function Legend({
 }
 
 /**
- * A day's 24 hours as columns, each stacked by agent. Hours after `until` are
- * left empty rather than drawn as zero, since they have not happened.
+ * 24 hours as columns, each stacked by agent. Hours after `until` are left
+ * empty rather than drawn as zero, since they have not happened.
  */
 export function HourChart({
   hours,
   colors,
   order,
+  first = 0,
   until = 23,
   height = 180,
 }: {
@@ -46,10 +47,13 @@ export function HourChart({
   colors: Map<string, string>
   /** Agents from the bottom of a column up. */
   order: string[]
+  /** The clock hour of the first column, for a chart that crosses midnight. */
+  first?: number
   until?: number
   height?: number
 }) {
   const max = niceMax(Math.max(...hours.map(sum)))
+  const clock = (i: number) => `${(first + i) % 24}시`
   return (
     <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1">
       <div
@@ -67,7 +71,7 @@ export function HourChart({
           {hours.map((split, i) => (
             <span
               key={i}
-              title={i > until ? `${i}시` : `${i}시 · ${exactTokens(sum(split))} 토큰`}
+              title={i > until ? clock(i) : `${clock(i)} · ${exactTokens(sum(split))} 토큰`}
               className="flex h-full flex-1 flex-col-reverse"
             >
               {i <= until &&
@@ -86,11 +90,9 @@ export function HourChart({
       </div>
       <span />
       <div className="text-muted flex justify-between font-mono text-[11px]">
-        <span>0시</span>
-        <span>6시</span>
-        <span>12시</span>
-        <span>18시</span>
-        <span>23시</span>
+        {[0, 6, 12, 18, 23].map((i) => (
+          <span key={i}>{clock(i)}</span>
+        ))}
       </div>
     </div>
   )

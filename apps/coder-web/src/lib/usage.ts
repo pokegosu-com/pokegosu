@@ -30,13 +30,6 @@ export function startOfDay(at: Date): Date {
   return new Date(at.getFullYear(), at.getMonth(), at.getDate())
 }
 
-/** Monday 00:00 of this week, on the reader's clock. */
-export function startOfWeek(at: Date): Date {
-  const day = startOfDay(at)
-  day.setDate(day.getDate() - ((day.getDay() + 6) % 7))
-  return day
-}
-
 export function startOfMonth(at: Date): Date {
   return new Date(at.getFullYear(), at.getMonth(), 1)
 }
@@ -48,7 +41,7 @@ export function localDate(at: Date): string {
 /**
  * The reader's usage from `start` up to the end of the current hour.
  *
- * Days and weeks are the reader's, which the server cannot know, so the range
+ * Days are the reader's, which the server cannot know, so the range
  * is worked out here. In a zone offset by part of an hour, local midnight
  * falls inside a UTC hour; that hour is counted whole.
  */
@@ -88,12 +81,24 @@ export function hoursOf(usage: Usage, day: Date): ByProvider[] {
   return hours
 }
 
-/** The seven days from `monday`, split by provider. */
-export function daysOf(usage: Usage, monday: Date): ByProvider[] {
+/** The 24 hours up to and including the current one, oldest first, split by provider. */
+export function lastDayOf(usage: Usage, now: Date): ByProvider[] {
+  const hours: ByProvider[] = Array.from({ length: 24 }, () => ({}))
+  const start = floorHour(now).getTime() - 23 * HOUR
+  for (const h of usage.hours) {
+    const i = Math.floor((new Date(h.hour_bucket).getTime() - start) / HOUR)
+    if (i < 0 || i > 23) continue
+    for (const [p, t] of Object.entries(h.providers)) hours[i][p] = (hours[i][p] ?? 0) + t
+  }
+  return hours
+}
+
+/** The seven days from `first`, split by provider. */
+export function daysOf(usage: Usage, first: Date): ByProvider[] {
   const days: ByProvider[] = Array.from({ length: 7 }, () => ({}))
   for (const h of usage.hours) {
     const at = startOfDay(new Date(h.hour_bucket))
-    const i = Math.round((at.getTime() - monday.getTime()) / (24 * HOUR))
+    const i = Math.round((at.getTime() - first.getTime()) / (24 * HOUR))
     if (i < 0 || i > 6) continue
     for (const [p, t] of Object.entries(h.providers)) days[i][p] = (days[i][p] ?? 0) + t
   }
