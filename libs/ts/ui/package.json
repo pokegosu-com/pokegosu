@@ -5,6 +5,7 @@
   "exports": {
     "./apps": "./src/apps.ts",
     "./theme.css": "./theme.css",
+    "./fonts": "./src/fonts.tsx",
     "./version-footer": "./src/version-footer.tsx"
   },
   "devDependencies": {

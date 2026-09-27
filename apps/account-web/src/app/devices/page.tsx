@@ -24,7 +24,9 @@ export default async function DevicesPage() {
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error.message}</p>
+        <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">
+          {error.message}
+        </p>
       )}
 
       {devices && devices.length === 0 && (
@@ -35,7 +37,7 @@ export default async function DevicesPage() {
       )}
 
       {devices && devices.length > 0 && (
-        <ul className="border-muted/25 divide-muted/25 divide-y rounded-lg border">
+        <ul className="border-line divide-line divide-y rounded-lg border">
           {devices.map((device) => (
             <DeviceRow key={device.id} device={device} />
           ))}

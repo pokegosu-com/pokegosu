@@ -78,7 +78,7 @@ function matches(p: Pokemon, view: View): boolean {
 
 const chip = 'rounded-full border px-2.5 py-1 text-xs'
 const on = 'border-accent bg-accent/10 text-ink'
-const off = 'border-muted/30 text-muted hover:border-muted'
+const off = 'border-line text-muted hover:border-line-strong'
 
 export function BoxView() {
   const game = useGame()
@@ -98,7 +98,7 @@ export function BoxView() {
 
       {box?.started && (
         <section className="space-y-4">
-          <nav className="border-muted/25 flex gap-4 border-b text-sm">
+          <nav className="border-line flex gap-4 border-b text-sm">
             {(
               [
                 ['pokemon', `포켓몬 박스 ${pokemon.length}`],
@@ -136,7 +136,7 @@ export function BoxView() {
                   <select
                     value={view.sort}
                     onChange={(e) => update({ sort: e.target.value as Sort })}
-                    className="border-muted/30 bg-surface rounded-md border px-2 py-1 text-xs"
+                    className="border-line bg-surface rounded-md border px-2 py-1 text-xs"
                   >
                     <option value="recent">최근 획득</option>
                     <option value="dex">도감 번호</option>
@@ -172,7 +172,7 @@ export function BoxView() {
                               ),
                             })
                           }
-                          className={`${chip} ${want === null ? off : on} ${want === 1 ? 'text-sky-500' : want === 2 ? 'text-rose-500' : ''}`}
+                          className={`${chip} ${want === null ? off : on} ${want === 1 ? 'text-mark-blue' : want === 2 ? 'text-mark-red' : ''}`}
                         >
                           {mark}
                         </button>

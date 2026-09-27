@@ -74,7 +74,7 @@ export function Dashboard() {
   }, [])
 
   if (failure) {
-    return <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{failure}</p>
+    return <p className="rounded-md bg-danger-surface px-3 py-2 text-sm text-danger">{failure}</p>
   }
   if (!shown) {
     return <p className="text-muted text-sm">불러오는 중…</p>
@@ -129,7 +129,7 @@ export function Dashboard() {
               <span className="text-muted w-8">
                 {day.toLocaleDateString('ko-KR', { weekday: 'short' })}
               </span>
-              <span className="bg-muted/15 h-2 flex-1 overflow-hidden rounded-full">
+              <span className="bg-surface-raised h-2 flex-1 overflow-hidden rounded-full">
                 <span
                   className="bg-accent block h-full rounded-full"
                   style={{ width: `${(tokens / busiest) * 100}%` }}
@@ -145,7 +145,7 @@ export function Dashboard() {
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">기기별 (이번 주)</h2>
-        <ul className="border-muted/25 divide-muted/25 divide-y rounded-lg border text-sm">
+        <ul className="border-line divide-line divide-y rounded-lg border text-sm">
           {usage.devices.map((d) => (
             <li key={d.device_id} className="flex justify-between gap-4 px-4 py-3">
               <span>{d.device_name ?? '이름 없는 기기'}</span>
@@ -162,7 +162,7 @@ export function Dashboard() {
 
 function Figure({ label, tokens, exact }: { label: string; tokens: number; exact?: string }) {
   return (
-    <div className="border-muted/25 space-y-1 rounded-lg border px-4 py-3">
+    <div className="border-line space-y-1 rounded-lg border px-4 py-3">
       <p className="text-muted text-sm">{label}</p>
       <p className="text-3xl font-semibold tracking-tight tabular-nums">{compactTokens(tokens)}</p>
       <p className="text-muted text-xs tabular-nums">{exactTokens(exact ?? tokens)} 토큰</p>

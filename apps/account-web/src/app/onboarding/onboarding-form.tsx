@@ -51,13 +51,13 @@ export function OnboardingForm({ userId }: { userId: string }) {
   if (confirming) {
     return (
       <div className="space-y-4">
-        <p className="border-muted/40 rounded-md border px-4 py-3 text-sm">
+        <p className="border-line-strong rounded-md border px-4 py-3 text-sm">
           핸들을 <strong>@{username}</strong> 으로 정합니다.
           <br />
           <span className="text-muted">한 번 정하면 변경할 수 없습니다.</span>
         </p>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex gap-2">
           <button
@@ -70,7 +70,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
           <button
             onClick={() => setConfirming(false)}
             disabled={saving}
-            className="border-muted/40 rounded-md border px-4 py-2 text-sm"
+            className="border-line-strong rounded-md border px-4 py-2 text-sm"
           >
             뒤로
           </button>
@@ -95,7 +95,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
           onChange={(e) => setUsername(e.target.value)}
           pattern="[a-z0-9_-]{3,30}"
           placeholder="alice-gosu"
-          className="border-muted/40 w-full rounded-md border px-3 py-2 text-sm"
+          className="border-line-strong w-full rounded-md border px-3 py-2 text-sm"
         />
       </label>
 
@@ -105,11 +105,11 @@ export function OnboardingForm({ userId }: { userId: string }) {
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="앨리스"
-          className="border-muted/40 w-full rounded-md border px-3 py-2 text-sm"
+          className="border-line-strong w-full rounded-md border px-3 py-2 text-sm"
         />
       </label>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <button
         type="submit"
