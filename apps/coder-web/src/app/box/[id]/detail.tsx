@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
+import { Artwork } from '@pokegosu/ui/artwork'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { env } from '@/env'
@@ -150,10 +151,7 @@ function PokemonDetail({
   return (
     <>
       <header className="flex items-center gap-8">
-        <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element -- official artwork from pokedex-web */}
-          {sprite && <img src={sprite} alt={ko(p)} className="size-40 object-contain" />}
-        </span>
+        <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           {p.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
           <p className="flex items-baseline gap-2">

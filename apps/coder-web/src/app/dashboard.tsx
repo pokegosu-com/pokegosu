@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+import { Artwork } from '@pokegosu/ui/artwork'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { exactTokens } from '@/lib/format'
@@ -70,10 +71,7 @@ function PokemonPartner({
       aria-label="파트너"
       className="border-accent flex items-center gap-8 rounded-lg border p-6"
     >
-      <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
-        {/* eslint-disable-next-line @next/next/no-img-element -- official artwork from pokedex-web */}
-        {sprite && <img src={sprite} alt={ko(p)} className="size-40 object-contain" />}
-      </span>
+      <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
       <div className="flex min-w-0 flex-1 flex-col gap-3.5">
         <div className="space-y-1">
           <p className="text-accent text-xs font-medium">파트너</p>
