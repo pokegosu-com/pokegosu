@@ -138,3 +138,48 @@ func TestCodexSessionEndReturnsBeforeTheSyncEnds(t *testing.T) {
 	}
 	t.Error("the sync never wrote to the log")
 }
+
+// Codex keys a trusted hook by its place in the file, so installing again
+// must leave this program's hook where it was, not move it behind hooks the
+// person added since.
+func TestCodexReinstallKeepsItsPlace(t *testing.T) {
+	path := codexHome(t)
+	if _, err := codex.Install(binary); err != nil {
+		t.Fatal(err)
+	}
+
+	// The person adds a hook of their own after ours.
+	withTheirs := strings.Replace(read(t, path), `"async": true
+          }
+        ]
+      }
+    ]`, `"async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "say done"
+          }
+        ]
+      }
+    ]`, 1)
+	if withTheirs == read(t, path) {
+		t.Fatal("could not add the person's hook")
+	}
+	write(t, path, withTheirs)
+
+	if _, err := codex.Install("/elsewhere/pokegosu"); err != nil {
+		t.Fatal(err)
+	}
+	got := read(t, path)
+	ours, theirs := strings.Index(got, "/elsewhere/pokegosu coder sync --jsonl --no-fail --min-interval"), strings.Index(got, `"say done"`)
+	if ours < 0 || theirs < 0 || ours > theirs {
+		t.Errorf("our Stop hook moved behind the person's:\n%s", got)
+	}
+	if strings.Contains(got, binary) {
+		t.Errorf("the old hook is still there:\n%s", got)
+	}
+}

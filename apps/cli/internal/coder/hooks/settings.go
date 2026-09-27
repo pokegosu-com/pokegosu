@@ -128,6 +128,7 @@ func (a settingsAgent) Installed() (bool, error) {
 
 // Install adds the hooks, replacing any this program wrote before, so that
 // installing again after the binary moved points them at where it is now.
+// A hook already there is replaced where it stands; see replace.
 func (a settingsAgent) Install(executable string) (string, error) {
 	log, err := a.LogPath()
 	if err != nil {
@@ -139,9 +140,40 @@ func (a settingsAgent) Install(executable string) (string, error) {
 		return "", fmt.Errorf("creating %s: %w", filepath.Dir(log), err)
 	}
 	return a.edit(func(event string, groups []group) []group {
-		groups = a.without(event, groups)
-		return append(groups, group{Hooks: []hook{a.hookFor(event, executable, log)}})
+		return a.replace(groups, a.hookFor(event, executable, log))
 	})
+}
+
+// replace puts h where this program's first hook is, and drops any other
+// copies; with none there, h goes at the end in a group of its own.
+//
+// Codex remembers which hooks a person trusted by their place in the file,
+// so a hook moved to the end is a new one it asks about again, even when
+// nothing in it changed.
+func (a settingsAgent) replace(groups []group, h hook) []group {
+	placed := false
+	var kept []group
+	for _, g := range groups {
+		var hooks []hook
+		for _, old := range g.Hooks {
+			switch {
+			case !a.ours(old.Command):
+				hooks = append(hooks, old)
+			case !placed:
+				hooks = append(hooks, h)
+				placed = true
+			}
+		}
+		if len(hooks) == 0 && len(g.Hooks) > 0 {
+			continue
+		}
+		g.Hooks = hooks
+		kept = append(kept, g)
+	}
+	if !placed {
+		kept = append(kept, group{Hooks: []hook{h}})
+	}
+	return kept
 }
 
 // Uninstall removes this program's hooks and nothing else.
