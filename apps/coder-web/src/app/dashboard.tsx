@@ -8,7 +8,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { exactTokens } from '@/lib/format'
 import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
-import { hoursOf, loadUsage, providerColors, startOfWeek, sum, type Usage } from '@/lib/usage'
+import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
@@ -215,21 +215,21 @@ function Empty() {
   )
 }
 
-function Today({ usage, now }: { usage: Usage; now: Date }) {
-  const hours = hoursOf(usage, now)
+function LastDay({ usage, now }: { usage: Usage; now: Date }) {
+  const hours = lastDayOf(usage, now)
   const colors = providerColors(usage.providers)
   const order = usage.providers.map((p) => p.provider)
   const total = hours.reduce((a, h) => a + sum(h), 0)
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-muted text-sm font-medium">오늘 시간별</h2>
+        <h2 className="text-muted text-sm font-medium">최근 24시간</h2>
         <span className="font-mono text-sm font-medium tabular-nums">
           {exactTokens(total)} 토큰
         </span>
       </div>
       {usage.providers.length > 1 && <Legend providers={usage.providers} colors={colors} />}
-      <HourChart hours={hours} colors={colors} order={order} until={now.getHours()} />
+      <HourChart hours={hours} colors={colors} order={order} first={(now.getHours() + 1) % 24} />
       <Link href="/usage" className="text-accent hover:text-ink self-end text-sm">
         사용량 전체 보기 →
       </Link>
@@ -238,14 +238,14 @@ function Today({ usage, now }: { usage: Usage; now: Date }) {
 }
 
 /**
- * The partner first, and today's usage by hour beneath it. Opening this page
- * claims the tokens earned since the last visit, so the partner is seen
- * climbing.
+ * The partner first, and the last 24 hours of usage beneath it, so the chart
+ * is never nearly empty just after midnight. Opening this page claims the
+ * tokens earned since the last visit, so the partner is seen climbing.
  */
 export function Dashboard() {
   const game = useGame()
   const { box, curve, busy, act, opening } = game
-  const [week, setWeek] = useState<{ usage: Usage; now: Date } | null>(null)
+  const [recent, setRecent] = useState<{ usage: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
   useEffect(() => {
@@ -253,8 +253,8 @@ export function Dashboard() {
     async function load() {
       const now = new Date()
       try {
-        const usage = await loadUsage(startOfWeek(now), now)
-        if (!cancelled) setWeek({ usage, now })
+        const usage = await loadUsage(new Date(floorHour(now).getTime() - 23 * HOUR), now)
+        if (!cancelled) setRecent({ usage, now })
       } catch (error) {
         if (!cancelled) setFailure((error as Error).message)
       }
@@ -269,11 +269,11 @@ export function Dashboard() {
   }, [])
 
   const problem = failure ?? game.failure
-  if (!box || !week) {
+  if (!box || !recent) {
     return problem ? <Notice>{problem}</Notice> : <p className="text-muted text-sm">불러오는 중…</p>
   }
 
-  const nothingYet = week.usage.hours.length === 0 && BigInt(box.balance) === 0n
+  const nothingYet = recent.usage.hours.length === 0 && BigInt(box.balance) === 0n
   if (nothingYet && !box.started) return <Empty />
 
   return (
@@ -300,7 +300,7 @@ export function Dashboard() {
       ) : (
         <EggPartner box={box} opening={opening} />
       )}
-      {week.usage.hours.length === 0 ? <Empty /> : <Today usage={week.usage} now={week.now} />}
+      {nothingYet ? <Empty /> : <LastDay usage={recent.usage} now={recent.now} />}
     </>
   )
 }

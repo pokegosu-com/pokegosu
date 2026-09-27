@@ -10,7 +10,6 @@ import {
   providerColors,
   startOfDay,
   startOfMonth,
-  startOfWeek,
   sum,
   type Usage,
 } from '@/lib/usage'
@@ -19,13 +18,23 @@ import { Figure, HourChart, Legend, SplitBar } from '../charts'
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일']
 
+/** Today and the six days before it, on the reader's clock. */
+const DAYS = 7
+const TODAY = DAYS - 1
+
+function firstDay(now: Date): Date {
+  const day = startOfDay(now)
+  day.setDate(day.getDate() - TODAY)
+  return day
+}
+
 /**
- * This month and this week, by hour, day, machine and coding agent. The month
- * is one call for its total; the week is another for everything else, since
- * the month's hours are more than the charts need.
+ * This month and the last seven days, by hour, day, machine and coding agent.
+ * The month is one call for its total; the seven days are another for
+ * everything else, since the month's hours are more than the charts need.
  */
 export function UsageView() {
-  const [loaded, setLoaded] = useState<{ week: Usage; month: Usage; now: Date } | null>(null)
+  const [loaded, setLoaded] = useState<{ recent: Usage; month: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
 
@@ -34,11 +43,11 @@ export function UsageView() {
     async function load() {
       const now = new Date()
       try {
-        const [week, month] = await Promise.all([
-          loadUsage(startOfWeek(now), now),
+        const [recent, month] = await Promise.all([
+          loadUsage(firstDay(now), now),
           loadUsage(startOfMonth(now), now),
         ])
-        if (!cancelled) setLoaded({ week, month, now })
+        if (!cancelled) setLoaded({ recent, month, now })
       } catch (error) {
         if (!cancelled) setFailure((error as Error).message)
       }
@@ -56,19 +65,22 @@ export function UsageView() {
   }
   if (!loaded) return <p className="text-muted text-sm">불러오는 중…</p>
 
-  const { week, month, now } = loaded
-  const monday = startOfWeek(now)
-  const today = Math.round((startOfDay(now).getTime() - monday.getTime()) / 86_400_000)
-  const day = picked ?? today
-  const shownDay = new Date(monday)
-  shownDay.setDate(monday.getDate() + day)
+  const { recent, month, now } = loaded
+  const first = firstDay(now)
+  const dates = Array.from({ length: DAYS }, (_, i) => {
+    const d = new Date(first)
+    d.setDate(first.getDate() + i)
+    return d
+  })
+  const weekday = (i: number) => WEEKDAYS[(dates[i].getDay() + 6) % 7]
+  const day = picked ?? TODAY
 
-  // The month's agents, so one that used nothing this week keeps its colour.
+  // The month's agents, so one that used nothing in these seven days keeps its colour.
   const colors = providerColors(month.providers)
   const order = month.providers.map((p) => p.provider)
-  const days = daysOf(week, monday)
+  const days = daysOf(recent, first)
   const busiestDay = Math.max(1, ...days.map(sum))
-  const busiestDevice = Math.max(1, ...week.devices.map((d) => d.tokens))
+  const busiestDevice = Math.max(1, ...recent.devices.map((d) => d.tokens))
 
   return (
     <>
@@ -78,8 +90,8 @@ export function UsageView() {
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <Figure label="오늘" tokens={sum(days[today])} />
-        <Figure label="이번 주" tokens={BigInt(week.total)} />
+        <Figure label="오늘" tokens={sum(days[TODAY])} />
+        <Figure label="최근 7일" tokens={BigInt(recent.total)} />
         <Figure label="이번 달" tokens={BigInt(month.total)} />
       </section>
 
@@ -91,55 +103,55 @@ export function UsageView() {
             aria-label="날짜"
             className="bg-surface-raised flex gap-0.5 rounded-lg p-0.5"
           >
-            {WEEKDAYS.slice(0, today + 1).map((label, i) => (
+            {dates.map((_, i) => (
               <button
-                key={label}
+                key={i}
                 type="button"
                 aria-pressed={day === i}
                 onClick={() => setPicked(i)}
                 className="text-muted aria-pressed:bg-surface aria-pressed:text-ink aria-pressed:ring-line rounded-md px-3 py-1 text-[13px] font-medium aria-pressed:ring-1"
               >
-                {i === today ? '오늘' : label}
+                {i === TODAY ? '오늘' : weekday(i)}
               </button>
             ))}
           </div>
         </div>
         <HourChart
-          hours={hoursOf(week, shownDay)}
+          hours={hoursOf(recent, dates[day])}
           colors={colors}
           order={order}
-          until={day === today ? now.getHours() : 23}
+          until={day === TODAY ? now.getHours() : 23}
           height={200}
         />
       </section>
 
       <section className="grid gap-10 sm:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <h2 className="text-muted text-sm font-medium">요일별 · 이번 주</h2>
+          <h2 className="text-muted text-sm font-medium">일별 · 최근 7일</h2>
           <ol className="flex flex-col gap-3">
             {days.map((split, i) => (
               <li
-                key={WEEKDAYS[i]}
+                key={i}
                 className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-[13px]"
               >
-                <span className={i === today ? 'text-ink font-medium' : 'text-muted'}>
-                  {WEEKDAYS[i]}
+                <span className={i === TODAY ? 'text-ink font-medium' : 'text-muted'}>
+                  {weekday(i)}
                 </span>
                 <SplitBar split={split} max={busiestDay} colors={colors} order={order} />
                 <span className="text-right font-mono text-xs tabular-nums">
-                  {i > today ? '—' : compactTokens(sum(split))}
+                  {compactTokens(sum(split))}
                 </span>
               </li>
             ))}
           </ol>
         </div>
         <div className="flex flex-col gap-4">
-          <h2 className="text-muted text-sm font-medium">기기별 · 이번 주</h2>
-          {week.devices.length === 0 ? (
-            <p className="text-muted text-sm">이번 주에 보낸 기기가 없습니다.</p>
+          <h2 className="text-muted text-sm font-medium">기기별 · 최근 7일</h2>
+          {recent.devices.length === 0 ? (
+            <p className="text-muted text-sm">최근 7일 동안 보낸 기기가 없습니다.</p>
           ) : (
             <ul className="flex flex-col gap-4">
-              {week.devices.map((d) => (
+              {recent.devices.map((d) => (
                 <li key={d.device_id} className="flex flex-col gap-1.5">
                   <p className="flex items-baseline justify-between gap-3 text-[13px]">
                     <span>{d.device_name ?? '(deleted-device)'}</span>
