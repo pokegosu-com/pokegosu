@@ -70,7 +70,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, the official artwork, through `Artwork`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark: as the favicon, every app's `icon.svg`, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, the official artwork, through `Artwork`. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 
@@ -83,6 +83,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 | `@pokegosu/ui/artwork`   | `Artwork`: the official artwork in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still. |
 | `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, and `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link).                        |
 | `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                 |
+| `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; and `faviconUrl`, the same drawing for each layout's `metadata.icons`.            |
 
 ## Behaviour
 

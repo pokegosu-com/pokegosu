@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { AppHeader } from '@pokegosu/ui/app-shell'
 import { Fonts } from '@pokegosu/ui/fonts'
+import { faviconUrl } from '@pokegosu/ui/icon'
 import { VersionFooter } from '@pokegosu/ui/version-footer'
 
 import './globals.css'
@@ -9,6 +10,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'PokeGosu Coder',
   description: '코딩 에이전트 토큰으로 포켓몬 키우기',
+  icons: { icon: faviconUrl },
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
