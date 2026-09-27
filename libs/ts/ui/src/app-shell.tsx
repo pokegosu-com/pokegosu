@@ -32,13 +32,7 @@ function PokeGosuIcon() {
   // Mask ids are document-wide, so each copy gets its own.
   const id = useId()
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="-1 -8.3 37.8 37.8"
-      aria-hidden="true"
-      className="text-ink"
-    >
+    <svg width="20" height="20" viewBox="-1 -8.3 37.8 37.8" aria-hidden="true" className="text-ink">
       <defs>
         <g id={`${id}cap`}>
           <ellipse cx="13.2" cy="6.2" rx="1.7" ry="2" />
