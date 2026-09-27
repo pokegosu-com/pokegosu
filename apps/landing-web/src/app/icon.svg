@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-4.8 -12.1 45.4 45.4">
-  <!-- A Poké Ball in a trainer's cap: PokeGosu as a whole, so every app carries the same one. It sits white on an accent tile, so it reads on light and dark tab bars alike. -->
+  <!-- A Poké Ball in a trainer's cap: PokeGosu as a whole, so every app carries the same one. It sits in accent on a white tile, so it reads on light and dark tab bars alike. -->
   <defs>
     <g id="cap">
       <ellipse cx="13.2" cy="6.2" rx="1.7" ry="2"/>
@@ -17,11 +17,11 @@
       <path d="M19.2 19.6C24 18 28.6 18.4 31.6 20.4" fill="none" stroke="#000" stroke-width="1.2"/>
     </mask>
   </defs>
-  <rect x="-4.8" y="-12.1" width="45.4" height="45.4" rx="10" fill="#3266e4"/>
-  <g fill="none" stroke="#fff" stroke-width="2.6" mask="url(#under-cap)">
+  <rect x="-4.8" y="-12.1" width="45.4" height="45.4" rx="10" fill="#fff"/>
+  <g fill="none" stroke="#3266e4" stroke-width="2.6" mask="url(#under-cap)">
     <circle cx="16" cy="16" r="10.6"/>
     <path d="M5.4 16H12.6M19.4 16H26.6"/>
     <circle cx="16" cy="16" r="3.2"/>
   </g>
-  <use href="#cap" transform="translate(14.5 10.17) rotate(-10) scale(1.2 1.02) translate(-13 -21.5)" fill="#fff" mask="url(#bill-gap)"/>
+  <use href="#cap" transform="translate(14.5 10.17) rotate(-10) scale(1.2 1.02) translate(-13 -21.5)" fill="#3266e4" mask="url(#bill-gap)"/>
 </svg>
