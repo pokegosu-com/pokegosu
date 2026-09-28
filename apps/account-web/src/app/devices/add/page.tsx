@@ -43,7 +43,7 @@ export default function AddMachinePage() {
             <p className="text-muted text-xs">
               링크를 열 수 없는 기기라면, 나온 코드를 여기에 입력하세요.
             </p>
-            <div className="max-w-task">
+            <div className="max-w-task mx-auto w-full">
               <CodeForm />
             </div>
           </div>
