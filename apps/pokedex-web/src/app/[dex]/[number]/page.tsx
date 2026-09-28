@@ -304,7 +304,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                             <img
                               src={look.src}
                               alt=""
-                              className="size-24 scale-125 [image-rendering:pixelated]"
+                              className="size-24 [image-rendering:pixelated]"
                             />
                           )}
                         </span>
@@ -369,15 +369,18 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                       <Link
                         href={hrefOf(f.number, f)}
                         aria-current={f.id === p.id ? 'page' : undefined}
-                        className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
+                        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                       >
+                        <span className="absolute top-1 right-1">
+                          <FormMarks id={f.id} />
+                        </span>
                         <span className="grid size-24 place-items-center rounded-md">
                           {f.front && (
                             // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
                             <img
                               src={f.front}
                               alt=""
-                              className="size-24 scale-125 [image-rendering:pixelated]"
+                              className="size-24 [image-rendering:pixelated]"
                             />
                           )}
                         </span>

@@ -52,7 +52,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 - Every app page, its top bar included, is `max-w-wide` (64rem) with a 24px side gutter, so the left edge stays put between sections. Single-task pages, such as sign-in and device approval, are `max-w-task` (24rem) and centred.
 - Sections are 32 to 40px apart; cards in a grid 8 to 12px.
-- A list of Pokémon is a grid of small tiles with the 96px pixel sprite in a 96px slot, drawn a quarter larger since its own margin is empty and no well frames it, and shrinking only where the grid is too narrow for it: 6 across in the box, 8 across in a pokedex. One Pokémon on its own page gets its large render, from Pokémon HOME, in a 192px slot.
+- A list of Pokémon is a grid of small tiles with the 96px pixel sprite at its own size, never scaled up, shrinking only where the grid is too narrow for it: 6 across in the box, 8 across in a pokedex. One Pokémon on its own page gets its large render, from Pokémon HOME, in a 192px slot.
 - Running text inside a wide page stays under about 40rem.
 - Mobile layouts come later; nothing is designed for them yet beyond grids that wrap.
 

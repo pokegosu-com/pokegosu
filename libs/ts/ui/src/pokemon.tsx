@@ -117,13 +117,13 @@ export function PokemonTile({
           <CaughtMarks caught={caught} />
         </span>
       )}
-      {/* A 96px slot where the tile is wide enough, and a narrow grid shrinks
-          it rather than cropping it. The sprite is drawn a quarter larger than
-          its slot, since its own margin is empty and nothing frames it. */}
+      {/* 96px, the sprite's own size, where the tile is wide enough; a narrow
+          grid shrinks it rather than cropping it. Scaled up by anything but a
+          whole number, its pixels come out uneven. */}
       <span className="mb-1 grid aspect-square w-full max-w-24 place-items-center rounded-md">
         {sprite && (
           // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
-          <img src={sprite} alt="" className="size-full scale-125 [image-rendering:pixelated]" />
+          <img src={sprite} alt="" className="size-full [image-rendering:pixelated]" />
         )}
       </span>
       <span className="max-w-full truncate text-[13px] font-medium">
