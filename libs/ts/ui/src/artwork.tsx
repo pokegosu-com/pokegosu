@@ -11,7 +11,7 @@ const SPARKLES = [
 ]
 
 /**
- * A Pokémon's official artwork in the large slot. The artwork is a still, so
+ * A Pokémon's large render, in the 192px slot. The render is a still, so
  * it idles above a shadow, and hops when it appears, is pointed at or pressed;
  * a shiny one sparkles as it hops. With reduced motion it stands still.
  */
@@ -47,7 +47,7 @@ export function Artwork({
         // A new src, such as the shiny one, is a new image: it hops, and
         // sparkles, in.
         <span key={src} className="motion-safe:animate-idle relative">
-          {/* eslint-disable-next-line @next/next/no-img-element -- official artwork from pokedex-web */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- large renders from pokedex-web */}
           <img
             src={src}
             alt={alt}

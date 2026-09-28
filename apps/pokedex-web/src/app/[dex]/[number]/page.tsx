@@ -59,7 +59,7 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   return parts.join(' · ') || (names.get(method.trigger) ?? '')
 }
 
-function gender(rate: number): string {
+function genderRatio(rate: number): string {
   if (rate < 0) return '성별 없음'
   const female = (rate / 8) * 100
   return `♂ ${100 - female}% · ♀ ${female}%`
@@ -83,7 +83,7 @@ function formName(form: { ko_form_name: string | null; en_form_name: string | nu
 
 export default async function Entry({ params, searchParams }: PageProps<'/[dex]/[number]'>) {
   const { dex, number } = await params
-  const { form } = await searchParams
+  const { form, gender } = await searchParams
   const n = Number(number)
   if (!Number.isInteger(n) || n < 1) notFound()
 
@@ -136,9 +136,14 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
   const shown = form ? forms.data?.find((f) => f.species.slug === form) : forms.data?.[0]
   if (!shown) notFound()
   const p = shown.species
-  // A form's page links by its number, and by its name unless it is the default.
-  const hrefOf = (number: number, f: { is_default: boolean; slug: string }) =>
-    f.is_default ? `/${dex}/${number}` : `/${dex}/${number}?form=${f.slug}`
+  // A form's page links by its number, by its name unless it is the default,
+  // and with ?gender=female for a female that looks different.
+  const hrefOf = (number: number, f: { is_default: boolean; slug: string }, female = false) => {
+    const query = new URLSearchParams()
+    if (!f.is_default) query.set('form', f.slug)
+    if (female) query.set('gender', 'female')
+    return query.size ? `/${dex}/${number}?${query}` : `/${dex}/${number}`
+  }
 
   // This pokedex's entry for the form shown; each pokedex writes its own.
   const entriesOf = await db
@@ -175,24 +180,34 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
   )
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
-  const sprites = p.sprites as { artwork?: string; artwork_shiny?: string }
+  const sprites = p.sprites as {
+    artwork?: string
+    artwork_shiny?: string
+    artwork_female?: string
+    artwork_shiny_female?: string
+  }
+  // Only where she looks different; elsewhere ?gender=female changes nothing.
+  const female = gender === 'female' && !!sprites.artwork_female
 
   // Every form, and where a female looks different, as Pikachu's tail does,
-  // her too, in pixels: the artwork draws only one of them. With more than
-  // one form, each links to its own page.
+  // the male and the female each. Each links to itself.
   const manyForms = forms.data!.length > 1
   const looks = forms.data!.flatMap(({ is_default, species: f }) => {
     const s = f.sprites as { front?: string; front_female?: string }
-    const link = manyForms
-      ? { href: hrefOf(n, { is_default, slug: f.slug }), current: f.id === p.id }
-      : { href: null, current: false }
+    const look = (key: string, src: string | undefined, label: string, isFemale: boolean) => ({
+      key,
+      src,
+      label,
+      href: hrefOf(n, { is_default, slug: f.slug }, isFemale),
+      current: f.id === p.id && female === isFemale,
+    })
     const name = manyForms ? `${formName(f)} ` : ''
     return s.front_female
       ? [
-          { key: `${f.id}-male`, src: s.front, label: `${name}수컷의 모습`, ...link },
-          { key: `${f.id}-female`, src: s.front_female, label: `${name}암컷의 모습`, ...link },
+          look(`${f.id}-male`, s.front, `${name}수컷의 모습`, false),
+          look(`${f.id}-female`, s.front_female, `${name}암컷의 모습`, true),
         ]
-      : [{ key: `${f.id}`, src: s.front, label: formName(f), ...link }]
+      : [look(`${f.id}`, s.front, formName(f), false)]
   })
   const previous = around.data!.find((e) => e.number === n - 1)
   const next = around.data!.find((e) => e.number === n + 1)
@@ -221,7 +236,11 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
       </nav>
 
       <header className="flex items-center gap-8">
-        <Sprite name={ko(p)} normal={sprites.artwork} shiny={sprites.artwork_shiny} />
+        <Sprite
+          name={ko(p)}
+          normal={female ? sprites.artwork_female : sprites.artwork}
+          shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
+        />
         <div className="flex flex-col gap-2">
           <p className="text-muted font-mono text-xs tabular-nums">
             {dexName} {dexNo(n)}
@@ -257,9 +276,13 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
         <section className="space-y-3">
           <h2 className="text-muted text-sm font-medium">모습</h2>
           <ul className="flex flex-wrap gap-2">
-            {looks.map((look) => {
-              const tile = (
-                <>
+            {looks.map((look) => (
+              <li key={look.key}>
+                <Link
+                  href={look.href}
+                  aria-current={look.current ? 'page' : undefined}
+                  className="border-line hover:border-line-strong aria-[current=page]:border-accent flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                >
                   <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
                     {look.src && (
                       // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
@@ -267,26 +290,9 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
                     )}
                   </span>
                   {look.label}
-                </>
-              )
-              const box =
-                'border-line flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]'
-              return (
-                <li key={look.key}>
-                  {look.href ? (
-                    <Link
-                      href={look.href}
-                      aria-current={look.current ? 'page' : undefined}
-                      className={`${box} hover:border-line-strong aria-[current=page]:border-accent`}
-                    >
-                      {tile}
-                    </Link>
-                  ) : (
-                    <div className={box}>{tile}</div>
-                  )}
-                </li>
-              )
-            })}
+                </Link>
+              </li>
+            ))}
           </ul>
         </section>
       )}
@@ -300,7 +306,7 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
             <dt className="text-muted">몸무게</dt>
             <dd className="font-mono text-[13px]">{(p.weight / 10).toFixed(1)} kg</dd>
             <dt className="text-muted">성비</dt>
-            <dd className="font-mono text-[13px]">{gender(p.gender_rate)}</dd>
+            <dd className="font-mono text-[13px]">{genderRatio(p.gender_rate)}</dd>
             <dt className="text-muted">포획률</dt>
             <dd className="font-mono text-[13px]">{p.capture_rate}</dd>
             <dt className="text-muted">부화</dt>

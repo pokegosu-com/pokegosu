@@ -47,6 +47,13 @@ const LAST_GENERATION = 4
  */
 const LEFT_OUT_FORMS = new Set(['arceus-unknown'])
 
+/**
+ * Forms Pokémon HOME never held, so it has no render of them; they take the
+ * official artwork instead. Spiky-eared Pichu came to one event in Generation
+ * IV and could never leave it.
+ */
+const NOT_IN_HOME = new Set(['pichu-spiky-eared'])
+
 /** PokéAPI names these forms in English only. */
 const FORM_KO_NAMES: Record<string, string> = {
   'pichu-spiky-eared': '삐쭉귀',
@@ -637,8 +644,8 @@ async function main() {
         evolvesFrom: evolution ? evolution.from : null,
         evolution: evolution ? await evolutionOf(evolution.detail) : null,
         // Under the form's id, which is the national number for a default form.
-        // A female that looks different has pixel sprites of her own; the
-        // official artwork draws one of each species, whichever it is.
+        // A female that looks different has sprites of her own, in pixels and
+        // large.
         sprites: {
           front: `/sprites/pokemon/${form.id}.png`,
           front_shiny: `/sprites/pokemon/shiny/${form.id}.png`,
@@ -648,6 +655,10 @@ async function main() {
           }),
           artwork: `/sprites/pokemon/artwork/${form.id}.png`,
           artwork_shiny: `/sprites/pokemon/artwork/shiny/${form.id}.png`,
+          ...(femaleDiffers && {
+            artwork_female: `/sprites/pokemon/artwork/female/${form.id}.png`,
+            artwork_shiny_female: `/sprites/pokemon/artwork/shiny/female/${form.id}.png`,
+          }),
         },
         // PokeAPI/sprites files a Pokémon's own default form by the Pokémon's
         // id, as 10008 for Heat Rotom, and its other forms by number and form,
@@ -732,26 +743,42 @@ async function main() {
   } catch {
     // No manifest yet: every file is fetched.
   }
-  const sprites: { path: string; source: string; sha256: string }[] = []
-  const add = async (path: string, source: string) => {
-    sprites.push({ path, source, sha256: known.get(source) ?? (await sha256Of(source)) })
-  }
+  const files: { path: string; source: string }[] = []
+  const add = (path: string, source: string) => files.push({ path, source })
   // A list shows the 96px front sprite, the one style every generation has
-  // in pixels; a Pokémon's own page shows the official artwork, which every
-  // generation has too and which stays sharp at any size.
-  await add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
-  const artwork = `${SPRITES_BASE}/other/official-artwork`
+  // in pixels. A Pokémon's own page shows its render from Pokémon HOME, the
+  // one large style with every species, its shiny and, where she looks
+  // different, its female, and which stays sharp at any size. The official
+  // artwork draws no females.
+  add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
+  const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
     const n = row.id
     const k = row.spriteKey
-    await add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
-    await add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${k}.png`)
+    add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
+    add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${k}.png`)
     if (row.femaleDiffers) {
-      await add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
-      await add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
+      add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
+      add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
     }
-    await add(`sprites/pokemon/artwork/${n}.png`, `${artwork}/${k}.png`)
-    await add(`sprites/pokemon/artwork/shiny/${n}.png`, `${artwork}/shiny/${k}.png`)
+    const large = NOT_IN_HOME.has(row.slug) ? `${SPRITES_BASE}/other/official-artwork` : home
+    add(`sprites/pokemon/artwork/${n}.png`, `${large}/${k}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${large}/shiny/${k}.png`)
+    if (row.femaleDiffers) {
+      add(`sprites/pokemon/artwork/female/${n}.png`, `${large}/female/${k}.png`)
+      add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${large}/shiny/female/${k}.png`)
+    }
+  }
+  // Sixteen at a time, in the manifest's order.
+  const sprites: { path: string; source: string; sha256: string }[] = []
+  for (let start = 0; start < files.length; start += 16) {
+    sprites.push(
+      ...(await Promise.all(
+        files
+          .slice(start, start + 16)
+          .map(async (f) => ({ ...f, sha256: known.get(f.source) ?? (await sha256Of(f.source)) })),
+      )),
+    )
   }
 
   await writeFile(

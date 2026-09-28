@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { Artwork } from '@pokegosu/ui/artwork'
 
-/** The official artwork, with the shiny one a press away. */
+/** The large render, with the shiny one a press away. */
 export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
   const [showShiny, setShowShiny] = useState(false)
   const src = showShiny ? shiny : normal
