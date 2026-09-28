@@ -44,8 +44,10 @@ function Chosen({ forms, form, female, children }: Look) {
 /**
  * A link to another look of the same entry. Every look is already on the page,
  * so a press only changes the address, which vinext passes to useSearchParams
- * without fetching or rendering the page again. Opening it in a new tab, or
- * any press but a plain one, still follows it as a link.
+ * without fetching or rendering the page again. The address is replaced, not
+ * added to: it can still be shared, but going back leaves the entry rather
+ * than stepping through every look tried. Opening it in a new tab, or any
+ * press but a plain one, still follows it as a link.
  */
 export function LookLink({ href, ...props }: ComponentProps<'a'> & { href: string }) {
   return (
@@ -56,7 +58,7 @@ export function LookLink({ href, ...props }: ComponentProps<'a'> & { href: strin
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
           return
         event.preventDefault()
-        window.history.pushState(null, '', href)
+        window.history.replaceState(null, '', href)
       }}
     />
   )
