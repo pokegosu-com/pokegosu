@@ -20,8 +20,6 @@ const primary =
   'bg-accent text-surface rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50'
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50'
-const control =
-  'border-line-strong bg-surface min-w-0 flex-1 rounded-md border px-2.5 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 /** Hours since the last sync from any machine, or null if none has synced. */
 function useHoursSinceSync() {
@@ -60,9 +58,10 @@ function say(action: WorkAction, o: Outcome): string | null {
 }
 
 /** A pixel sprite at the size the card gives it, standing on the card itself. */
-function Sprite({ src, size }: { src: string | undefined; size: 'md' | 'lg' }) {
+function Sprite({ src, size }: { src: string | undefined; size: 'sm' | 'md' | 'lg' }) {
+  const box = { sm: 'size-10', md: 'size-14', lg: 'size-24' }[size]
   return (
-    <span className={`grid flex-none place-items-center ${size === 'lg' ? 'size-24' : 'size-14'}`}>
+    <span className={`grid flex-none place-items-center ${box}`}>
       {src && (
         // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
         <img src={src} alt="" className="size-full [image-rendering:pixelated]" />
@@ -95,9 +94,12 @@ function TrainerCard({
           {points(rules.bonus_points)} 를 받습니다.
         </p>
         <div className="max-w-sm space-y-1.5">
-          <p className="text-muted flex justify-between font-mono text-xs tabular-nums">
-            <span>보너스까지 {trainer.hours_to_bonus}시간</span>
+          <p className="text-muted flex justify-between text-xs">
             <span>
+              보너스까지 <span className="font-mono tabular-nums">{trainer.hours_to_bonus}</span>
+              시간
+            </span>
+            <span className="font-mono tabular-nums">
               {toBonus} / {rules.bonus_every_hours}
             </span>
           </p>
@@ -124,6 +126,89 @@ function TrainerCard({
   )
 }
 
+/** How many of the best-paid are offered before the rest are asked for. */
+const SHOWN = 3
+
+/** Pick who goes: the best-paid few as rows to choose from, the rest on request. */
+function Picker({
+  place,
+  work,
+  busy,
+  act,
+}: {
+  place: Workplace
+  work: Started
+  busy: boolean
+  act: (a: WorkAction) => void
+}) {
+  // Those not out on a request already, best paid first: a Pokémon stays
+  // until its request is done.
+  const candidates = work.pokemon
+    .filter((p) => p.workplace_id === null)
+    .map((p) => ({ p, offer: p.offers.find((o) => o.workplace_id === place.id)! }))
+    .sort((a, b) => b.offer.points - a.offer.points)
+  const [chosen, setChosen] = useState('')
+  const [all, setAll] = useState(false)
+  const picked = candidates.find((c) => c.p.id === chosen) ?? candidates[0]
+
+  if (!picked) {
+    return (
+      <p className="text-muted text-sm">
+        보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 다른 의뢰를 하고
+        있지 않은 포켓몬이 갈 수 있습니다.
+      </p>
+    )
+  }
+  const shown = all ? candidates : candidates.slice(0, SHOWN)
+  return (
+    <div className="space-y-3">
+      <ul role="radiogroup" aria-label="보낼 포켓몬" className="space-y-1.5">
+        {shown.map(({ p, offer }) => (
+          <li key={p.id}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={p.id === picked.p.id}
+              onClick={() => setChosen(p.id)}
+              className="border-line hover:border-line-strong aria-checked:border-ink aria-checked:bg-surface-raised flex w-full items-center gap-3 rounded-md border px-2 py-1 text-left"
+            >
+              <Sprite src={spriteUrl(p, 'small')} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
+                  {ko(p)} <span className="text-muted font-mono text-xs">Lv.{p.level}</span>
+                </span>
+                <span className="text-muted block text-xs">{aptitudeLine(offer.aptitude)}</span>
+              </span>
+              <span className="font-mono text-sm tabular-nums">{points(offer.points)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {candidates.length > SHOWN && (
+        <button
+          type="button"
+          onClick={() => setAll(!all)}
+          className="text-accent hover:text-ink text-xs"
+        >
+          {all ? '접기' : `모두 보기 (${candidates.length})`}
+        </button>
+      )}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <button
+          type="button"
+          className={primary}
+          disabled={busy}
+          onClick={() => act({ fn: 'assign', workplace_id: place.id, companion_id: picked.p.id })}
+        >
+          {ko(picked.p)} 보내기
+        </button>
+        <span className="text-muted text-xs">의뢰를 마칠 때까지 돌아오지 않습니다.</span>
+      </div>
+    </div>
+  )
+}
+
 function RequestCard({
   place,
   work,
@@ -140,23 +225,15 @@ function RequestCard({
   const worker = place.worker
     ? work.pokemon.find((p) => p.id === place.worker!.companion_id)
     : undefined
-  // Those not out on a request already, best paid first: a Pokémon stays
-  // until its request is done.
-  const candidates = work.pokemon
-    .filter((p) => p.workplace_id === null)
-    .map((p) => ({ p, offer: p.offers.find((o) => o.workplace_id === place.id)! }))
-    .sort((a, b) => b.offer.points - a.offer.points)
-  const [chosen, setChosen] = useState('')
-  const picked = candidates.find((c) => c.p.id === chosen) ?? candidates[0]
 
   return (
     <li className="border-line flex flex-col rounded-lg border">
-      <div className="flex items-center gap-4 p-5">
+      <header className="flex items-center gap-4 px-5 pt-5 pb-4">
         <Sprite
           src={spriteUrl({ sprites: client.sprites, is_shiny: false, gender: null }, 'small')}
           size="lg"
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <p className="flex items-baseline justify-between gap-2">
             <span className="font-medium">
               <a
@@ -180,22 +257,25 @@ function RequestCard({
             {place.types.map((t) => ko(t)).join('·')} 타입에 강한 포켓몬을 찾고 있다.
           </p>
         </div>
-      </div>
+      </header>
 
-      <div className="border-line flex flex-1 flex-col gap-4 border-t p-5">
+      <div className="border-line flex flex-1 flex-col gap-4 border-t px-5 py-4">
         {place.worker && worker ? (
           <>
             <div className="flex items-center gap-3">
               <Sprite src={spriteUrl(worker, 'small')} size="md" />
-              <div className="min-w-0 space-y-0.5">
-                <Link href={`/box/${worker.id}`} className="hover:text-accent text-sm font-medium">
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/box/${worker.id}`}
+                  className="hover:text-accent block truncate text-sm font-medium"
+                >
                   {worker.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
                   {ko(worker)}{' '}
                   <span className="text-muted font-mono text-xs">Lv.{worker.level}</span>
                 </Link>
                 <p className="text-muted text-xs">{aptitudeLine(place.worker.aptitude)}</p>
               </div>
-              <p className="ml-auto text-right">
+              <p className="text-right">
                 <span className="text-muted block text-xs">보상</span>
                 <span className="font-mono text-sm font-medium tabular-nums">
                   {points(place.worker.points)}
@@ -203,79 +283,64 @@ function RequestCard({
               </p>
             </div>
             <div className="space-y-1.5">
-              <p className="text-muted font-mono text-xs tabular-nums">
-                {place.worker.hours} / {shift}시간
+              <p className="text-muted flex justify-between text-xs">
+                <span>
+                  <span className="font-mono tabular-nums">
+                    {place.worker.hours} / {shift}
+                  </span>
+                  시간
+                </span>
+                {!place.worker.can_settle && (
+                  <span>
+                    <span className="font-mono tabular-nums">{shift - place.worker.hours}</span>
+                    시간 남음
+                  </span>
+                )}
               </p>
               <ProgressBar value={place.worker.hours} max={shift} label="의뢰를 마칠 때까지" />
             </div>
-            <div className="mt-auto">
-              <button
-                type="button"
-                className={place.worker.can_settle ? primary : quiet}
-                disabled={busy || !place.worker.can_settle}
-                onClick={() => act({ fn: 'settle', workplace_id: place.id })}
-              >
-                보상 받기
-              </button>
-            </div>
+            {place.worker.can_settle && (
+              <div className="mt-auto">
+                <button
+                  type="button"
+                  className={primary}
+                  disabled={busy}
+                  onClick={() => act({ fn: 'settle', workplace_id: place.id })}
+                >
+                  보상 받기
+                </button>
+              </div>
+            )}
           </>
         ) : (
-          <>
-            {picked ? (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <select
-                    aria-label="보낼 포켓몬"
-                    value={picked.p.id}
-                    onChange={(e) => setChosen(e.target.value)}
-                    className={control}
-                  >
-                    {candidates.map(({ p, offer }) => (
-                      <option key={p.id} value={p.id}>
-                        {ko(p)} Lv.{p.level} · {points(offer.points)}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={primary}
-                    disabled={busy}
-                    onClick={() =>
-                      act({ fn: 'assign', workplace_id: place.id, companion_id: picked.p.id })
-                    }
-                  >
-                    보내기
-                  </button>
-                </div>
-                <p className="text-muted text-xs">
-                  {ko(picked.p)}은(는) {aptitudeLine(picked.offer.aptitude)}. 보내면 의뢰를 마칠
-                  때까지 돌아오지 않습니다.
-                </p>
-              </div>
-            ) : (
-              <p className="text-muted text-sm">
-                보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 다른 의뢰를
-                하고 있지 않은 포켓몬이 갈 수 있습니다.
-              </p>
-            )}
-            <div className="mt-auto flex items-center gap-3">
+          <Picker place={place} work={work} busy={busy} act={act} />
+        )}
+      </div>
+
+      {!place.worker && (
+        <footer className="border-line text-muted flex min-h-12 items-center justify-between gap-3 border-t px-5 py-2 text-xs">
+          {place.can_reroll ? (
+            <>
+              <span>다른 의뢰로 바꿀 수 있습니다.</span>
               <button
                 type="button"
-                className={quiet}
-                disabled={busy || !place.can_reroll}
+                className="text-accent hover:text-ink font-medium"
+                disabled={busy}
                 onClick={() => act({ fn: 'reroll', workplace_id: place.id })}
               >
                 다른 의뢰 찾기
               </button>
-              {!place.can_reroll && (
-                <span className="text-muted font-mono text-xs tabular-nums">
-                  {Math.min(place.hours_open, shift)} / {shift}시간
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          ) : (
+            <span>
+              <span className="font-mono tabular-nums">
+                {shift - Math.min(place.hours_open, shift)}
+              </span>
+              시간 뒤 다른 의뢰로 바꿀 수 있습니다
+            </span>
+          )}
+        </footer>
+      )}
     </li>
   )
 }
@@ -304,14 +369,24 @@ export function RequestsView() {
   }
 
   const out = work.workplaces.filter((w) => w.worker).length
+  const ready = work.workplaces.filter((w) => w.worker?.can_settle).length
 
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">의뢰</h1>
-          <span className="text-muted font-mono text-xs tabular-nums">
-            진행 중 {out} / {work.workplaces.length}
+          <span className="text-muted text-xs">
+            진행 중{' '}
+            <span className="font-mono tabular-nums">
+              {out} / {work.workplaces.length}
+            </span>
+            {ready > 0 && (
+              <>
+                {' · 끝난 의뢰 '}
+                <span className="font-mono tabular-nums">{ready}</span>
+              </>
+            )}
           </span>
         </div>
         <span className="font-mono text-sm tabular-nums">{points(work.points)}</span>
