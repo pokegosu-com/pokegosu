@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(11);
+select plan(13);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -78,6 +78,13 @@ select is((select default_id from public.my_dex() d join public.pokedex_species 
   (select form_of from public.pokedex_species where slug = 'shellos-east'),
   'a form names its species'' default, for a list that shows one tile a species');
 
+select is((select string_agg(coalesce(p ->> 'form_slug', '-'), ' ' order by (p ->> 'species_id')::int)
+             from jsonb_array_elements(public.box() -> 'pokemon') p where (p ->> 'species_id')::int > 5),
+  'shellos-east', 'the box names a form, for its link to the Pokédex');
+select is((select count(*)::int from jsonb_array_elements(public.box() -> 'pokemon') p
+            where (p ->> 'species_id')::int in (4, 5) and p -> 'form_slug' = 'null'::jsonb), 2,
+  'and names none for a default form');
+
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000b');
 select is(pg_temp.dex(), '', 'another person sees none of it');
 
@@ -89,7 +96,8 @@ set local role anon;
 select throws_ok($$ select * from public.my_dex() $$, '42501', null, 'a visitor cannot ask');
 
 reset role;
-select is((select count(*)::int from public.coder_dex_entries), 3,
+select is((select count(*)::int from public.coder_dex_entries
+            where user_id = '00000000-0000-0000-0000-00000000000a'), 3,
   'one row a form, however many times it was had');
 
 select * from finish();

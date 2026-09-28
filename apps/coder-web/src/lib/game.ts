@@ -27,6 +27,8 @@ export type Named = { ko_name: string | null; en_name: string | null }
 export type Pokemon = {
   id: string
   species_id: number
+  /** The form's name in the Pokédex, or null for a species' default form. */
+  form_slug: string | null
   dex_no: number
   ko_name: string | null
   en_name: string | null
