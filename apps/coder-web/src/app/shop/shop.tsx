@@ -40,7 +40,7 @@ function useShop() {
 }
 
 /**
- * One thing for sale: its sprite in a well, its name, a line about it, the
+ * One thing for sale: its sprite, its name, a line about it, the
  * price and the button. An item's sprite is 30px and drawn at twice that, a
  * whole number of pixels, so it stays crisp; the egg is 96px, like a
  * Pokémon's.
@@ -64,7 +64,7 @@ function Ware({
 }) {
   return (
     <li className="border-line flex flex-col items-center gap-2 rounded-lg border p-4 text-center">
-      <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+      <span className="grid size-24 place-items-center">
         {sprite && (
           // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
           <img

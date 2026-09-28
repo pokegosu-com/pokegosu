@@ -59,12 +59,10 @@ function say(action: WorkAction, o: Outcome): string | null {
   }
 }
 
-/** A pixel sprite in its well, at the size the grid gives it. */
+/** A pixel sprite at the size the card gives it, standing on the card itself. */
 function Sprite({ src, size }: { src: string | undefined; size: 'md' | 'lg' }) {
   return (
-    <span
-      className={`bg-surface-raised grid flex-none place-items-center rounded-md ${size === 'lg' ? 'size-24' : 'size-14'}`}
-    >
+    <span className={`grid flex-none place-items-center ${size === 'lg' ? 'size-24' : 'size-14'}`}>
       {src && (
         // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
         <img src={src} alt="" className="size-full [image-rendering:pixelated]" />
