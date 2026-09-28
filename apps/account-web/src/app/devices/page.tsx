@@ -29,7 +29,7 @@ export default async function DevicesPage() {
           </p>
         </div>
         <Link href="/devices/add" className="text-accent hover:text-ink flex-none text-sm">
-          코드로 추가
+          기기 추가
         </Link>
       </div>
 

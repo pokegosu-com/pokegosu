@@ -27,7 +27,6 @@ export function CodeForm() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
           required
-          autoFocus
           placeholder="XPTQ-4F2K"
           className="border-line-strong w-full rounded-md border px-3 py-2 text-center font-mono text-lg tracking-[0.2em]"
         />
