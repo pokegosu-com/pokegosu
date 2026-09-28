@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(100);
+select plan(103);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -463,6 +463,30 @@ select is(
   (select string_agg(distinct pg_temp.roll_sinnoh_and_let_go(), ' ') from generate_series(1, 20)),
   'spiritomb',
   'a form counts as its family, whatever form the family is in');
+
+-- Someone with every letter of Unown's but Z, and East Sea Gastrodon. With a
+-- form never had weighing all but everything, an Unown egg is Z every time,
+-- and a Shellos egg West Sea, East Sea Shellos being had through what it
+-- became.
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000e', 'e@test.local');
+insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny)
+select '00000000-0000-0000-0000-00000000000e', s.id, 'national', false
+  from public.pokedex_species s where s.slug ~ '^unown-' and s.slug <> 'unown-z' or s.slug = 'gastrodon-east';
+select is(
+  (select string_agg(distinct s.slug, ' ') from (select public.draw_form('00000000-0000-0000-0000-00000000000e', 201) as id from generate_series(1, 20)) d
+     join public.pokedex_species s on s.id = d.id),
+  'unown-z',
+  'a form never had weighs as a family never had');
+select is(
+  (select string_agg(distinct s.slug, ' ') from (select public.draw_form('00000000-0000-0000-0000-00000000000e', 422) as id from generate_series(1, 20)) d
+     join public.pokedex_species s on s.id = d.id),
+  'shellos-west',
+  'and a form is had through what it became');
+select is(
+  (select string_agg(distinct s.slug, ' ') from (select public.draw_form('00000000-0000-0000-0000-00000000000e', 443) as id from generate_series(1, 5)) d
+     join public.pokedex_species s on s.id = d.id),
+  'gible',
+  'a species with no other form an egg can hold keeps its own');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');
