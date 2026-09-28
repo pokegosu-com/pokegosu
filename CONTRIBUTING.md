@@ -27,7 +27,7 @@ A deploy ships everything together: the database first, then the rest. It needs 
 
 **Supabase** holds the database, sign-in and the Edge Functions. Create the project with _Automatically expose new tables_ turned off. Set the sign-in site URL and redirect to the account app, and give it SMTP to send mail from your domain. The migrations and functions are pushed with the Supabase CLI.
 
-**Cloudflare** serves the apps, one Worker each, built with production values. The first time, a Worker has no address: attach its hostname in the dashboard.
+**Cloudflare** serves the apps, one Worker each, built with production values. The first time, a Worker has no address: attach its hostname in the dashboard. The Pokédex builds every page ahead from the database, so its build reads the Supabase project, after the migrations, and needs the local stack running when built locally.
 
 The apps build with these values:
 

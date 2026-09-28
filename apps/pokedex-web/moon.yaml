@@ -35,8 +35,11 @@ tasks:
     command: 'node scripts/generate.ts'
     preset: 'utility'
 
+  # Every page is built from the database. In CI that is a fresh one with
+  # every migration applied, which `supabase:verify` leaves running; locally,
+  # where verify never runs, it is the developer's own.
   build:
-    deps: ['sprites']
+    deps: ['sprites', 'supabase:verify']
 
   # vinext dev is Vite underneath and ignores PORT, so it is passed.
   dev:

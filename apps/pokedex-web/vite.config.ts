@@ -12,8 +12,6 @@ export default defineConfig({
   // Shown by @pokegosu/ui/version-footer.
   define: { __APP_VERSION__: JSON.stringify(resolveAppVersion()) },
   plugins: [
-    // Not prerendered: the pages read the pokedex from the database, which
-    // a build has no business reaching.
     vinext(),
     cloudflare({
       // Every app's dev server would otherwise take workerd's inspector on
