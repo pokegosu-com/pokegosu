@@ -6,7 +6,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
 import { FormMarks, FormSprite } from './marks'
-import { ShinyChoice } from './shiny'
+import { ShinyChoice, StageLink } from './shiny'
 import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
@@ -366,7 +366,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                         {i > 0 && f.method && (
                           <span className="text-muted text-xs">→ {takes(f.method)}</span>
                         )}
-                        <Link
+                        <StageLink
                           href={hrefOf(f.number, f)}
                           aria-current={f.id === p.id ? 'page' : undefined}
                           className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
@@ -384,7 +384,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           <span className="text-muted font-mono text-[11px]">
                             {dexNo(f.number)}
                           </span>
-                        </Link>
+                        </StageLink>
                       </li>
                     ))}
                   </ol>

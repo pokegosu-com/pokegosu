@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, type ReactNode, useContext, useState, useSyncExternalStore } from 'react'
+import Link from 'next/link'
+import {
+  type ComponentProps,
+  createContext,
+  type ReactNode,
+  useContext,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
 import { useMyDex } from '@/lib/my-dex'
 
@@ -42,4 +50,16 @@ export function ShinyChoice({
 
 export function useShiny() {
   return useContext(Shiny)
+}
+
+/**
+ * A link to another stage of the family, which is another entry's page: it
+ * carries the choice there as ?shiny=, so moving along a family keeps it.
+ */
+export function StageLink({ href, ...props }: ComponentProps<typeof Link> & { href: string }) {
+  const [shiny] = useShiny()
+  const [path, query] = href.split('?')
+  const carried = new URLSearchParams(query)
+  carried.set('shiny', shiny ? '1' : '0')
+  return <Link href={`${path}?${carried}`} {...props} />
 }
