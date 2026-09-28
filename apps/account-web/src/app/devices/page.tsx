@@ -22,11 +22,7 @@ export default async function DevicesPage() {
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
-          <p className="text-muted text-sm">
-            CLI 로 로그인한 기기입니다. 새 기기는{' '}
-            <code className="text-ink font-mono text-[13px]">pokegosu auth login</code> 을 실행하면
-            추가됩니다.
-          </p>
+          <p className="text-muted text-sm">CLI 로 로그인한 기기입니다.</p>
         </div>
         <Link href="/devices/add" className="text-accent hover:text-ink flex-none text-sm">
           기기 추가
@@ -41,8 +37,10 @@ export default async function DevicesPage() {
 
       {devices && devices.length === 0 && (
         <p className="text-muted text-sm">
-          아직 등록된 기기가 없습니다. 기기에서 <code>pokegosu auth login</code> 을 실행하면 코드가
-          나옵니다.
+          아직 등록된 기기가 없습니다.{' '}
+          <Link href="/devices/add" className="text-accent hover:text-ink">
+            기기 추가 →
+          </Link>
         </p>
       )}
 
