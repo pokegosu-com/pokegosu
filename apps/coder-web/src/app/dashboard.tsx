@@ -7,7 +7,7 @@ import { Artwork } from '@pokegosu/ui/artwork'
 import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { exactTokens } from '@/lib/format'
+import { compactTokens, exactTokens } from '@/lib/format'
 import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
 import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
@@ -87,10 +87,17 @@ function Tasks({
  */
 function Leftover({ balance }: { balance: string }) {
   return (
-    <p className="flex items-baseline justify-between text-xs">
-      <span className="text-muted">남은 토큰</span>
-      <span className="font-mono tabular-nums">{exactTokens(balance)} 토큰</span>
-    </p>
+    <section
+      aria-labelledby="leftover"
+      className="border-line flex flex-col justify-center gap-2 rounded-lg border p-6"
+    >
+      <h2 id="leftover" className="text-muted text-sm font-medium">
+        남은 토큰
+      </h2>
+      <p className="text-2xl font-medium" title={`${exactTokens(balance)} 토큰`}>
+        <span className="font-mono tabular-nums">{compactTokens(BigInt(balance))}</span> 토큰
+      </p>
+    </section>
   )
 }
 
@@ -159,7 +166,6 @@ function PokemonPartner({
             label="다음 레벨까지"
             size="lg"
           />
-          <Leftover balance={box.balance} />
         </div>
         {/* Hidden while the level is still counting up, so nothing is
             pressed on a level the bar hasn't reached. */}
@@ -248,7 +254,6 @@ function EggPartner({
             {exactTokens(Math.floor(shown))} / {exactTokens(egg.tokens_needed)} 토큰
           </p>
           <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
-          <Leftover balance={box.balance} />
         </div>
         {!climbing && (
           <Tasks box={box} game={game} acted={acted}>
@@ -403,10 +408,15 @@ export function Dashboard() {
             알 받기
           </button>
         </section>
-      ) : box.pokemon.some((p) => p.id === box.main_companion_id) ? (
-        <PokemonPartner box={box} curve={curve} game={game} acted={acted} onAct={onAct} />
       ) : (
-        <EggPartner box={box} game={game} acted={acted} onAct={onAct} />
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+          {box.pokemon.some((p) => p.id === box.main_companion_id) ? (
+            <PokemonPartner box={box} curve={curve} game={game} acted={acted} onAct={onAct} />
+          ) : (
+            <EggPartner box={box} game={game} acted={acted} onAct={onAct} />
+          )}
+          <Leftover balance={box.balance} />
+        </div>
       )}
       {nothingYet ? <Empty /> : <LastDay usage={recent.usage} now={recent.now} />}
     </>
