@@ -124,6 +124,26 @@ export type Database = {
           },
         ]
       }
+      coder_egg_forms: {
+        Row: {
+          species_id: number
+        }
+        Insert: {
+          species_id: number
+        }
+        Update: {
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_egg_forms_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: true
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_egg_kinds: {
         Row: {
           en_name: string | null
@@ -692,10 +712,12 @@ export type Database = {
           capture_rate: number
           category: string | null
           defense: number
+          en_form_name: string | null
           en_genus: string | null
           en_name: string | null
           evolution_method: string | null
           evolves_from_id: number | null
+          form_of: number | null
           gender_rate: number
           generation: number
           growth_rate: string
@@ -703,6 +725,7 @@ export type Database = {
           height: number
           hp: number
           id: number
+          ko_form_name: string | null
           ko_genus: string | null
           ko_name: string | null
           slug: string
@@ -719,10 +742,12 @@ export type Database = {
           capture_rate: number
           category?: string | null
           defense: number
+          en_form_name?: string | null
           en_genus?: string | null
           en_name?: string | null
           evolution_method?: string | null
           evolves_from_id?: number | null
+          form_of?: number | null
           gender_rate: number
           generation: number
           growth_rate: string
@@ -730,6 +755,7 @@ export type Database = {
           height: number
           hp: number
           id: number
+          ko_form_name?: string | null
           ko_genus?: string | null
           ko_name?: string | null
           slug: string
@@ -746,10 +772,12 @@ export type Database = {
           capture_rate?: number
           category?: string | null
           defense?: number
+          en_form_name?: string | null
           en_genus?: string | null
           en_name?: string | null
           evolution_method?: string | null
           evolves_from_id?: number | null
+          form_of?: number | null
           gender_rate?: number
           generation?: number
           growth_rate?: string
@@ -757,6 +785,7 @@ export type Database = {
           height?: number
           hp?: number
           id?: number
+          ko_form_name?: string | null
           ko_genus?: string | null
           ko_name?: string | null
           slug?: string
@@ -779,6 +808,13 @@ export type Database = {
           {
             foreignKeyName: 'pokedex_species_evolves_from_id_fkey'
             columns: ['evolves_from_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_species_form_of_fkey'
+            columns: ['form_of']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
             referencedColumns: ['id']

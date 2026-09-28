@@ -76,8 +76,14 @@ const STATS = [
   ['speed', '스피드'],
 ] as const
 
-export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
+/** A form's own name, or 기본 for a default form the games name nothing. */
+function formName(form: { ko_form_name: string | null; en_form_name: string | null }): string {
+  return form.ko_form_name ?? form.en_form_name ?? '기본'
+}
+
+export default async function Entry({ params, searchParams }: PageProps<'/[dex]/[number]'>) {
   const { dex, number } = await params
+  const { form } = await searchParams
   const n = Number(number)
   if (!Number.isInteger(n) || n < 1) notFound()
 
@@ -89,14 +95,15 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         .select('is_default, species:pokedex_species(*)')
         .eq('dex', dex)
         .eq('number', n)
-        .order('is_default', { ascending: false }),
+        .order('is_default', { ascending: false })
+        .order('species_id'),
       // Every form in this pokedex, small enough to take whole: the family is
       // found by following evolves_from_id, and each links by its number here.
       // A stage this pokedex does not list is left out: Kanto's has no Pichu.
       db
         .from('pokedex_entries')
         .select(
-          'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
+          'number, is_default, species:pokedex_species(id, slug, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
         )
         .eq('dex', dex),
       // The numbers either side, in the same pokedex.
@@ -125,8 +132,13 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
   const dexName = kindNames.get(dex)
   if (!dexName) notFound()
-  const p = forms.data?.[0]?.species
-  if (!p) notFound()
+  // The default form, or the one ?form= names, as ?form=rotom-heat.
+  const shown = form ? forms.data?.find((f) => f.species.slug === form) : forms.data?.[0]
+  if (!shown) notFound()
+  const p = shown.species
+  // A form's page links by its number, and by its name unless it is the default.
+  const hrefOf = (number: number, f: { is_default: boolean; slug: string }) =>
+    f.is_default ? `/${dex}/${number}` : `/${dex}/${number}?form=${f.slug}`
 
   // This pokedex's entry for the form shown; each pokedex writes its own.
   const entriesOf = await db
@@ -136,7 +148,12 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     .eq('dex', dex)
   if (entriesOf.error) throw entriesOf.error
 
-  const rows = new Map(all.data!.map(({ number, species }) => [species.id, { ...species, number }]))
+  const rows = new Map(
+    all.data!.map(({ number, is_default, species }) => [
+      species.id,
+      { ...species, number, is_default },
+    ]),
+  )
   const firstOf = (id: number): number => {
     const row = rows.get(id)
     return row?.evolves_from_id ? firstOf(row.evolves_from_id) : id
@@ -191,7 +208,14 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           <p className="text-muted font-mono text-xs tabular-nums">
             {dexName} {dexNo(n)}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">{ko(p)}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {ko(p)}
+            {forms.data!.length > 1 && (
+              <span className="text-muted ml-2 text-base font-normal tracking-normal">
+                {formName(p)}
+              </span>
+            )}
+          </h1>
           <p className="text-muted text-sm">
             {p.ko_genus ?? p.en_genus}
             {p.category && ` · ${CATEGORIES[p.category]}`}
@@ -210,6 +234,34 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           ))}
         </div>
       </header>
+
+      {forms.data!.length > 1 && (
+        <section className="space-y-3">
+          <h2 className="text-muted text-sm font-medium">모습</h2>
+          <ul className="flex flex-wrap gap-2">
+            {forms.data!.map(({ is_default, species: f }) => {
+              const art = (f.sprites as { front?: string }).front
+              return (
+                <li key={f.id}>
+                  <Link
+                    href={hrefOf(n, { is_default, slug: f.slug })}
+                    aria-current={f.id === p.id ? 'page' : undefined}
+                    className="border-line hover:border-line-strong aria-[current=page]:border-accent flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                  >
+                    <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+                      {art && (
+                        // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
+                        <img src={art} alt="" className="size-24 [image-rendering:pixelated]" />
+                      )}
+                    </span>
+                    {formName(f)}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="grid gap-10 sm:grid-cols-2">
         <div className="space-y-3">
@@ -266,8 +318,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                     </span>
                   )}
                   <Link
-                    href={`/${dex}/${f.number}`}
-                    aria-current={f.number === n ? 'page' : undefined}
+                    href={hrefOf(f.number, f)}
+                    aria-current={f.id === p.id ? 'page' : undefined}
                     className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                   >
                     <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
@@ -283,19 +335,6 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
               )
             })}
           </ol>
-        </section>
-      )}
-
-      {forms.data!.length > 1 && (
-        <section className="space-y-3">
-          <h2 className="text-muted text-sm font-medium">모습</h2>
-          <ul className="flex flex-wrap gap-2 text-sm">
-            {forms.data!.map(({ species: f }) => (
-              <li key={f.id} className="border-line rounded border px-2 py-1">
-                {ko(f)}
-              </li>
-            ))}
-          </ul>
         </section>
       )}
     </main>

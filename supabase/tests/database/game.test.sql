@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(91);
+select plan(94);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -396,6 +396,48 @@ select is(
   (select string_agg(distinct pg_temp.roll_and_let_go(), ' ') from generate_series(1, 20)),
   'mew',
   'a regional egg''s species is matched to what a person has by family, babies and all');
+
+-- A Sinnoh egg holds Unown, Burmy and Shellos, and hatches them in any form
+-- coder_egg_forms lists, and nothing else in any but its default.
+reset role;
+update public.coder_settings set unowned_line_weight = 1;
+select setseed(0.25);
+select public.roll_egg('00000000-0000-0000-0000-00000000000b', 'sinnoh') from generate_series(1, 1000);
+select is_empty(
+  $$ select c.id from public.coder_companions c join public.pokedex_species s on s.id = c.species_id
+      where c.user_id = '00000000-0000-0000-0000-00000000000b' and c.egg_kind = 'sinnoh'
+        and (s.form_of is not null) <> (s.id in (select species_id from public.coder_egg_forms)) $$,
+  'an egg hatches another form only where the game lists it');
+select isnt_empty(
+  $$ select c.id from public.coder_companions c join public.pokedex_species s on s.id = c.species_id
+      where c.user_id = '00000000-0000-0000-0000-00000000000b' and s.form_of is not null $$,
+  'and does hatch them');
+
+-- Someone with every family a Sinnoh egg holds but Spiritomb's, Shellos's as
+-- East Sea Gastrodon. Unless a form is matched to its family by its default,
+-- a Shellos egg would count as a line never had.
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000d', 'd@test.local');
+insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny)
+select '00000000-0000-0000-0000-00000000000d',
+       case when s.slug = 'shellos-west' then (select id from public.pokedex_species where slug = 'gastrodon-east')
+            else public.pokedex_first_form(g.species_id) end,
+       'national', false
+  from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+ where g.egg_kind = 'sinnoh' and s.slug <> 'spiritomb';
+update public.coder_settings set unowned_line_weight = 100000000;
+create function pg_temp.roll_sinnoh_and_let_go() returns text language plpgsql as $$
+declare
+  egg uuid := public.roll_egg('00000000-0000-0000-0000-00000000000d', 'sinnoh');
+  species integer;
+begin
+  delete from public.coder_companions c where c.id = egg returning c.species_id into species;
+  return (select slug from public.pokedex_species where id = species);
+end;
+$$;
+select is(
+  (select string_agg(distinct pg_temp.roll_sinnoh_and_let_go(), ' ') from generate_series(1, 20)),
+  'spiritomb',
+  'a form counts as its family, whatever form the family is in');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');
