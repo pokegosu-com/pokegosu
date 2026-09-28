@@ -68,6 +68,7 @@ export type Database = {
           egg_received_at: string | null
           egg_tokens: number
           exp: number
+          gender: string | null
           hatched_at: string | null
           id: string
           invested_tokens: number
@@ -83,6 +84,7 @@ export type Database = {
           egg_received_at?: string | null
           egg_tokens?: number
           exp?: number
+          gender?: string | null
           hatched_at?: string | null
           id?: string
           invested_tokens?: number
@@ -98,6 +100,7 @@ export type Database = {
           egg_received_at?: string | null
           egg_tokens?: number
           exp?: number
+          gender?: string | null
           hatched_at?: string | null
           id?: string
           invested_tokens?: number
@@ -948,6 +951,7 @@ export type Database = {
         Returns: Json
       }
       companion_history: { Args: { companion_id: string }; Returns: Json }
+      draw_gender: { Args: { species_id: number }; Returns: string }
       eligible_ribbons: {
         Args: {
           pokemon: Database['public']['Tables']['coder_companions']['Row']
@@ -957,9 +961,8 @@ export type Database = {
       evolve: { Args: { companion_id: string }; Returns: Json }
       hatch: { Args: { companion_id: string }; Returns: Json }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
-      level_only_methods: { Args: never; Returns: string[] }
       level_up_evolution: {
-        Args: { from_id: number }
+        Args: { from_id: number; gender: string }
         Returns: {
           id: number
           min_level: number
@@ -973,6 +976,7 @@ export type Database = {
           egg_received_at: string | null
           egg_tokens: number
           exp: number
+          gender: string | null
           hatched_at: string | null
           id: string
           invested_tokens: number

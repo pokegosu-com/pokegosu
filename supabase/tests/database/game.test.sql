@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(94);
+select plan(100);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -127,21 +127,34 @@ select is(
     where s.category = 'baby'),
   'rare',
   'every baby is rare, whatever it grows into');
-select is(public.level_up_evolution(148), row(149, 55::smallint)::record,
+select is(public.level_up_evolution(148, 'male'), row(149, 55::smallint)::record,
   'Dragonair becomes Dragonite at Lv.55');
-select is(public.level_up_evolution(79), row(80, 37::smallint)::record,
+select is(public.level_up_evolution(79, 'male'), row(80, 37::smallint)::record,
   'Slowpoke becomes Slowbro at Lv.37, and the trade to Slowking is left to wait');
-select is_empty($$ select * from public.level_up_evolution(236) $$,
+select is_empty($$ select * from public.level_up_evolution(236, 'male') $$,
   'Tyrogue''s Lv.20 asks for Attack against Defense too, so it waits');
-select is_empty($$ select * from public.level_up_evolution(172) $$,
+select is_empty($$ select * from public.level_up_evolution(172, 'male') $$,
   'and so does Pichu, on friendship');
-select is_empty($$ select * from public.level_up_evolution(265) $$,
+select is_empty($$ select * from public.level_up_evolution(265, 'male') $$,
   'Wurmple''s Lv.7 hangs on its personality, so it waits rather than always becoming Silcoon');
-select is(public.level_up_evolution(290), row(291, 20::smallint)::record,
+select is(public.level_up_evolution(290, 'male'), row(291, 20::smallint)::record,
   'Nincada becomes Ninjask at Lv.20, and Shedinja is left to wait');
-select is_empty($$ select * from public.level_up_evolution(412) $$,
-  'Burmy''s Lv.20 asks for a gender too, so it waits');
-select is(public.level_up_evolution(443), row(444, 24::smallint)::record,
+select is(public.level_up_evolution(412, 'female'), row(413, 20::smallint)::record,
+  'a female Burmy becomes Wormadam at Lv.20');
+select is(
+  (select row(p.slug, e.min_level)::text
+     from public.level_up_evolution((select id from public.pokedex_species where slug = 'burmy-sandy'), 'female') e
+     join public.pokedex_species p on p.id = e.id),
+  '(wormadam-sandy,20)',
+  'in her own cloak');
+select is(public.level_up_evolution((select id from public.pokedex_species where slug = 'burmy-trash'), 'male'),
+  row(414, 20::smallint)::record,
+  'and a male one Mothim, whatever his cloak');
+select is(public.level_up_evolution(415, 'female'), row(416, 21::smallint)::record,
+  'a female Combee becomes Vespiquen at Lv.21');
+select is_empty($$ select * from public.level_up_evolution(415, 'male') $$,
+  'and a male one never evolves');
+select is(public.level_up_evolution(443, 'male'), row(444, 24::smallint)::record,
   'Gible becomes Gabite at Lv.24');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   200000000::bigint, 'Medium Fast reaches Lv.50 on 200M tokens');
@@ -412,6 +425,18 @@ select isnt_empty(
   $$ select c.id from public.coder_companions c join public.pokedex_species s on s.id = c.species_id
       where c.user_id = '00000000-0000-0000-0000-00000000000b' and s.form_of is not null $$,
   'and does hatch them');
+select is_empty(
+  $$ select c.id from public.coder_companions c join public.pokedex_species s on s.id = c.species_id
+      where c.user_id = '00000000-0000-0000-0000-00000000000b'
+        and (case when s.gender_rate < 0 then c.gender is not null
+                  when s.gender_rate = 0 then c.gender is distinct from 'male'
+                  when s.gender_rate = 8 then c.gender is distinct from 'female'
+                  else c.gender is null end) $$,
+  'an egg has a gender by its species'' ratio, and none where the species has none');
+select is(
+  (select count(distinct c.gender)::int from public.coder_companions c join public.pokedex_species s on s.id = c.species_id
+    where c.user_id = '00000000-0000-0000-0000-00000000000b' and s.gender_rate between 1 and 7),
+  2, 'both genders come of a species that has both');
 
 -- Someone with every family a Sinnoh egg holds but Spiritomb's, Shellos's as
 -- East Sea Gastrodon. Unless a form is matched to its family by its default,

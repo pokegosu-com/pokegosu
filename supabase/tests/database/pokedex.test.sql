@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(34);
+select plan(35);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -121,6 +121,12 @@ select is(
   (select count(*)::int from public.pokedex_species
     where slug in ('cherrim-sunshine', 'rotom-heat', 'pichu-spiky-eared') and evolves_from_id is not null),
   0, 'and from nothing where the form before has no such form');
+
+select is(
+  (select string_agg(slug || ':' || (sprites ? 'front_female'), ' ' order by id)
+     from public.pokedex_species where slug in ('pikachu', 'nidoran-f', 'combee')),
+  'pikachu:true nidoran-f:false combee:true',
+  'a female that looks different has a sprite of her own');
 
 select is((select category from public.pokedex_species where slug = 'mewtwo'), 'legendary', 'a category is one of three, or none');
 

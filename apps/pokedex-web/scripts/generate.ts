@@ -15,7 +15,7 @@
 // into Pikachu's row, and the newest migration always says all of it.
 
 import { createHash } from 'node:crypto'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 /** PokeAPI/sprites at the commit every hash in the manifest was taken from. */
@@ -130,6 +130,7 @@ type Species = {
   is_baby: boolean
   is_legendary: boolean
   is_mythical: boolean
+  has_gender_differences: boolean
   growth_rate: Named
   evolution_chain: { url: string }
   varieties: { is_default: boolean; pokemon: Named }[]
@@ -465,6 +466,8 @@ type Row = {
   sprites: Record<string, string>
   /** The file each style is under in PokeAPI/sprites: a Pokémon's id, or its number and form. */
   spriteKey: string
+  /** Whether a female looks different, as Pikachu's tail does. */
+  femaleDiffers: boolean
 }
 
 const STATS: Record<string, string> = {
@@ -602,6 +605,10 @@ async function main() {
       if (kept.length > 1 && form.id !== s.id && !formNames.ko)
         throw new Error(`no Korean name for the form ${form.name}`)
       const types = form.types.length > 0 ? form.types : pokemon.types
+      // Of the species' default form only: no other form kept has a female of
+      // its own. PokéAPI's front_female is no guide, as it gives Nidoran♀
+      // her one sprite there.
+      const femaleDiffers = s.has_gender_differences && form.id === s.id
       rows.push({
         id: form.id,
         slug: form.name,
@@ -630,9 +637,15 @@ async function main() {
         evolvesFrom: evolution ? evolution.from : null,
         evolution: evolution ? await evolutionOf(evolution.detail) : null,
         // Under the form's id, which is the national number for a default form.
+        // A female that looks different has pixel sprites of her own; the
+        // official artwork draws one of each species, whichever it is.
         sprites: {
           front: `/sprites/pokemon/${form.id}.png`,
           front_shiny: `/sprites/pokemon/shiny/${form.id}.png`,
+          ...(femaleDiffers && {
+            front_female: `/sprites/pokemon/female/${form.id}.png`,
+            front_shiny_female: `/sprites/pokemon/shiny/female/${form.id}.png`,
+          }),
           artwork: `/sprites/pokemon/artwork/${form.id}.png`,
           artwork_shiny: `/sprites/pokemon/artwork/shiny/${form.id}.png`,
         },
@@ -641,6 +654,7 @@ async function main() {
         // as 201-b for Unown B. Pokémon and form ids differ: form 10001 is Unown
         // B, and Pokémon 10001 is Attack Forme Deoxys.
         spriteKey: form.is_default ? String(pokemon.id) : `${s.id}-${form.form_name}`,
+        femaleDiffers,
       })
     }
   }
@@ -704,9 +718,23 @@ async function main() {
     )
   }
 
+  // The commit is pinned, so a hash the manifest already has for a source is
+  // still that file's, and a run fetches only what is new.
+  const known = new Map<string, string>()
+  try {
+    const previous = JSON.parse(await readFile(MANIFEST, 'utf8')) as {
+      commit: string
+      files: { source: string; sha256: string }[]
+    }
+    if (previous.commit === SPRITES_COMMIT) {
+      for (const f of previous.files) known.set(f.source, f.sha256)
+    }
+  } catch {
+    // No manifest yet: every file is fetched.
+  }
   const sprites: { path: string; source: string; sha256: string }[] = []
   const add = async (path: string, source: string) => {
-    sprites.push({ path, source, sha256: await sha256Of(source) })
+    sprites.push({ path, source, sha256: known.get(source) ?? (await sha256Of(source)) })
   }
   // A list shows the 96px front sprite, the one style every generation has
   // in pixels; a Pokémon's own page shows the official artwork, which every
@@ -718,6 +746,10 @@ async function main() {
     const k = row.spriteKey
     await add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
     await add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${k}.png`)
+    if (row.femaleDiffers) {
+      await add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
+      await add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
+    }
     await add(`sprites/pokemon/artwork/${n}.png`, `${artwork}/${k}.png`)
     await add(`sprites/pokemon/artwork/shiny/${n}.png`, `${artwork}/shiny/${k}.png`)
   }

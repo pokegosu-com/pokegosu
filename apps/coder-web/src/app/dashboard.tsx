@@ -13,6 +13,7 @@ import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage 
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
+import { Gender } from './game/gender'
 import { useGame, type Opening } from './game/use-game'
 
 /** A level's worth of climbing takes this long, however many tokens it is. */
@@ -79,6 +80,7 @@ function PokemonPartner({
           <p className="flex items-baseline gap-2">
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
             <span className="text-3xl font-semibold tracking-tight">{ko(p)}</span>
+            <Gender gender={p.gender} />
             <span className="text-muted font-mono text-xs">
               No.{String(p.dex_no).padStart(3, '0')}
             </span>

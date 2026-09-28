@@ -176,6 +176,24 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
   const sprites = p.sprites as { artwork?: string; artwork_shiny?: string }
+
+  // Every form, and where a female looks different, as Pikachu's tail does,
+  // her too, in pixels: the artwork draws only one of them. With more than
+  // one form, each links to its own page.
+  const manyForms = forms.data!.length > 1
+  const looks = forms.data!.flatMap(({ is_default, species: f }) => {
+    const s = f.sprites as { front?: string; front_female?: string }
+    const link = manyForms
+      ? { href: hrefOf(n, { is_default, slug: f.slug }), current: f.id === p.id }
+      : { href: null, current: false }
+    const name = manyForms ? `${formName(f)} ` : ''
+    return s.front_female
+      ? [
+          { key: `${f.id}-male`, src: s.front, label: `${name}수컷의 모습`, ...link },
+          { key: `${f.id}-female`, src: s.front_female, label: `${name}암컷의 모습`, ...link },
+        ]
+      : [{ key: `${f.id}`, src: s.front, label: formName(f), ...link }]
+  })
   const previous = around.data!.find((e) => e.number === n - 1)
   const next = around.data!.find((e) => e.number === n + 1)
 
@@ -235,27 +253,37 @@ export default async function Entry({ params, searchParams }: PageProps<'/[dex]/
         </div>
       </header>
 
-      {forms.data!.length > 1 && (
+      {looks.length > 1 && (
         <section className="space-y-3">
           <h2 className="text-muted text-sm font-medium">모습</h2>
           <ul className="flex flex-wrap gap-2">
-            {forms.data!.map(({ is_default, species: f }) => {
-              const art = (f.sprites as { front?: string }).front
+            {looks.map((look) => {
+              const tile = (
+                <>
+                  <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+                    {look.src && (
+                      // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
+                      <img src={look.src} alt="" className="size-24 [image-rendering:pixelated]" />
+                    )}
+                  </span>
+                  {look.label}
+                </>
+              )
+              const box =
+                'border-line flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]'
               return (
-                <li key={f.id}>
-                  <Link
-                    href={hrefOf(n, { is_default, slug: f.slug })}
-                    aria-current={f.id === p.id ? 'page' : undefined}
-                    className="border-line hover:border-line-strong aria-[current=page]:border-accent flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
-                  >
-                    <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
-                      {art && (
-                        // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
-                        <img src={art} alt="" className="size-24 [image-rendering:pixelated]" />
-                      )}
-                    </span>
-                    {formName(f)}
-                  </Link>
+                <li key={look.key}>
+                  {look.href ? (
+                    <Link
+                      href={look.href}
+                      aria-current={look.current ? 'page' : undefined}
+                      className={`${box} hover:border-line-strong aria-[current=page]:border-accent`}
+                    >
+                      {tile}
+                    </Link>
+                  ) : (
+                    <div className={box}>{tile}</div>
+                  )}
                 </li>
               )
             })}
