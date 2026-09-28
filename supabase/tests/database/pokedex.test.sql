@@ -5,25 +5,28 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(27);
+select plan(35);
 
-select is((select count(*)::int from public.pokedex_species where generation = 1), 151,
+select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
-select is((select count(*)::int from public.pokedex_species where generation = 2), 100,
+select is((select count(*)::int from public.pokedex_species where generation = 2 and form_of is null), 100,
   'and every Generation II species');
-select is((select count(*)::int from public.pokedex_species where generation = 3), 135,
+select is((select count(*)::int from public.pokedex_species where generation = 3 and form_of is null), 135,
   'and every Generation III species');
-select is((select count(*)::int from public.pokedex_species where generation = 4), 107,
+select is((select count(*)::int from public.pokedex_species where generation = 4 and form_of is null), 107,
   'and every Generation IV species');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national'), 493, 'the national pokedex lists them');
-select is((select count(*)::int from public.pokedex_entries where dex = 'kanto'), 151, 'Kanto''s the first 151');
-select is((select count(*)::int from public.pokedex_entries where dex = 'johto'), 251, 'Johto''s the first 251, in its own order');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 64,
+  'and every other form those games had, but Arceus''s ??? type');
+
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 493, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
+select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
             where e.dex = 'johto' and s.slug = 'pikachu'), 22::smallint, 'Pikachu is Johto''s No.22');
-select is((select count(*)::int from public.pokedex_entries where dex = 'hoenn'), 202,
+select is((select count(*)::int from public.pokedex_entries where dex = 'hoenn' and is_default), 202,
   'and Hoenn''s 202, from Generation III and before');
-select is((select count(*)::int from public.pokedex_entries where dex = 'sinnoh'), 151,
+select is((select count(*)::int from public.pokedex_entries where dex = 'sinnoh' and is_default), 151,
   'and Diamond and Pearl''s 151, from Generation IV and before');
 
 select isnt(
@@ -87,6 +90,43 @@ select is(
 select is((select evolves_from_id from public.pokedex_species where slug = 'manaphy'), null,
   'Phione shares Manaphy''s chain, but never becomes it');
 select is(public.pokedex_first_form(143), 446, 'Snorlax''s family starts with Munchlax, from Generation IV');
+
+select is(
+  (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'national' and e.number = 479),
+  'rotom:true rotom-heat:false rotom-wash:false rotom-frost:false rotom-fan:false rotom-mow:false',
+  'a number lists every form of its species, and shows the default');
+select is(
+  (select row(ko_name, ko_form_name, en_form_name, form_of, type1, type2)::text
+     from public.pokedex_species where slug = 'rotom-heat'),
+  '(로토무,히트로토무,"Heat Rotom",479,electric,fire)',
+  'a form keeps its species'' name, has one of its own, and its own types');
+select is(
+  (select row(ko_form_name, form_of, type1)::text from public.pokedex_species where slug = 'arceus-fire'),
+  '(불꽃타입,493,fire)',
+  'and is named in Korean where PokéAPI names it only in English');
+select is(
+  (select string_agg(slug || ':' || coalesce(ko_form_name, '-'), ' ' order by id)
+     from public.pokedex_species where slug in ('pikachu', 'pichu', 'unown-a', 'unown-question')),
+  'pikachu:- pichu:- unown-a:A unown-question:?',
+  'a species with one form names none, and neither does a default form the games leave unnamed');
+select is(
+  (select string_agg(s.slug || '<' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('gastrodon-east', 'wormadam-sandy', 'gastrodon-west')),
+  'gastrodon-west<shellos-west:level-up-30 wormadam-sandy<burmy-sandy:level-up-20-female gastrodon-east<shellos-east:level-up-30',
+  'a form evolves from the form of the same name');
+select is(
+  (select count(*)::int from public.pokedex_species
+    where slug in ('cherrim-sunshine', 'rotom-heat', 'pichu-spiky-eared') and evolves_from_id is not null),
+  0, 'and from nothing where the form before has no such form');
+
+select is(
+  (select string_agg(slug || ':' || (sprites ? 'front_female'), ' ' order by id)
+     from public.pokedex_species where slug in ('pikachu', 'nidoran-f', 'combee')),
+  'pikachu:true nidoran-f:false combee:true',
+  'a female that looks different has a sprite of her own');
 
 select is((select category from public.pokedex_species where slug = 'mewtwo'), 'legendary', 'a category is one of three, or none');
 

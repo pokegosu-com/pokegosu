@@ -59,7 +59,7 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   return parts.join(' · ') || (names.get(method.trigger) ?? '')
 }
 
-function gender(rate: number): string {
+function genderRatio(rate: number): string {
   if (rate < 0) return '성별 없음'
   const female = (rate / 8) * 100
   return `♂ ${100 - female}% · ♀ ${female}%`
@@ -76,8 +76,14 @@ const STATS = [
   ['speed', '스피드'],
 ] as const
 
-export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
+/** A form's own name, or 기본 for a default form the games name nothing. */
+function formName(form: { ko_form_name: string | null; en_form_name: string | null }): string {
+  return form.ko_form_name ?? form.en_form_name ?? '기본'
+}
+
+export default async function Entry({ params, searchParams }: PageProps<'/[dex]/[number]'>) {
   const { dex, number } = await params
+  const { form, gender } = await searchParams
   const n = Number(number)
   if (!Number.isInteger(n) || n < 1) notFound()
 
@@ -89,14 +95,15 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         .select('is_default, species:pokedex_species(*)')
         .eq('dex', dex)
         .eq('number', n)
-        .order('is_default', { ascending: false }),
+        .order('is_default', { ascending: false })
+        .order('species_id'),
       // Every form in this pokedex, small enough to take whole: the family is
       // found by following evolves_from_id, and each links by its number here.
       // A stage this pokedex does not list is left out: Kanto's has no Pichu.
       db
         .from('pokedex_entries')
         .select(
-          'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
+          'number, is_default, species:pokedex_species(id, slug, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
         )
         .eq('dex', dex),
       // The numbers either side, in the same pokedex.
@@ -125,8 +132,18 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
   const dexName = kindNames.get(dex)
   if (!dexName) notFound()
-  const p = forms.data?.[0]?.species
-  if (!p) notFound()
+  // The default form, or the one ?form= names, as ?form=rotom-heat.
+  const shown = form ? forms.data?.find((f) => f.species.slug === form) : forms.data?.[0]
+  if (!shown) notFound()
+  const p = shown.species
+  // A form's page links by its number, by its name unless it is the default,
+  // and with ?gender=female for a female that looks different.
+  const hrefOf = (number: number, f: { is_default: boolean; slug: string }, female = false) => {
+    const query = new URLSearchParams()
+    if (!f.is_default) query.set('form', f.slug)
+    if (female) query.set('gender', 'female')
+    return query.size ? `/${dex}/${number}?${query}` : `/${dex}/${number}`
+  }
 
   // This pokedex's entry for the form shown; each pokedex writes its own.
   const entriesOf = await db
@@ -136,7 +153,12 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     .eq('dex', dex)
   if (entriesOf.error) throw entriesOf.error
 
-  const rows = new Map(all.data!.map(({ number, species }) => [species.id, { ...species, number }]))
+  const rows = new Map(
+    all.data!.map(({ number, is_default, species }) => [
+      species.id,
+      { ...species, number, is_default },
+    ]),
+  )
   const firstOf = (id: number): number => {
     const row = rows.get(id)
     return row?.evolves_from_id ? firstOf(row.evolves_from_id) : id
@@ -158,7 +180,35 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   )
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
-  const sprites = p.sprites as { artwork?: string; artwork_shiny?: string }
+  const sprites = p.sprites as {
+    artwork?: string
+    artwork_shiny?: string
+    artwork_female?: string
+    artwork_shiny_female?: string
+  }
+  // Only where she looks different; elsewhere ?gender=female changes nothing.
+  const female = gender === 'female' && !!sprites.artwork_female
+
+  // Every form, and where a female looks different, as Pikachu's tail does,
+  // the male and the female each. Each links to itself.
+  const manyForms = forms.data!.length > 1
+  const looks = forms.data!.flatMap(({ is_default, species: f }) => {
+    const s = f.sprites as { front?: string; front_female?: string }
+    const look = (key: string, src: string | undefined, label: string, isFemale: boolean) => ({
+      key,
+      src,
+      label,
+      href: hrefOf(n, { is_default, slug: f.slug }, isFemale),
+      current: f.id === p.id && female === isFemale,
+    })
+    const name = manyForms ? `${formName(f)} ` : ''
+    return s.front_female
+      ? [
+          look(`${f.id}-male`, s.front, `${name}수컷의 모습`, false),
+          look(`${f.id}-female`, s.front_female, `${name}암컷의 모습`, true),
+        ]
+      : [look(`${f.id}`, s.front, formName(f), false)]
+  })
   const previous = around.data!.find((e) => e.number === n - 1)
   const next = around.data!.find((e) => e.number === n + 1)
 
@@ -186,12 +236,23 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
       </nav>
 
       <header className="flex items-center gap-8">
-        <Sprite name={ko(p)} normal={sprites.artwork} shiny={sprites.artwork_shiny} />
+        <Sprite
+          name={ko(p)}
+          normal={female ? sprites.artwork_female : sprites.artwork}
+          shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
+        />
         <div className="flex flex-col gap-2">
           <p className="text-muted font-mono text-xs tabular-nums">
             {dexName} {dexNo(n)}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">{ko(p)}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {ko(p)}
+            {forms.data!.length > 1 && (
+              <span className="text-muted ml-2 text-base font-normal tracking-normal">
+                {formName(p)}
+              </span>
+            )}
+          </h1>
           <p className="text-muted text-sm">
             {p.ko_genus ?? p.en_genus}
             {p.category && ` · ${CATEGORIES[p.category]}`}
@@ -211,6 +272,31 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         </div>
       </header>
 
+      {looks.length > 1 && (
+        <section className="space-y-3">
+          <h2 className="text-muted text-sm font-medium">모습</h2>
+          <ul className="flex flex-wrap gap-2">
+            {looks.map((look) => (
+              <li key={look.key}>
+                <Link
+                  href={look.href}
+                  aria-current={look.current ? 'page' : undefined}
+                  className="border-line hover:border-line-strong aria-[current=page]:border-accent flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                >
+                  <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+                    {look.src && (
+                      // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
+                      <img src={look.src} alt="" className="size-24 [image-rendering:pixelated]" />
+                    )}
+                  </span>
+                  {look.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="grid gap-10 sm:grid-cols-2">
         <div className="space-y-3">
           <h2 className="text-muted text-sm font-medium">정보</h2>
@@ -220,7 +306,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
             <dt className="text-muted">몸무게</dt>
             <dd className="font-mono text-[13px]">{(p.weight / 10).toFixed(1)} kg</dd>
             <dt className="text-muted">성비</dt>
-            <dd className="font-mono text-[13px]">{gender(p.gender_rate)}</dd>
+            <dd className="font-mono text-[13px]">{genderRatio(p.gender_rate)}</dd>
             <dt className="text-muted">포획률</dt>
             <dd className="font-mono text-[13px]">{p.capture_rate}</dd>
             <dt className="text-muted">부화</dt>
@@ -266,8 +352,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                     </span>
                   )}
                   <Link
-                    href={`/${dex}/${f.number}`}
-                    aria-current={f.number === n ? 'page' : undefined}
+                    href={hrefOf(f.number, f)}
+                    aria-current={f.id === p.id ? 'page' : undefined}
                     className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                   >
                     <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
@@ -283,19 +369,6 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
               )
             })}
           </ol>
-        </section>
-      )}
-
-      {forms.data!.length > 1 && (
-        <section className="space-y-3">
-          <h2 className="text-muted text-sm font-medium">모습</h2>
-          <ul className="flex flex-wrap gap-2 text-sm">
-            {forms.data!.map(({ species: f }) => (
-              <li key={f.id} className="border-line rounded border px-2 py-1">
-                {ko(f)}
-              </li>
-            ))}
-          </ul>
         </section>
       )}
     </main>

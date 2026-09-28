@@ -34,6 +34,8 @@ export type Pokemon = {
   growth_rate: string
   types: ({ id: string } & Named)[]
   is_shiny: boolean
+  /** Null for a genderless species. */
+  gender: 'female' | 'male' | null
   level: number
   /** Its experience in tokens, at today's rate, and where its level starts and ends. */
   tokens: number
@@ -61,27 +63,34 @@ export function ko(named: Named): string {
 export type Sprites = {
   front?: string
   front_shiny?: string
+  /** Only where a female looks different. */
+  front_female?: string
+  front_shiny_female?: string
   artwork?: string
   artwork_shiny?: string
+  artwork_female?: string
+  artwork_shiny_female?: string
 }
 
 /**
- * The pixel front sprite for a list, the official artwork for a Pokémon on its
- * own. species keeps the paths; pokedex-web serves them.
+ * The pixel front sprite for a list, the large render for a Pokémon on its
+ * own, a female's own where she looks different. species keeps the paths;
+ * pokedex-web serves them.
  */
 export function spriteUrl(
-  pokemon: Pick<Pokemon, 'sprites' | 'is_shiny'>,
+  pokemon: Pick<Pokemon, 'sprites' | 'is_shiny' | 'gender'>,
   size: 'small' | 'large',
 ): string | undefined {
   const { sprites, is_shiny } = pokemon
+  const female = pokemon.gender === 'female'
   const path =
     size === 'small'
       ? is_shiny
-        ? sprites.front_shiny
-        : sprites.front
+        ? (female && sprites.front_shiny_female) || sprites.front_shiny
+        : (female && sprites.front_female) || sprites.front
       : is_shiny
-        ? sprites.artwork_shiny
-        : sprites.artwork
+        ? (female && sprites.artwork_shiny_female) || sprites.artwork_shiny
+        : (female && sprites.artwork_female) || sprites.artwork
   return path && `${env.NEXT_PUBLIC_POKEDEX_URL}${path}`
 }
 
