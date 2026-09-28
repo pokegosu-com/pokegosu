@@ -55,18 +55,19 @@ export type Caught = 'caught' | 'shiny'
 /**
  * A pokedex entry's marks for the trainer signed in: ✨ if they have had it
  * shiny, then the ball for having had it at all, as the games mark caught.
+ * lg sits beside a Pokémon's name on its own page.
  */
-export function CaughtMarks({ caught }: { caught: Caught }) {
+export function CaughtMarks({ caught, size = 'md' }: { caught: Caught; size?: 'md' | 'lg' }) {
   const label = caught === 'shiny' ? '색이 다른 모습까지 잡음' : '잡음'
   return (
     <span
       role="img"
       aria-label={label}
       title={label}
-      className="text-muted inline-flex items-center gap-0.5 text-[11px] leading-none"
+      className={`text-ink inline-flex items-center leading-none ${size === 'lg' ? 'gap-1 text-xl' : 'gap-0.5 text-sm'}`}
     >
       {caught === 'shiny' && <span aria-hidden="true">✨</span>}
-      <CaughtIcon />
+      <CaughtIcon size={size === 'lg' ? 22 : 18} />
     </span>
   )
 }

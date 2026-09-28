@@ -264,8 +264,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                       {formName(p)}
                     </span>
                   )}
-                  <span className="self-center text-base">
-                    <FormMarks id={p.id} />
+                  <span className="self-center">
+                    <FormMarks id={p.id} size="lg" />
                   </span>
                 </h1>
                 <p className="text-muted text-sm">
