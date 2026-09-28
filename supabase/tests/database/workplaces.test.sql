@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(59);
+select plan(61);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -57,6 +57,11 @@ $$;
 -- The type chart, and what it makes of a workplace
 -- ------------------------------------------------------------
 select is((select count(*)::int from public.pokedex_type_efficacy), 324, 'every pair of the 18 types has a row');
+select results_eq(
+  $$ select distinct count(*)::int from public.coder_request_tasks group by type $$,
+  $$ values (5) $$,
+  'every type has five tasks');
+select is((select count(distinct type)::int from public.coder_request_tasks), 18, 'every one of the 18');
 select is((select damage_factor from public.pokedex_type_efficacy
             where attacking_type = 'fighting' and defending_type = 'normal'), 200::smallint,
   'Fighting is super effective on Normal');
