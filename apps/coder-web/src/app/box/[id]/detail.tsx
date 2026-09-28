@@ -250,11 +250,6 @@ function PokemonDetail({
           label="다음 레벨까지"
           size="lg"
         />
-        {p.evolves_to && !p.can_evolve && (
-          <p className="text-muted text-xs">
-            Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
-          </p>
-        )}
         {p.workplace_id && (
           <p className="text-muted text-xs">
             의뢰를 하는 중이다.{' '}
