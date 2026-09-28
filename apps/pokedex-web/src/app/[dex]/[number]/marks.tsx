@@ -4,13 +4,15 @@ import { CaughtMarks } from '@pokegosu/ui/pokemon'
 
 import { useMyDex } from '@/lib/my-dex'
 
+import { useShiny } from './shiny'
+
 /**
- * A form's small sprite, shiny where the trainer signed in has had it shiny.
- * The page is a file, so it holds both and the browser picks.
+ * A form's or a stage's small sprite, shiny when the page is. The page is a
+ * file, so it holds both and the browser picks.
  */
-export function FormSprite({ id, src, shiny }: { id: number; src?: string; shiny?: string }) {
-  const hadShiny = useMyDex()?.forms.get(id) === 'shiny'
-  const shown = (hadShiny && shiny) || src
+export function FormSprite({ src, shiny }: { src?: string; shiny?: string }) {
+  const [wantShiny] = useShiny()
+  const shown = (wantShiny && shiny) || src
   if (!shown) return null
   // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
   return <img src={shown} alt="" className="size-24 [image-rendering:pixelated]" />

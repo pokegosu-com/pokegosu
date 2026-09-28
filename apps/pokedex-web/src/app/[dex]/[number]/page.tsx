@@ -6,6 +6,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
 import { FormMarks, FormSprite } from './marks'
+import { ShinyChoice } from './shiny'
 import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
@@ -239,158 +240,160 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
 
       {/* A file cannot tell ?form= from ?gender=, so every look is drawn here
           and the browser shows the one the address asks for. */}
-      {forms.data.flatMap(({ ko_description, en_description, species: p }) => {
-        const sprites = p.sprites as {
-          artwork?: string
-          artwork_shiny?: string
-          artwork_female?: string
-          artwork_shiny_female?: string
-        }
-        const description = ko_description ?? en_description
-        const family = familyOf(p.id)
-        const statTotal = STATS.reduce((sum, [key]) => sum + p[key], 0)
-        // Only where she looks different; elsewhere ?gender=female changes nothing.
-        const genders = sprites.artwork_female ? [false, true] : [null]
-        return genders.map((female) => (
-          <Shown key={`${p.id}-${female}`} forms={slugs} form={p.slug} female={female}>
-            <header className="flex items-center gap-8">
-              <Sprite
-                id={p.id}
-                name={ko(p)}
-                normal={female ? sprites.artwork_female : sprites.artwork}
-                shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
-              />
-              <div className="flex flex-col gap-2">
-                <p className="text-muted font-mono text-xs tabular-nums">
-                  {dexName} {dexNo(n)}
-                </p>
-                <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
-                  {ko(p)}
-                  {manyForms && (
-                    <span className="text-muted text-base font-normal tracking-normal">
-                      {formName(p)}
-                    </span>
-                  )}
-                  <FormMarks id={p.id} size="lg" />
-                </h1>
-                <p className="text-muted text-sm">
-                  {p.ko_genus ?? p.en_genus}
-                  {p.category && ` · ${CATEGORIES[p.category]}`}
-                </p>
-                <p className="flex gap-1">
-                  {[p.type1, p.type2]
-                    .filter((t): t is string => !!t)
-                    .map((t) => (
-                      <TypeChip key={t} id={t} name={types.get(t) ?? t} />
+      <ShinyChoice forms={forms.data.map(({ species: f }) => [f.slug, f.id])}>
+        {forms.data.flatMap(({ ko_description, en_description, species: p }) => {
+          const sprites = p.sprites as {
+            artwork?: string
+            artwork_shiny?: string
+            artwork_female?: string
+            artwork_shiny_female?: string
+          }
+          const description = ko_description ?? en_description
+          const family = familyOf(p.id)
+          const statTotal = STATS.reduce((sum, [key]) => sum + p[key], 0)
+          // Only where she looks different; elsewhere ?gender=female changes nothing.
+          const genders = sprites.artwork_female ? [false, true] : [null]
+          return genders.map((female) => (
+            <Shown key={`${p.id}-${female}`} forms={slugs} form={p.slug} female={female}>
+              <header className="flex items-center gap-8">
+                <Sprite
+                  name={ko(p)}
+                  normal={female ? sprites.artwork_female : sprites.artwork}
+                  shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
+                />
+                <div className="flex flex-col gap-2">
+                  <p className="text-muted font-mono text-xs tabular-nums">
+                    {dexName} {dexNo(n)}
+                  </p>
+                  <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
+                    {ko(p)}
+                    {manyForms && (
+                      <span className="text-muted text-base font-normal tracking-normal">
+                        {formName(p)}
+                      </span>
+                    )}
+                    <FormMarks id={p.id} size="lg" />
+                  </h1>
+                  <p className="text-muted text-sm">
+                    {p.ko_genus ?? p.en_genus}
+                    {p.category && ` · ${CATEGORIES[p.category]}`}
+                  </p>
+                  <p className="flex gap-1">
+                    {[p.type1, p.type2]
+                      .filter((t): t is string => !!t)
+                      .map((t) => (
+                        <TypeChip key={t} id={t} name={types.get(t) ?? t} />
+                      ))}
+                  </p>
+                  {description && <p className="mt-2 max-w-xl leading-relaxed">{description}</p>}
+                </div>
+              </header>
+
+              {looks.length > 1 && (
+                <section className="space-y-3">
+                  <h2 className="text-muted text-sm font-medium">모습</h2>
+                  <ul className="flex flex-wrap gap-2">
+                    {looks.map((look) => (
+                      <li key={look.key}>
+                        <LookLink
+                          href={look.href}
+                          aria-current={
+                            look.id === p.id && look.female === !!female ? 'page' : undefined
+                          }
+                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                        >
+                          <span className="absolute top-1 right-1">
+                            <FormMarks id={look.id} />
+                          </span>
+                          <span className="grid size-24 place-items-center rounded-md">
+                            <FormSprite src={look.src} shiny={look.shiny} />
+                          </span>
+                          {look.label}
+                        </LookLink>
+                      </li>
                     ))}
-                </p>
-                {description && <p className="mt-2 max-w-xl leading-relaxed">{description}</p>}
-              </div>
-            </header>
+                  </ul>
+                </section>
+              )}
 
-            {looks.length > 1 && (
-              <section className="space-y-3">
-                <h2 className="text-muted text-sm font-medium">모습</h2>
-                <ul className="flex flex-wrap gap-2">
-                  {looks.map((look) => (
-                    <li key={look.key}>
-                      <LookLink
-                        href={look.href}
-                        aria-current={
-                          look.id === p.id && look.female === !!female ? 'page' : undefined
-                        }
-                        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
-                      >
-                        <span className="absolute top-1 right-1">
-                          <FormMarks id={look.id} />
-                        </span>
-                        <span className="grid size-24 place-items-center rounded-md">
-                          <FormSprite id={look.id} src={look.src} shiny={look.shiny} />
-                        </span>
-                        {look.label}
-                      </LookLink>
-                    </li>
-                  ))}
-                </ul>
+              <section className="grid gap-10 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <h2 className="text-muted text-sm font-medium">정보</h2>
+                  <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-y-2 text-sm">
+                    <dt className="text-muted">키</dt>
+                    <dd className="font-mono text-[13px]">{(p.height / 10).toFixed(1)} m</dd>
+                    <dt className="text-muted">몸무게</dt>
+                    <dd className="font-mono text-[13px]">{(p.weight / 10).toFixed(1)} kg</dd>
+                    <dt className="text-muted">성비</dt>
+                    <dd className="font-mono text-[13px]">{genderRatio(p.gender_rate)}</dd>
+                    <dt className="text-muted">포획률</dt>
+                    <dd className="font-mono text-[13px]">{p.capture_rate}</dd>
+                    <dt className="text-muted">부화</dt>
+                    <dd className="font-mono text-[13px]">{p.hatch_counter} 사이클</dd>
+                    <dt className="text-muted">첫 등장</dt>
+                    <dd className="font-mono text-[13px]">{p.generation}세대</dd>
+                  </dl>
+                </div>
+                <div className="space-y-3">
+                  <h2 className="text-muted text-sm font-medium">종족값</h2>
+                  <dl className="grid grid-cols-[4rem_2rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
+                    {STATS.map(([key, label]) => (
+                      <div key={key} className="contents">
+                        <dt className="text-muted">{label}</dt>
+                        <dd className="text-right font-mono text-[13px]">{p[key]}</dd>
+                        <dd>
+                          <ProgressBar value={p[key]} max={180} label={label} />
+                        </dd>
+                      </div>
+                    ))}
+                    <dt className="text-muted border-line border-t pt-2">합계</dt>
+                    <dd className="border-line border-t pt-2 text-right font-mono text-[13px] font-medium">
+                      {statTotal}
+                    </dd>
+                    <dd className="border-line h-full border-t" />
+                  </dl>
+                </div>
               </section>
-            )}
 
-            <section className="grid gap-10 sm:grid-cols-2">
-              <div className="space-y-3">
-                <h2 className="text-muted text-sm font-medium">정보</h2>
-                <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-y-2 text-sm">
-                  <dt className="text-muted">키</dt>
-                  <dd className="font-mono text-[13px]">{(p.height / 10).toFixed(1)} m</dd>
-                  <dt className="text-muted">몸무게</dt>
-                  <dd className="font-mono text-[13px]">{(p.weight / 10).toFixed(1)} kg</dd>
-                  <dt className="text-muted">성비</dt>
-                  <dd className="font-mono text-[13px]">{genderRatio(p.gender_rate)}</dd>
-                  <dt className="text-muted">포획률</dt>
-                  <dd className="font-mono text-[13px]">{p.capture_rate}</dd>
-                  <dt className="text-muted">부화</dt>
-                  <dd className="font-mono text-[13px]">{p.hatch_counter} 사이클</dd>
-                  <dt className="text-muted">첫 등장</dt>
-                  <dd className="font-mono text-[13px]">{p.generation}세대</dd>
-                </dl>
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-muted text-sm font-medium">종족값</h2>
-                <dl className="grid grid-cols-[4rem_2rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
-                  {STATS.map(([key, label]) => (
-                    <div key={key} className="contents">
-                      <dt className="text-muted">{label}</dt>
-                      <dd className="text-right font-mono text-[13px]">{p[key]}</dd>
-                      <dd>
-                        <ProgressBar value={p[key]} max={180} label={label} />
-                      </dd>
-                    </div>
-                  ))}
-                  <dt className="text-muted border-line border-t pt-2">합계</dt>
-                  <dd className="border-line border-t pt-2 text-right font-mono text-[13px] font-medium">
-                    {statTotal}
-                  </dd>
-                  <dd className="border-line h-full border-t" />
-                </dl>
-              </div>
-            </section>
-
-            {family.length > 1 && (
-              <section className="space-y-3">
-                <h2 className="text-muted text-sm font-medium">진화</h2>
-                <ol className="flex flex-wrap items-center gap-3">
-                  {family.map((f, i) => (
-                    <li key={f.id} className="flex items-center gap-3">
-                      {/* The first stage shown has nothing before it here, even
+              {family.length > 1 && (
+                <section className="space-y-3">
+                  <h2 className="text-muted text-sm font-medium">진화</h2>
+                  <ol className="flex flex-wrap items-center gap-3">
+                    {family.map((f, i) => (
+                      <li key={f.id} className="flex items-center gap-3">
+                        {/* The first stage shown has nothing before it here, even
                           where it evolves from one this pokedex leaves out. */}
-                      {i > 0 && f.method && (
-                        <span className="text-muted text-xs">→ {takes(f.method)}</span>
-                      )}
-                      <Link
-                        href={hrefOf(f.number, f)}
-                        aria-current={f.id === p.id ? 'page' : undefined}
-                        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
-                      >
-                        <span className="absolute top-1 right-1">
-                          <FormMarks id={f.id} />
-                        </span>
-                        <span className="grid size-24 place-items-center rounded-md">
-                          <FormSprite
-                            id={f.id}
-                            src={f.front ?? undefined}
-                            shiny={f.front_shiny ?? undefined}
-                          />
-                        </span>
-                        {ko(f)}
-                        <span className="text-muted font-mono text-[11px]">{dexNo(f.number)}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-          </Shown>
-        ))
-      })}
+                        {i > 0 && f.method && (
+                          <span className="text-muted text-xs">→ {takes(f.method)}</span>
+                        )}
+                        <Link
+                          href={hrefOf(f.number, f)}
+                          aria-current={f.id === p.id ? 'page' : undefined}
+                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
+                        >
+                          <span className="absolute top-1 right-1">
+                            <FormMarks id={f.id} />
+                          </span>
+                          <span className="grid size-24 place-items-center rounded-md">
+                            <FormSprite
+                              src={f.front ?? undefined}
+                              shiny={f.front_shiny ?? undefined}
+                            />
+                          </span>
+                          {ko(f)}
+                          <span className="text-muted font-mono text-[11px]">
+                            {dexNo(f.number)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+            </Shown>
+          ))
+        })}
+      </ShinyChoice>
     </main>
   )
 }

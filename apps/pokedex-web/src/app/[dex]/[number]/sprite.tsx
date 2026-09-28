@@ -1,40 +1,13 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
-
 import { Artwork } from '@pokegosu/ui/artwork'
 
-import { useMyDex } from '@/lib/my-dex'
+import { useShiny } from './shiny'
 
-const never = () => () => {}
-
-/**
- * The large render, with the shiny one a press away. A trainer who has had
- * this form shiny sees it shiny first, as the list showed it; a link that
- * says ?shiny=1 or ?shiny=0, as the box's does for one Pokémon, says first.
- */
-export function Sprite({
-  id,
-  name,
-  normal,
-  shiny,
-}: {
-  /** The form, to look up in the trainer's pokedex. */
-  id: number
-  name: string
-  normal?: string
-  shiny?: string
-}) {
-  const hadShiny = useMyDex()?.forms.get(id) === 'shiny'
-  // Read once the page has loaded: the file is built with no address. Choosing
-  // another form drops it from the address, and that form goes by the pokedex.
-  const asked = useSyncExternalStore(
-    never,
-    () => new URLSearchParams(window.location.search).get('shiny'),
-    () => null,
-  )
-  const [chosen, setShowShiny] = useState<boolean | null>(null)
-  const showShiny = !!shiny && (chosen ?? (asked ? asked === '1' : hadShiny))
+/** The large render, and the choice between it and the shiny one for the whole page. */
+export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
+  const [wantShiny, setShowShiny] = useShiny()
+  const showShiny = wantShiny && !!shiny
   const src = showShiny ? shiny : normal
   return (
     <div className="flex flex-none flex-col items-center gap-2">
