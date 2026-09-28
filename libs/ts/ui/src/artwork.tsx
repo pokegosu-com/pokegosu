@@ -40,7 +40,7 @@ export function Artwork({
       ref={slot}
       onPointerEnter={hop}
       onClick={hop}
-      className="bg-surface-raised relative grid size-48 flex-none place-items-center overflow-hidden rounded-lg"
+      className="relative grid size-48 flex-none place-items-center overflow-hidden rounded-lg"
     >
       <span className="bg-ink/10 motion-safe:animate-idle-shadow absolute bottom-4 h-3 w-24 rounded-full blur-[2px]" />
       {src && (

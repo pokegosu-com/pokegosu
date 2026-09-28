@@ -4,9 +4,27 @@ import { useState } from 'react'
 
 import { Artwork } from '@pokegosu/ui/artwork'
 
-/** The large render, with the shiny one a press away. */
-export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
-  const [showShiny, setShowShiny] = useState(false)
+import { useMyDex } from '@/lib/my-dex'
+
+/**
+ * The large render, with the shiny one a press away. A trainer who has had
+ * this form shiny sees it shiny first, as the list showed it.
+ */
+export function Sprite({
+  id,
+  name,
+  normal,
+  shiny,
+}: {
+  /** The form, to look up in the trainer's pokedex. */
+  id: number
+  name: string
+  normal?: string
+  shiny?: string
+}) {
+  const hadShiny = useMyDex()?.forms.get(id) === 'shiny'
+  const [chosen, setShowShiny] = useState<boolean | null>(null)
+  const showShiny = chosen ?? (hadShiny && !!shiny)
   const src = showShiny ? shiny : normal
   return (
     <div className="flex flex-none flex-col items-center gap-2">

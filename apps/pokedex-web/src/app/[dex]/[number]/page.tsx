@@ -249,6 +249,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           <Shown key={`${p.id}-${female}`} forms={slugs} form={p.slug} female={female}>
             <header className="flex items-center gap-8">
               <Sprite
+                id={p.id}
                 name={ko(p)}
                 normal={female ? sprites.artwork_female : sprites.artwork}
                 shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
@@ -257,16 +258,14 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                 <p className="text-muted font-mono text-xs tabular-nums">
                   {dexName} {dexNo(n)}
                 </p>
-                <h1 className="flex items-baseline gap-2 text-3xl font-semibold tracking-tight">
+                <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
                   {ko(p)}
                   {manyForms && (
                     <span className="text-muted text-base font-normal tracking-normal">
                       {formName(p)}
                     </span>
                   )}
-                  <span className="self-center">
-                    <FormMarks id={p.id} size="lg" />
-                  </span>
+                  <FormMarks id={p.id} size="lg" />
                 </h1>
                 <p className="text-muted text-sm">
                   {p.ko_genus ?? p.en_genus}
@@ -296,16 +295,16 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                         }
                         className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
                       >
-                        <span className="absolute top-1.5 right-1.5">
+                        <span className="absolute top-1 right-1">
                           <FormMarks id={look.id} />
                         </span>
-                        <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+                        <span className="grid size-24 place-items-center rounded-md">
                           {look.src && (
                             // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
                             <img
                               src={look.src}
                               alt=""
-                              className="size-24 [image-rendering:pixelated]"
+                              className="size-24 scale-125 [image-rendering:pixelated]"
                             />
                           )}
                         </span>
@@ -372,13 +371,13 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                         aria-current={f.id === p.id ? 'page' : undefined}
                         className="border-line hover:border-line-strong aria-[current=page]:border-accent flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
                       >
-                        <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
+                        <span className="grid size-24 place-items-center rounded-md">
                           {f.front && (
                             // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
                             <img
                               src={f.front}
                               alt=""
-                              className="size-24 [image-rendering:pixelated]"
+                              className="size-24 scale-125 [image-rendering:pixelated]"
                             />
                           )}
                         </span>

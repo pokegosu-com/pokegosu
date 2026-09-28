@@ -262,7 +262,7 @@ function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: Hist
   return (
     <>
       <header className="flex items-center gap-8">
-        <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
+        <span className="grid size-48 flex-none place-items-center rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}
           <img src={eggSpriteUrl} alt="알" className="size-24 [image-rendering:pixelated]" />
         </span>

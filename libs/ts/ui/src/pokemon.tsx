@@ -64,10 +64,10 @@ export function CaughtMarks({ caught, size = 'md' }: { caught: Caught; size?: 'm
       role="img"
       aria-label={label}
       title={label}
-      className={`text-ink inline-flex items-center leading-none ${size === 'lg' ? 'gap-1 text-xl' : 'gap-0.5 text-sm'}`}
+      className={`text-ink inline-flex items-center leading-none ${size === 'lg' ? 'gap-1 text-xl' : 'gap-0.5 text-lg'}`}
     >
       {caught === 'shiny' && <span aria-hidden="true">✨</span>}
-      <CaughtIcon size={size === 'lg' ? 22 : 18} />
+      <CaughtIcon size={22} />
     </span>
   )
 }
@@ -113,16 +113,17 @@ export function PokemonTile({
         />
       )}
       {caught && (
-        <span className="absolute top-1.5 right-1.5">
+        <span className="absolute top-1 right-1">
           <CaughtMarks caught={caught} />
         </span>
       )}
-      {/* 96px, the sprite's own size, where the tile is wide enough; a narrow
-          grid shrinks it rather than cropping it. */}
-      <span className="bg-surface-raised mb-1 grid aspect-square w-full max-w-24 place-items-center rounded-md">
+      {/* A 96px slot where the tile is wide enough, and a narrow grid shrinks
+          it rather than cropping it. The sprite is drawn a quarter larger than
+          its slot, since its own margin is empty and nothing frames it. */}
+      <span className="mb-1 grid aspect-square w-full max-w-24 place-items-center rounded-md">
         {sprite && (
           // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
-          <img src={sprite} alt="" className="size-full [image-rendering:pixelated]" />
+          <img src={sprite} alt="" className="size-full scale-125 [image-rendering:pixelated]" />
         )}
       </span>
       <span className="max-w-full truncate text-[13px] font-medium">
