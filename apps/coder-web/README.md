@@ -4,7 +4,7 @@ Raise Pokémon with the tokens your coding agent spends.
 
 PokeGosu Coder counts the tokens your coding agent uses on every machine you work on, and turns them into experience for your Pokémon. Work on a laptop, a server and a container, and it all goes to the same box. It reads Claude Code and Codex.
 
-The hours you code earn points too. You earn some yourself, and Pokémon of Lv.50 and up earn more at workplaces, the more the better their types suit the work. Points buy evolution stones and regional eggs in the shop.
+The hours you code earn points too. You earn some yourself, and Pokémon of Lv.50 and up earn more on requests from other Pokémon, the more the better their types would hit the one asking. Points buy evolution stones and regional eggs in the shop.
 
 ## Getting started
 

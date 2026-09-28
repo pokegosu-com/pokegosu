@@ -122,10 +122,10 @@ export function ShopView() {
 
       <p className="text-muted text-xs">
         포인트는{' '}
-        <Link href="/work" className="text-accent hover:text-ink">
-          업장
+        <Link href="/requests" className="text-accent hover:text-ink">
+          의뢰
         </Link>
-        에서 법니다.
+        로 법니다.
       </p>
     </>
   )

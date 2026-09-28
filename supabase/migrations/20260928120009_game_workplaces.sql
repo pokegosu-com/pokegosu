@@ -58,10 +58,85 @@ create table public.coder_point_entries (
 create index on public.coder_point_entries (user_id);
 
 
+
+-- ============================================================
+-- coder_request_tasks: what a Pokémon can ask for help with, by type. A
+-- request is for one of its client's types, so the screen reads 꼬마돌의
+-- 터널 파기, or 버터플의 디버깅: half chores, half the work the tokens come
+-- from.
+-- ============================================================
+create table public.coder_request_tasks (
+  id      text primary key,
+  type    text not null references public.pokedex_types,
+  ko_name text,
+  en_name text
+);
+
+insert into public.coder_request_tasks (id, type, ko_name, en_name) values
+  ('errands', 'normal', '심부름', 'Running errands'),
+  ('code-review', 'normal', '코드 리뷰', 'Code review'),
+  ('tidying-up', 'normal', '대청소', 'A big clean-up'),
+  ('campfire', 'fire', '캠프파이어 준비', 'Building a campfire'),
+  ('baking', 'fire', '빵 굽기', 'Baking bread'),
+  ('burning-legacy', 'fire', '레거시 코드 태우기', 'Burning legacy code'),
+  ('watering', 'water', '밭에 물 주기', 'Watering the fields'),
+  ('cooling-servers', 'water', '서버 냉각', 'Cooling the servers'),
+  ('washing-up', 'water', '설거지', 'Washing up'),
+  ('power-plant', 'electric', '발전소 점검', 'Checking the power plant'),
+  ('powering-servers', 'electric', '서버 전원 공급', 'Powering the servers'),
+  ('wiring', 'electric', '배선 정리', 'Tidying the wiring'),
+  ('weeding', 'grass', '밭 매기', 'Weeding the fields'),
+  ('gardening', 'grass', '정원 가꾸기', 'Tending the garden'),
+  ('pruning-dependencies', 'grass', '의존성 가지치기', 'Pruning dependencies'),
+  ('hauling-ice', 'ice', '얼음 나르기', 'Hauling ice'),
+  ('shaved-ice', 'ice', '빙수 만들기', 'Making shaved ice'),
+  ('code-freeze', 'ice', '코드 프리즈 지키기', 'Holding the code freeze'),
+  ('moving-house', 'fighting', '이삿짐 나르기', 'Moving house'),
+  ('dojo', 'fighting', '도장 청소', 'Cleaning the dojo'),
+  ('refactoring', 'fighting', '리팩터링', 'Refactoring'),
+  ('pest-control', 'poison', '해충 퇴치', 'Pest control'),
+  ('brewing-herbs', 'poison', '약초 달이기', 'Brewing herbs'),
+  ('reverting', 'poison', '문제 커밋 되돌리기', 'Reverting a bad commit'),
+  ('tunnel', 'ground', '터널 파기', 'Digging a tunnel'),
+  ('ploughing', 'ground', '밭 갈기', 'Ploughing the fields'),
+  ('infrastructure', 'ground', '인프라 공사', 'Laying infrastructure'),
+  ('mail', 'flying', '편지 배달', 'Delivering the mail'),
+  ('scouting', 'flying', '하늘 정찰', 'Scouting the skies'),
+  ('shipping', 'flying', '배포 나르기', 'Carrying the release'),
+  ('foreseeing-bugs', 'psychic', '버그 예지', 'Foreseeing bugs'),
+  ('requirements', 'psychic', '요구사항 읽기', 'Reading the requirements'),
+  ('meditation', 'psychic', '명상 지도', 'Guiding meditation'),
+  ('debugging', 'bug', '디버깅', 'Debugging'),
+  ('spinning-silk', 'bug', '실 잣기', 'Spinning silk'),
+  ('pollen', 'bug', '꽃가루 모으기', 'Gathering pollen'),
+  ('hauling-stones', 'rock', '돌 나르기', 'Hauling stones'),
+  ('building-walls', 'rock', '성벽 쌓기', 'Building a wall'),
+  ('monolith', 'rock', '모놀리스 지키기', 'Guarding the monolith'),
+  ('on-call', 'ghost', '야간 당직', 'Night on-call'),
+  ('zombie-processes', 'ghost', '좀비 프로세스 정리', 'Clearing zombie processes'),
+  ('haunted-house', 'ghost', '폐가 순찰', 'Patrolling an old house'),
+  ('hoard', 'dragon', '보물 지키기', 'Guarding a hoard'),
+  ('big-migration', 'dragon', '대규모 마이그레이션', 'A big migration'),
+  ('mountain-delivery', 'dragon', '산 넘어 배달', 'Delivering over the mountains'),
+  ('night-batch', 'dark', '야간 배치 작업', 'A night batch job'),
+  ('security-audit', 'dark', '보안 점검', 'A security audit'),
+  ('night-patrol', 'dark', '밤길 순찰', 'Night patrol'),
+  ('bridge', 'steel', '다리 보수', 'Mending a bridge'),
+  ('server-racks', 'steel', '서버 랙 조립', 'Building server racks'),
+  ('hardening-tests', 'steel', '테스트 강화', 'Hardening the tests'),
+  ('docs', 'fairy', '문서 다듬기', 'Polishing the docs'),
+  ('flower-beds', 'fairy', '꽃밭 가꾸기', 'Tending the flower beds'),
+  ('ui-polish', 'fairy', '화면 꾸미기', 'Dressing up the UI');
+
+
 -- ============================================================
 -- coder_workplaces: a person's workplaces, one row per slot for good. Settling
 -- or rerolling one changes the row into the next workplace rather than
 -- adding one; what it paid is in the ledger.
+--
+-- The screen calls each one a request (의뢰): a Pokémon drawn from the
+-- pokedex, client_id, asks for help with task_id, and the work wants its
+-- types.
 --
 -- opened_at starts the clock for a reroll, assigned_at the worker's shift. A
 -- Pokémon works at one workplace at a time.
@@ -70,14 +145,13 @@ create table public.coder_workplaces (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null references auth.users on delete cascade,
   slot         smallint not null check (slot > 0),
-  type1        text not null references public.pokedex_types,
-  type2        text references public.pokedex_types,
+  client_id    integer not null references public.pokedex_species,
+  task_id      text not null references public.coder_request_tasks,
   opened_at    timestamptz not null default now(),
   companion_id uuid unique,
   assigned_at  timestamptz,
   unique (user_id, slot),
   foreign key (companion_id, user_id) references public.coder_companions (id, user_id),
-  constraint two_different_types check (type2 is distinct from type1),
   constraint a_worker_has_a_shift check ((companion_id is null) = (assigned_at is null))
 );
 
@@ -133,17 +207,20 @@ create table public.coder_bag (
 -- tables; a person's own rows are read through work() and box().
 -- ============================================================
 revoke all on public.coder_point_entries, public.coder_workplaces, public.coder_shop_items,
-  public.coder_bag
+  public.coder_bag, public.coder_request_tasks
   from anon, authenticated;
 
 alter table public.coder_point_entries enable row level security;
 alter table public.coder_workplaces    enable row level security;
 alter table public.coder_shop_items    enable row level security;
 alter table public.coder_bag           enable row level security;
+alter table public.coder_request_tasks enable row level security;
 
-grant select on public.coder_shop_items to authenticated;
+grant select on public.coder_shop_items, public.coder_request_tasks to authenticated;
 
 create policy "anyone signed in can read the shop" on public.coder_shop_items
+  for select to authenticated using (true);
+create policy "anyone signed in can read what a request can be" on public.coder_request_tasks
   for select to authenticated using (true);
 
 
@@ -206,18 +283,34 @@ as $$
     from public.coder_settings g;
 $$;
 
--- A new workplace wants the types of a Pokémon drawn from the national
--- pokedex, every species in its default form as likely as the next, so the types that are common
+-- The Pokémon a new workplace is for, drawn from the national pokedex, every
+-- species in its default form as likely as the next, so the types common
 -- among Pokémon are common among workplaces too.
-create function public.roll_workplace_types(out type1 text, out type2 text)
+create function public.roll_client()
+returns integer
 language sql
 volatile
 set search_path = ''
 as $$
-  select s.type1, s.type2
+  select s.id
     from public.pokedex_entries e
     join public.pokedex_species s on s.id = e.species_id
    where e.dex = 'national' and e.is_default
+   order by random()
+   limit 1;
+$$;
+
+-- A task for one of the client's types, every task as likely as the next.
+create function public.roll_task(client_id integer)
+returns text
+language sql
+volatile
+set search_path = ''
+as $$
+  select t.id
+    from public.coder_request_tasks t
+    join public.pokedex_species s on t.type in (s.type1, s.type2)
+   where s.id = roll_task.client_id
    order by random()
    limit 1;
 $$;
@@ -231,13 +324,13 @@ set search_path = ''
 as $$
 declare
   n smallint;
-  rolled record;
+  client integer;
 begin
   for n in select generate_series(1, g.workplaces) from public.coder_settings g loop
     if not exists (select 1 from public.coder_workplaces w where w.user_id = owner and w.slot = n) then
-      select * into rolled from public.roll_workplace_types();
-      insert into public.coder_workplaces (user_id, slot, type1, type2)
-      values (owner, n, rolled.type1, rolled.type2);
+      client := public.roll_client();
+      insert into public.coder_workplaces (user_id, slot, client_id, task_id)
+      values (owner, n, client, public.roll_task(client));
     end if;
   end loop;
 end;
@@ -251,11 +344,10 @@ volatile
 set search_path = ''
 as $$
 declare
-  rolled record;
+  client integer := public.roll_client();
 begin
-  select * into rolled from public.roll_workplace_types();
   update public.coder_workplaces w
-     set type1 = rolled.type1, type2 = rolled.type2, opened_at = now(),
+     set client_id = client, task_id = public.roll_task(client), opened_at = now(),
          companion_id = null, assigned_at = null
    where w.id = replace_workplace.workplace_id;
 end;
@@ -348,7 +440,9 @@ $$;
 --      "rules": {"points_per_hour", "shift_hours", "min_work_level",
 --                "bonus_every_hours", "bonus_points"},
 --      "trainer": {"hours", "hours_paid", "points_waiting", "hours_to_bonus"},
---      "workplaces": [{"id", "slot", "types": [{"id", "ko_name", "en_name"}],
+--      "workplaces": [{"id", "slot", "client": {"species_id", "ko_name", "en_name", "sprites"},
+--                      "task": {"id", "ko_name", "en_name"},
+--                      "types": [{"id", "ko_name", "en_name"}],
 --                      "hours_open", "can_reroll",
 --                      "worker": null | {"companion_id", "hours", "aptitude", "points", "can_settle"}}],
 --      "pokemon": [{"id", "species_id", "ko_name", "en_name", "sprites", "is_shiny", "gender", "level",
@@ -406,19 +500,24 @@ begin
       select jsonb_agg(jsonb_build_object(
                'id', w.id,
                'slot', w.slot,
+               'client', jsonb_build_object('species_id', k.id, 'ko_name', k.ko_name, 'en_name', k.en_name,
+                                            'sprites', k.sprites),
+               'task', (select jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
+                          from public.coder_request_tasks t where t.id = w.task_id),
                'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
-                                          order by t.id = w.type2)
-                           from public.pokedex_types t where t.id in (w.type1, w.type2)),
+                                          order by t.id = k.type2)
+                           from public.pokedex_types t where t.id in (k.type1, k.type2)),
                'hours_open', open.hours,
                'can_reroll', w.companion_id is null and open.hours >= g.shift_hours,
                'worker', case when w.companion_id is not null then jsonb_build_object(
                    'companion_id', w.companion_id,
                    'hours', least(shift.hours, g.shift_hours),
-                   'aptitude', public.aptitude(c.species_id, w.type1, w.type2),
-                   'points', public.shift_pay(c.species_id, c.level, w.type1, w.type2),
+                   'aptitude', public.aptitude(c.species_id, k.type1, k.type2),
+                   'points', public.shift_pay(c.species_id, c.level, k.type1, k.type2),
                    'can_settle', shift.hours >= g.shift_hours) end)
              order by w.slot)
         from public.coder_workplaces w
+        join public.pokedex_species k on k.id = w.client_id
         left join public.coder_companions c on c.id = w.companion_id
         cross join lateral (select public.active_hours(caller, w.opened_at) as hours) open
         cross join lateral (select public.active_hours(caller, w.assigned_at) as hours) shift
@@ -439,10 +538,12 @@ begin
                'workplace_id', (select w.id from public.coder_workplaces w where w.companion_id = c.id),
                'offers', (select jsonb_agg(jsonb_build_object(
                                    'workplace_id', w.id,
-                                   'aptitude', public.aptitude(p.id, w.type1, w.type2),
-                                   'points', public.shift_pay(p.id, c.level, w.type1, w.type2))
+                                   'aptitude', public.aptitude(p.id, k.type1, k.type2),
+                                   'points', public.shift_pay(p.id, c.level, k.type1, k.type2))
                                  order by w.slot)
-                            from public.coder_workplaces w where w.user_id = caller))
+                            from public.coder_workplaces w
+                            join public.pokedex_species k on k.id = w.client_id
+                           where w.user_id = caller))
              order by c.level desc, c.hatched_at)
         from public.coder_companions c
         join public.pokedex_species p on p.id = c.species_id
@@ -541,7 +642,8 @@ begin
   end if;
 
   select * into pokemon from public.coder_companions c where c.id = place.companion_id;
-  pay := public.shift_pay(pokemon.species_id, pokemon.level, place.type1, place.type2);
+  select public.shift_pay(pokemon.species_id, pokemon.level, k.type1, k.type2) into pay
+    from public.pokedex_species k where k.id = place.client_id;
   if pay > 0 then
     insert into public.coder_point_entries (user_id, points, reason) values (caller, pay, 'shift');
   end if;
@@ -848,7 +950,8 @@ revoke execute on function
   public.point_balance(uuid),
   public.aptitude(integer, text, text),
   public.shift_pay(integer, smallint, text, text),
-  public.roll_workplace_types(),
+  public.roll_client(),
+  public.roll_task(integer),
   public.open_workplaces(uuid),
   public.replace_workplace(uuid),
   public.lock_trainer(uuid),

@@ -360,6 +360,35 @@ export type Database = {
         }
         Relationships: []
       }
+      coder_request_tasks: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+          type: string
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+          type: string
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_request_tasks_type_fkey'
+            columns: ['type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_ribbons: {
         Row: {
           en_description: string | null
@@ -527,35 +556,42 @@ export type Database = {
       coder_workplaces: {
         Row: {
           assigned_at: string | null
+          client_id: number
           companion_id: string | null
           id: string
           opened_at: string
           slot: number
-          type1: string
-          type2: string | null
+          task_id: string
           user_id: string
         }
         Insert: {
           assigned_at?: string | null
+          client_id: number
           companion_id?: string | null
           id?: string
           opened_at?: string
           slot: number
-          type1: string
-          type2?: string | null
+          task_id: string
           user_id: string
         }
         Update: {
           assigned_at?: string | null
+          client_id?: number
           companion_id?: string | null
           id?: string
           opened_at?: string
           slot?: number
-          type1?: string
-          type2?: string | null
+          task_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'coder_workplaces_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'coder_workplaces_companion_id_user_id_fkey'
             columns: ['companion_id', 'user_id']
@@ -564,17 +600,10 @@ export type Database = {
             referencedColumns: ['id', 'user_id']
           },
           {
-            foreignKeyName: 'coder_workplaces_type1_fkey'
-            columns: ['type1']
+            foreignKeyName: 'coder_workplaces_task_id_fkey'
+            columns: ['task_id']
             isOneToOne: false
-            referencedRelation: 'pokedex_types'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'coder_workplaces_type2_fkey'
-            columns: ['type2']
-            isOneToOne: false
-            referencedRelation: 'pokedex_types'
+            referencedRelation: 'coder_request_tasks'
             referencedColumns: ['id']
           },
         ]
@@ -1277,8 +1306,9 @@ export type Database = {
       }
       replace_workplace: { Args: { workplace_id: string }; Returns: undefined }
       reroll: { Args: { workplace_id: string }; Returns: Json }
+      roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
-      roll_workplace_types: { Args: never; Returns: Record<string, unknown> }
+      roll_task: { Args: { client_id: number }; Returns: string }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
         Args: { companion_id: string; markings: number }

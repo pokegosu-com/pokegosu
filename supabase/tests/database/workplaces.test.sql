@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(57);
+select plan(59);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -85,6 +85,21 @@ select is(public.work(), '{"started": false}'::jsonb, 'before starting there is 
 select public.start_game();
 
 select is(jsonb_array_length(public.work() -> 'workplaces'), 5, 'starting opens five workplaces');
+select ok(
+  (select bool_and(w -> 'types' = (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
+                                                    order by t.id = s.type2)
+                                     from public.pokedex_species s
+                                     join public.pokedex_types t on t.id in (s.type1, s.type2)
+                                    where s.id = (w -> 'client' ->> 'species_id')::int
+                                    group by s.id))
+     from jsonb_array_elements(public.work() -> 'workplaces') w),
+  'each wants the types of the Pokémon it is for');
+select ok(
+  (select bool_and(exists (select 1 from public.coder_request_tasks t join public.pokedex_species k
+                                  on t.type in (k.type1, k.type2)
+                            where k.id = (w -> 'client' ->> 'species_id')::int and t.id = w -> 'task' ->> 'id'))
+     from jsonb_array_elements(public.work() -> 'workplaces') w),
+  'and asks for help with a task of one of them');
 select is((public.work() ->> 'points')::int, 0, 'with no points yet');
 select is(public.work() -> 'pokemon', '[]'::jsonb, 'and nobody to send, with only an egg');
 select ok(
@@ -95,7 +110,8 @@ select throws_ok($$ select * from public.coder_workplaces $$, '42501', null,
   'a person reads their workplaces through work() only');
 
 reset role;
-update public.coder_workplaces set type1 = 'normal', type2 = null
+-- Every workplace for Rattata, which is Normal.
+update public.coder_workplaces set client_id = 19, task_id = 'errands'
  where user_id = '00000000-0000-0000-0000-00000000000a';
 create temporary table mon as
 select pg_temp.pokemon(66, 49) as machop, pg_temp.pokemon(19, 50) as rattata;
@@ -161,10 +177,10 @@ select is(public.reroll(pg_temp.workplace(3)), '{"outcome": "occupied"}'::jsonb,
 
 reset role;
 select ok(
-  (select bool_and(exists (select 1 from public.pokedex_species s
-                            where s.type1 = w.type1 and s.type2 is not distinct from w.type2))
+  (select bool_and(exists (select 1 from public.pokedex_entries e
+                            where e.dex = 'national' and e.is_default and e.species_id = w.client_id))
      from public.coder_workplaces w where w.user_id = '00000000-0000-0000-0000-00000000000a'),
-  'a workplace wants the types of some Pokémon');
+  'a workplace is for a Pokémon from the national pokedex, in its default form');
 select pg_temp.as_person();
 
 

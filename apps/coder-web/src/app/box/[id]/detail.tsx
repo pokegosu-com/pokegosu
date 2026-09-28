@@ -269,9 +269,9 @@ function PokemonDetail({
         ))}
         {p.workplace_id && (
           <p className="text-muted text-xs">
-            업장에서 일하는 중이다.{' '}
-            <Link href="/work" className="text-accent hover:text-ink">
-              업장
+            의뢰를 하는 중이다.{' '}
+            <Link href="/requests" className="text-accent hover:text-ink">
+              의뢰
             </Link>
           </p>
         )}

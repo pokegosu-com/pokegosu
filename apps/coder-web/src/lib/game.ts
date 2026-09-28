@@ -186,9 +186,14 @@ export type Work =
       pokemon: Worker[]
     }
 
+/** A request (의뢰): a Pokémon asking for help with a task of one of its types. */
 export type Workplace = {
   id: string
   slot: number
+  /** The Pokémon it is for, as the pokedex has it. */
+  client: { species_id: number; sprites: Sprites } & Named
+  /** What it asks help with: 터널 파기, 디버깅. */
+  task: { id: string } & Named
   types: ({ id: string } & Named)[]
   /** Active hours since it opened, which a reroll waits on. */
   hours_open: number
