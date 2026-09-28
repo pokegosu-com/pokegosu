@@ -15,7 +15,7 @@ type ShopItem = {
   id: string
   price: number
   item: Item | null
-  egg: Named | null
+  egg: ({ id: string } & Named) | null
 }
 
 const quiet =
@@ -23,20 +23,28 @@ const quiet =
 
 function useShop() {
   const [items, setItems] = useState<ShopItem[] | null>(null)
+  // An egg holds what the pokedex of the same id lists: 관동도감 for a Kanto egg.
+  const [dexes, setDexes] = useState<Map<string, Named>>(new Map())
   const [failure, setFailure] = useState<string | null>(null)
   useEffect(() => {
     createClient()
       .from('coder_shop_items')
       .select(
-        'id, price, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(ko_name, en_name)',
+        'id, price, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(id, ko_name, en_name)',
       )
       .order('position')
       .then(({ data, error }) => {
         if (error) setFailure(error.message)
         else setItems(data as unknown as ShopItem[])
       })
+    createClient()
+      .from('pokedex_kinds')
+      .select('id, ko_name, en_name')
+      .then(({ data }) => {
+        if (data) setDexes(new Map(data.map((d) => [d.id, d])))
+      })
   }, [])
-  return { items, failure }
+  return { items, dexes, failure }
 }
 
 /**
@@ -82,6 +90,11 @@ function Ware({
       </button>
     </li>
   )
+}
+
+/** "관동도감의 포켓몬", once the pokedexes have loaded. */
+function dexNote(dex: Named | undefined): string {
+  return dex ? `${ko(dex)}의 포켓몬` : ''
 }
 
 export function ShopView() {
@@ -155,7 +168,7 @@ export function ShopView() {
               sprite={eggSpriteUrl}
               large
               name={ko(s.egg!)}
-              note="그 지방 도감의 포켓몬"
+              note={dexNote(shop.dexes.get(s.egg!.id))}
               price={s.price}
               disabled={busy || box.points < s.price}
               onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
