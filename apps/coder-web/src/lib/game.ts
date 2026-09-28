@@ -14,7 +14,15 @@ export type Box =
       pokemon: Pokemon[]
     }
 
-export type BagItem = { id: string; quantity: number } & Named
+/** An item, with its sprite's path on pokedex-web. */
+export type Item = { id: string; sprite: string | null } & Named
+
+export type BagItem = Item & { quantity: number }
+
+/** An item's pixel sprite, served by pokedex-web. */
+export function itemSpriteUrl(item: Pick<Item, 'sprite'>): string | undefined {
+  return item.sprite ? `${env.NEXT_PUBLIC_POKEDEX_URL}${item.sprite}` : undefined
+}
 
 export type Egg = {
   id: string
@@ -53,7 +61,7 @@ export type Pokemon = {
   evolves_to: ({ species_id: number; level: number } & Named) | null
   can_evolve: boolean
   /** What it becomes with which item: Eevee has three. */
-  item_evolutions: ({ species_id: number; item: { id: string } & Named } & Named)[]
+  item_evolutions: ({ species_id: number; item: Item } & Named)[]
   /** The workplace it is working at, if any. */
   workplace_id: string | null
   can_receive_egg: boolean

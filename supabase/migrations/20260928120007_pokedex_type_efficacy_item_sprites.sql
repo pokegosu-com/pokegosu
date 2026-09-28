@@ -1,3 +1,5 @@
+-- The type chart, and a sprite for each item.
+--
 -- How much damage a move of one type does to a Pokémon of another: the type
 -- chart, as PokéAPI has it today, Fairy included. A Pokémon of two types
 -- takes the product of the two.
@@ -26,3 +28,10 @@ grant select on public.pokedex_type_efficacy to anon, authenticated;
 
 create policy "anyone can read the type chart" on public.pokedex_type_efficacy
   for select to anon, authenticated using (true);
+
+
+-- ============================================================
+-- An item's sprite, a path on pokedex-web as a species' sprites are, such as
+-- "/sprites/items/fire-stone.png". The migration after this one fills it.
+-- ============================================================
+alter table public.pokedex_items add column sprite text;

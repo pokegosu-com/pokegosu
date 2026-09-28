@@ -22,6 +22,7 @@ import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage 
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
+import { UseItemLabel } from './game/item-label'
 import { Gender } from './game/gender'
 import { say } from './game/say'
 import { useGame, type Opening } from './game/use-game'
@@ -231,7 +232,7 @@ function PokemonPartner({
                   game.act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })
                 }}
               >
-                {ko(e.item)} 사용
+                <UseItemLabel item={e.item} />
               </button>
             ))}
           </Tasks>

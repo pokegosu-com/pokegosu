@@ -868,16 +868,19 @@ export type Database = {
           en_name: string | null
           id: string
           ko_name: string | null
+          sprite: string | null
         }
         Insert: {
           en_name?: string | null
           id: string
           ko_name?: string | null
+          sprite?: string | null
         }
         Update: {
           en_name?: string | null
           id?: string
           ko_name?: string | null
+          sprite?: string | null
         }
         Relationships: []
       }

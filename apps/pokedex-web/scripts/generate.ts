@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 /** PokeAPI/sprites at the commit every hash in the manifest was taken from. */
 const SPRITES_COMMIT = 'a13b1f4ccd77f35fd1370d2db5f0051221e9683f'
 const SPRITES_BASE = `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITES_COMMIT}/sprites/pokemon`
+const ITEMS_BASE = `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITES_COMMIT}/sprites/items`
 
 /**
  * What the generated files say about where their contents come from. PokéAPI's
@@ -761,6 +762,9 @@ async function main() {
   // different, its female, and which stays sharp at any size. The official
   // artwork draws no females.
   add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
+  // Every item an evolution names, in the bag's 30px pixel style.
+  for (const id of [...items.keys()].sort())
+    add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${id}.png`)
   const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
     const n = row.id
@@ -873,11 +877,14 @@ async function main() {
     '',
     upsert(
       'pokedex_items',
-      ['id', 'ko_name', 'en_name'],
+      ['id', 'ko_name', 'en_name', 'sprite'],
       ['id'],
       [...items]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+        .map(
+          ([id, names]) =>
+            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(`/sprites/items/${id}.png`)})`,
+        ),
     ),
     '',
     upsert(

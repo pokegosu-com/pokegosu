@@ -858,9 +858,9 @@ $$;
 -- box — as before, with the bag, the points, and for each Pokémon the stones
 -- that evolve it, by its gender too, and the workplace it is at.
 --
---   → {..., "points": 1234, "bag": [{"id", "ko_name", "en_name", "quantity"}],
+--   → {..., "points": 1234, "bag": [{"id", "ko_name", "en_name", "sprite", "quantity"}],
 --      "pokemon": [{..., "item_evolutions": [{"species_id", "ko_name", "en_name",
---                                             "item": {"id", "ko_name", "en_name"}}],
+--                                             "item": {"id", "ko_name", "en_name", "sprite"}}],
 --                   "workplace_id": "..." | null}]}
 -- ============================================================
 create or replace function public.box()
@@ -894,7 +894,7 @@ begin
     'points', public.point_balance(caller),
     'bag', coalesce((
       select jsonb_agg(jsonb_build_object('id', i.id, 'ko_name', i.ko_name, 'en_name', i.en_name,
-                                          'quantity', b.quantity)
+                                          'sprite', i.sprite, 'quantity', b.quantity)
                        order by s.position, i.id)
         from public.coder_bag b
         join public.pokedex_items i on i.id = b.item_id
@@ -940,7 +940,8 @@ begin
                'item_evolutions', coalesce((
                    select jsonb_agg(jsonb_build_object(
                             'species_id', e.id, 'ko_name', s.ko_name, 'en_name', s.en_name,
-                            'item', jsonb_build_object('id', i.id, 'ko_name', i.ko_name, 'en_name', i.en_name))
+                            'item', jsonb_build_object('id', i.id, 'ko_name', i.ko_name, 'en_name', i.en_name,
+                                                       'sprite', i.sprite))
                           order by e.id)
                      from public.item_evolutions(c.species_id, c.gender) e
                      join public.pokedex_species s on s.id = e.id

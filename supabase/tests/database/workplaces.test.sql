@@ -220,7 +220,8 @@ grant select on fox to authenticated;
 select pg_temp.as_person();
 
 select is(public.buy('fire-stone'), '{"outcome": "bought", "points": 36470}'::jsonb, 'a stone is bought with points');
-select is(public.box() -> 'bag', '[{"id": "fire-stone", "ko_name": "불꽃의돌", "en_name": "Fire Stone", "quantity": 1}]'::jsonb,
+select is(public.box() -> 'bag', '[{"id": "fire-stone", "ko_name": "불꽃의돌", "en_name": "Fire Stone",
+                                    "sprite": "/sprites/items/fire-stone.png", "quantity": 1}]'::jsonb,
   'and goes in the bag');
 select is(public.buy('kanto-egg') ->> 'outcome', 'bought', 'an egg too');
 select is(jsonb_array_length(public.box() -> 'eggs'), 2, 'and goes in the box');

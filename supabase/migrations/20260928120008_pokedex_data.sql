@@ -981,33 +981,34 @@ on conflict (id) do update set
   ko_name = excluded.ko_name,
   en_name = excluded.en_name;
 
-insert into public.pokedex_items (id, ko_name, en_name) values
-  ('dawn-stone', '각성의돌', 'Dawn Stone'),
-  ('deep-sea-scale', '심해의비늘', 'Deep Sea Scale'),
-  ('deep-sea-tooth', '심해의이빨', 'Deep Sea Tooth'),
-  ('dragon-scale', '용의비늘', 'Dragon Scale'),
-  ('dubious-disc', '괴상한패치', 'Dubious Disc'),
-  ('dusk-stone', '어둠의돌', 'Dusk Stone'),
-  ('electirizer', '에레키부스터', 'Electirizer'),
-  ('fire-stone', '불꽃의돌', 'Fire Stone'),
-  ('kings-rock', '왕의징표석', 'King’s Rock'),
-  ('leaf-stone', '리프의돌', 'Leaf Stone'),
-  ('magmarizer', '마그마부스터', 'Magmarizer'),
-  ('metal-coat', '금속코트', 'Metal Coat'),
-  ('moon-stone', '달의돌', 'Moon Stone'),
-  ('oval-stone', '동글동글돌', 'Oval Stone'),
-  ('protector', '프로텍터', 'Protector'),
-  ('razor-claw', '예리한손톱', 'Razor Claw'),
-  ('razor-fang', '예리한이빨', 'Razor Fang'),
-  ('reaper-cloth', '영계의천', 'Reaper Cloth'),
-  ('shiny-stone', '빛의돌', 'Shiny Stone'),
-  ('sun-stone', '태양의돌', 'Sun Stone'),
-  ('thunder-stone', '천둥의돌', 'Thunder Stone'),
-  ('up-grade', '업그레이드', 'Upgrade'),
-  ('water-stone', '물의돌', 'Water Stone')
+insert into public.pokedex_items (id, ko_name, en_name, sprite) values
+  ('dawn-stone', '각성의돌', 'Dawn Stone', '/sprites/items/dawn-stone.png'),
+  ('deep-sea-scale', '심해의비늘', 'Deep Sea Scale', '/sprites/items/deep-sea-scale.png'),
+  ('deep-sea-tooth', '심해의이빨', 'Deep Sea Tooth', '/sprites/items/deep-sea-tooth.png'),
+  ('dragon-scale', '용의비늘', 'Dragon Scale', '/sprites/items/dragon-scale.png'),
+  ('dubious-disc', '괴상한패치', 'Dubious Disc', '/sprites/items/dubious-disc.png'),
+  ('dusk-stone', '어둠의돌', 'Dusk Stone', '/sprites/items/dusk-stone.png'),
+  ('electirizer', '에레키부스터', 'Electirizer', '/sprites/items/electirizer.png'),
+  ('fire-stone', '불꽃의돌', 'Fire Stone', '/sprites/items/fire-stone.png'),
+  ('kings-rock', '왕의징표석', 'King’s Rock', '/sprites/items/kings-rock.png'),
+  ('leaf-stone', '리프의돌', 'Leaf Stone', '/sprites/items/leaf-stone.png'),
+  ('magmarizer', '마그마부스터', 'Magmarizer', '/sprites/items/magmarizer.png'),
+  ('metal-coat', '금속코트', 'Metal Coat', '/sprites/items/metal-coat.png'),
+  ('moon-stone', '달의돌', 'Moon Stone', '/sprites/items/moon-stone.png'),
+  ('oval-stone', '동글동글돌', 'Oval Stone', '/sprites/items/oval-stone.png'),
+  ('protector', '프로텍터', 'Protector', '/sprites/items/protector.png'),
+  ('razor-claw', '예리한손톱', 'Razor Claw', '/sprites/items/razor-claw.png'),
+  ('razor-fang', '예리한이빨', 'Razor Fang', '/sprites/items/razor-fang.png'),
+  ('reaper-cloth', '영계의천', 'Reaper Cloth', '/sprites/items/reaper-cloth.png'),
+  ('shiny-stone', '빛의돌', 'Shiny Stone', '/sprites/items/shiny-stone.png'),
+  ('sun-stone', '태양의돌', 'Sun Stone', '/sprites/items/sun-stone.png'),
+  ('thunder-stone', '천둥의돌', 'Thunder Stone', '/sprites/items/thunder-stone.png'),
+  ('up-grade', '업그레이드', 'Upgrade', '/sprites/items/up-grade.png'),
+  ('water-stone', '물의돌', 'Water Stone', '/sprites/items/water-stone.png')
 on conflict (id) do update set
   ko_name = excluded.ko_name,
-  en_name = excluded.en_name;
+  en_name = excluded.en_name,
+  sprite = excluded.sprite;
 
 insert into public.pokedex_moves (id, ko_name, en_name) values
   ('ancient-power', '원시의힘', 'Ancient Power'),

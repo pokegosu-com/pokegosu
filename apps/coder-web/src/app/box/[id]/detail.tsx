@@ -23,6 +23,7 @@ import {
 } from '@/lib/game'
 
 import { useCountUp } from '../../game/count-up'
+import { UseItemLabel } from '../../game/item-label'
 import { Gender } from '../../game/gender'
 import { Marks } from '../../game/marks'
 import { say } from '../../game/say'
@@ -197,7 +198,7 @@ function PokemonDetail({
                   disabled={busy}
                   onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
                 >
-                  {ko(e.item)} 사용
+                  <UseItemLabel item={e.item} />
                 </button>
               ))}
               {p.can_receive_egg && (
