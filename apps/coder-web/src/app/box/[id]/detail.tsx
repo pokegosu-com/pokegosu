@@ -255,19 +255,6 @@ function PokemonDetail({
             Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
           </p>
         )}
-        {p.item_evolutions.map((e) => (
-          <p key={e.item.id} className="text-muted text-xs">
-            {ko(e.item)}을(를) 쓰면 {ko(e)}(으)로 진화할 수 있다
-            {!stones.includes(e) && (
-              <>
-                {' · '}
-                <Link href="/shop" className="text-accent hover:text-ink">
-                  상점
-                </Link>
-              </>
-            )}
-          </p>
-        ))}
         {p.workplace_id && (
           <p className="text-muted text-xs">
             의뢰를 하는 중이다.{' '}
