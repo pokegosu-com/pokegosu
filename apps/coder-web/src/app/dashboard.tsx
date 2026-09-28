@@ -121,7 +121,9 @@ function Points({ points: amount }: { points: number }) {
       <h2 id="points" className="text-muted text-sm font-medium">
         포인트
       </h2>
-      <p className="font-mono text-2xl font-medium tabular-nums">{points(amount)}</p>
+      <p className="text-2xl font-medium" title={points(amount)}>
+        <span className="font-mono tabular-nums">{compactTokens(amount)}</span> P
+      </p>
     </section>
   )
 }
