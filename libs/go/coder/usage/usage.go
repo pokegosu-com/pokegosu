@@ -25,12 +25,9 @@ type Entry struct {
 	// Provider is the providers.id value this entry belongs to.
 	Provider string
 
-	// SessionID scopes the message. Two records from different sessions are
-	// different messages even when everything else matches.
-	SessionID string
-
 	// MessageID identifies the API response. Agents write the same response
-	// to the log two or three times.
+	// to the log two or three times, and a resumed or forked session copies
+	// its earlier responses into a new session under the same id.
 	MessageID string
 
 	// RequestID identifies the API call. Empty when the log does not carry
@@ -108,14 +105,13 @@ type Aggregator struct {
 	// same message.
 	exact map[exactKey]int
 
-	// bySession indexes records by (provider, session, message) for the
-	// sidechain fallback, where request ids differ but the message is one.
-	bySession map[messageKey][]int
+	// byMessage indexes records by (provider, message) for the sidechain
+	// fallback, where request ids differ but the message is one.
+	byMessage map[messageKey][]int
 }
 
 type exactKey struct {
 	provider  string
-	sessionID string
 	messageID string
 	requestID string
 
@@ -126,7 +122,6 @@ type exactKey struct {
 
 type messageKey struct {
 	provider  string
-	sessionID string
 	messageID string
 }
 
@@ -141,22 +136,22 @@ type record struct {
 func NewAggregator() *Aggregator {
 	return &Aggregator{
 		exact:     make(map[exactKey]int),
-		bySession: make(map[messageKey][]int),
+		byMessage: make(map[messageKey][]int),
 	}
 }
 
 // Add records an entry, merging it into an earlier one if they are the same
 // message.
 //
-// Two records are the same message when provider, session, message id and
-// request id all match. Without a request id the timestamp has to match too.
-// Session is part of the key: the same message id under a different session
-// is counted separately, because an id is only known to be unique within the
-// session that produced it.
+// Two records are the same message when provider, message id and request id
+// all match. Without a request id the timestamp has to match too. Session is
+// not part of the key: resuming or forking a session copies its earlier
+// messages into the new session, ids and all, and counting them there again
+// inflated real totals by a tenth.
 //
 // The exception is a sidechain replay. A sub-agent transcript repeats its
 // parent's messages under fresh request ids, so when either side is marked as
-// a sidechain, matching provider, session and message id is enough.
+// a sidechain, matching provider and message id is enough.
 //
 // When two records merge, the larger token count wins and a real message is
 // preferred over its sidechain copy — a record can be written before the
@@ -177,8 +172,8 @@ func (a *Aggregator) Add(e Entry) {
 			tokens:      e.Tokens,
 			isSidechain: e.IsSidechain,
 		})
-		mk := messageKey{e.Provider, e.SessionID, e.MessageID}
-		a.bySession[mk] = append(a.bySession[mk], idx)
+		mk := messageKey{e.Provider, e.MessageID}
+		a.byMessage[mk] = append(a.byMessage[mk], idx)
 		a.exact[a.exactKeyOf(e)] = idx
 		return
 	}
@@ -200,7 +195,7 @@ func (a *Aggregator) lookup(e Entry) (int, bool) {
 	if idx, ok := a.exact[a.exactKeyOf(e)]; ok {
 		return idx, true
 	}
-	for _, idx := range a.bySession[messageKey{e.Provider, e.SessionID, e.MessageID}] {
+	for _, idx := range a.byMessage[messageKey{e.Provider, e.MessageID}] {
 		if e.IsSidechain || a.records[idx].isSidechain {
 			return idx, true
 		}
@@ -211,7 +206,6 @@ func (a *Aggregator) lookup(e Entry) (int, bool) {
 func (a *Aggregator) exactKeyOf(e Entry) exactKey {
 	k := exactKey{
 		provider:  e.Provider,
-		sessionID: e.SessionID,
 		messageID: e.MessageID,
 		requestID: e.RequestID,
 	}

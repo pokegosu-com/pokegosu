@@ -73,12 +73,11 @@ func (Parser) Roots() ([]string, error) {
 // logLine is the subset of a log line we read. Everything else in the line,
 // including fields added by future versions, is ignored by the decoder.
 //
-// requestId, sessionId and isSidechain sit at the top level of the line, not
-// inside message.
+// requestId and isSidechain sit at the top level of the line, not inside
+// message.
 type logLine struct {
 	Timestamp   string `json:"timestamp"`
 	RequestID   string `json:"requestId"`
-	SessionID   string `json:"sessionId"`
 	IsSidechain bool   `json:"isSidechain"`
 	Message     *struct {
 		ID    string       `json:"id"`
@@ -223,7 +222,6 @@ func parseLine(line string) (usage.Entry, lineStatus) {
 
 	return usage.Entry{
 		Provider:    ID,
-		SessionID:   l.SessionID,
 		MessageID:   l.Message.ID,
 		RequestID:   l.RequestID,
 		IsSidechain: l.IsSidechain,

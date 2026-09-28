@@ -22,7 +22,7 @@ func TestAddCountsAMessageOnce(t *testing.T) {
 		"2026-09-12T11:05:58.180Z",
 		"2026-09-12T11:05:58.819Z",
 	} {
-		a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "msg_1", RequestID: "req_1", At: at(t, ts), Tokens: 44729})
+		a.Add(Entry{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", At: at(t, ts), Tokens: 44729})
 	}
 
 	if got := a.Messages(); got != 1 {
@@ -38,8 +38,8 @@ func TestAddCountsAMessageOnce(t *testing.T) {
 // bucket no matter which copy is read first, or two machines scanning the
 // same log will disagree.
 func TestAddPutsDuplicatesInTheEarliestHour(t *testing.T) {
-	early := Entry{Provider: "claude_code", SessionID: "s1", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:59:58Z"), Tokens: 100}
-	late := Entry{Provider: "claude_code", SessionID: "s1", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T12:00:03Z"), Tokens: 100}
+	early := Entry{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:59:58Z"), Tokens: 100}
+	late := Entry{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T12:00:03Z"), Tokens: 100}
 
 	for _, order := range [][]Entry{{early, late}, {late, early}} {
 		a := NewAggregator()
@@ -60,8 +60,8 @@ func TestAddPutsDuplicatesInTheEarliestHour(t *testing.T) {
 func TestAddKeepsProvidersApart(t *testing.T) {
 	a := NewAggregator()
 	// Two providers could hand out the same message id.
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:00:00Z"), Tokens: 10})
-	a.Add(Entry{Provider: "codex", SessionID: "s1", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:00:00Z"), Tokens: 20})
+	a.Add(Entry{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:00:00Z"), Tokens: 10})
+	a.Add(Entry{Provider: "codex", MessageID: "msg_1", RequestID: "req_1", At: at(t, "2026-09-12T11:00:00Z"), Tokens: 20})
 
 	rollups := a.Rollups(time.Time{})
 	if len(rollups) != 2 {
@@ -76,9 +76,9 @@ func TestAddKeepsProvidersApart(t *testing.T) {
 func TestRollupsBucketByHourInUTC(t *testing.T) {
 	a := NewAggregator()
 	// A non-UTC timestamp still has to land in the right UTC hour.
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "a", RequestID: "req_a", At: at(t, "2026-09-12T20:30:00+09:00"), Tokens: 1})
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "b", RequestID: "req_b", At: at(t, "2026-09-12T11:59:59Z"), Tokens: 2})
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "c", RequestID: "req_c", At: at(t, "2026-09-12T12:00:00Z"), Tokens: 4})
+	a.Add(Entry{Provider: "claude_code", MessageID: "a", RequestID: "req_a", At: at(t, "2026-09-12T20:30:00+09:00"), Tokens: 1})
+	a.Add(Entry{Provider: "claude_code", MessageID: "b", RequestID: "req_b", At: at(t, "2026-09-12T11:59:59Z"), Tokens: 2})
+	a.Add(Entry{Provider: "claude_code", MessageID: "c", RequestID: "req_c", At: at(t, "2026-09-12T12:00:00Z"), Tokens: 4})
 
 	rollups := a.Rollups(time.Time{})
 	want := []Rollup{
@@ -99,9 +99,9 @@ func TestRollupsBucketByHourInUTC(t *testing.T) {
 // has to include that hour entire rather than a slice of it.
 func TestRollupsSinceRoundsDownToTheHour(t *testing.T) {
 	a := NewAggregator()
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "a", RequestID: "req_a", At: at(t, "2026-09-12T11:05:00Z"), Tokens: 1})
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "b", RequestID: "req_b", At: at(t, "2026-09-12T11:45:00Z"), Tokens: 2})
-	a.Add(Entry{Provider: "claude_code", SessionID: "s1", MessageID: "c", RequestID: "req_c", At: at(t, "2026-09-12T10:00:00Z"), Tokens: 4})
+	a.Add(Entry{Provider: "claude_code", MessageID: "a", RequestID: "req_a", At: at(t, "2026-09-12T11:05:00Z"), Tokens: 1})
+	a.Add(Entry{Provider: "claude_code", MessageID: "b", RequestID: "req_b", At: at(t, "2026-09-12T11:45:00Z"), Tokens: 2})
+	a.Add(Entry{Provider: "claude_code", MessageID: "c", RequestID: "req_c", At: at(t, "2026-09-12T10:00:00Z"), Tokens: 4})
 
 	rollups := a.Rollups(at(t, "2026-09-12T11:30:00Z"))
 	if len(rollups) != 1 {
@@ -118,26 +118,11 @@ func TestRollupsEmpty(t *testing.T) {
 	}
 }
 
-func entry(t *testing.T, session, msg, req, ts string, tokens int64, sidechain bool) Entry {
+func entry(t *testing.T, msg, req, ts string, tokens int64, sidechain bool) Entry {
 	t.Helper()
 	return Entry{
-		Provider: "claude_code", SessionID: session, MessageID: msg, RequestID: req,
+		Provider: "claude_code", MessageID: msg, RequestID: req,
 		IsSidechain: sidechain, At: at(t, ts), Tokens: tokens,
-	}
-}
-
-// Session is part of the key. A message id is only known to be unique within
-// the session that produced it, so merging across sessions undercounts.
-func TestAddKeepsSessionsApart(t *testing.T) {
-	a := NewAggregator()
-	a.Add(entry(t, "s1", "msg_1", "req_1", "2026-09-12T11:10:00Z", 100, false))
-	a.Add(entry(t, "s2", "msg_1", "req_1", "2026-09-12T11:20:00Z", 100, false))
-
-	if got := a.Messages(); got != 2 {
-		t.Fatalf("Messages() = %d, want 2", got)
-	}
-	if got := a.Rollups(time.Time{})[0].Tokens; got != 200 {
-		t.Errorf("tokens = %d, want 200", got)
 	}
 }
 
@@ -145,13 +130,13 @@ func TestAddKeepsSessionsApart(t *testing.T) {
 // says whether two lines describe the same call.
 func TestAddWithoutRequestIDFallsBackToTimestamp(t *testing.T) {
 	a := NewAggregator()
-	a.Add(entry(t, "s1", "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
-	a.Add(entry(t, "s1", "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
+	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
+	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
 	if got := a.Messages(); got != 1 {
 		t.Errorf("Messages() = %d, want 1: same timestamp is the same record", got)
 	}
 
-	a.Add(entry(t, "s1", "msg_1", "", "2026-09-12T11:10:05Z", 100, false))
+	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:05Z", 100, false))
 	if got := a.Messages(); got != 2 {
 		t.Errorf("Messages() = %d, want 2: a different timestamp is a different record", got)
 	}
@@ -162,8 +147,8 @@ func TestAddWithoutRequestIDFallsBackToTimestamp(t *testing.T) {
 func TestAddMergesSidechainReplay(t *testing.T) {
 	for _, order := range []string{"parent first", "sidechain first"} {
 		t.Run(order, func(t *testing.T) {
-			parent := entry(t, "s1", "msg_1", "req_parent", "2026-09-12T11:10:00Z", 100, false)
-			replay := entry(t, "s1", "msg_1", "req_replay", "2026-09-12T11:10:30Z", 900, true)
+			parent := entry(t, "msg_1", "req_parent", "2026-09-12T11:10:00Z", 100, false)
+			replay := entry(t, "msg_1", "req_replay", "2026-09-12T11:10:30Z", 900, true)
 
 			a := NewAggregator()
 			if order == "parent first" {
@@ -191,7 +176,7 @@ func TestAddKeepsTheLargerTotal(t *testing.T) {
 	for _, order := range [][]int64{{111, 1111}, {1111, 111}} {
 		a := NewAggregator()
 		for i, tokens := range order {
-			a.Add(entry(t, "s1", "msg_1", "req_1",
+			a.Add(entry(t, "msg_1", "req_1",
 				[]string{"2026-09-12T11:10:00Z", "2026-09-12T11:10:02Z"}[i], tokens, false))
 		}
 		if got := a.Rollups(time.Time{})[0].Tokens; got != 1111 {
