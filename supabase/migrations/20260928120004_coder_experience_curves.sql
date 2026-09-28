@@ -18,25 +18,22 @@
 --   tokens(level) = medium(level) × ratio(level) ^ 0.7 × ratio(100) ^ 0.3,
 --   ratio(level) = the games' exp at level / Medium Fast's
 --
--- Nothing already earned is lost. An egg keeps how far it is from
--- hatching, its tokens doubled with the cycle. A Pokémon of the four rates
--- keeps its level and how far it is into the next, its experience doubled
--- with the curve. One of the two new rates keeps the tokens it took, and
--- they now count: it reaches the level they buy, and takes back as balance
+-- What a companion has taken is doubled with it: its egg tokens, its
+-- experience and its invested tokens alike, as a token stays a point of
+-- experience. Every egg keeps how far it is from hatching and every Pokémon
+-- its level, and what was invested weighs twice on the balance, which can
+-- go below zero until usage makes it up. An Erratic or Fluctuating Pokémon
+-- reaches the level its doubled experience buys, and gives back as balance
 -- whatever went past Lv.100.
 
 update public.coder_settings set tokens_per_cycle = tokens_per_cycle * 2;
 
-update public.coder_companions set egg_tokens = egg_tokens * 2 where hatched_at is null;
-
 update public.coder_experience_levels set tokens = tokens * 2;
 
-update public.coder_companions c
-   set exp = c.exp * 2
-  from public.pokedex_species p
- where p.id = c.species_id
-   and c.hatched_at is not null
-   and p.growth_rate in (select distinct growth_rate from public.coder_experience_levels);
+update public.coder_companions
+   set egg_tokens = egg_tokens * 2,
+       exp = exp * 2,
+       invested_tokens = invested_tokens * 2;
 
 insert into public.coder_experience_levels (growth_rate, level, tokens)
 select g.growth_rate, g.level,
