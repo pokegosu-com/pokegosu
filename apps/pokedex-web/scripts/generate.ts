@@ -15,7 +15,7 @@
 // into Pikachu's row, and the newest migration always says all of it.
 
 import { createHash } from 'node:crypto'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 /** PokeAPI/sprites at the commit every hash in the manifest was taken from. */
@@ -33,8 +33,48 @@ const POKEAPI_NOTICE =
 const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
-/** Generations I to IV: national dex numbers 1 to 493, in their default forms. */
+/**
+ * Generations I to IV: national dex numbers 1 to 493, in every form those
+ * games had. A form a later game added, such as Alolan Raichu or Mega
+ * Venusaur, waits for its generation.
+ */
 const LAST_DEX_NO = 493
+const LAST_GENERATION = 4
+
+/**
+ * Forms left out though their generation is in. Arceus's ??? type has no
+ * plate to hold, so no game shows it, and no type row to point at.
+ */
+const LEFT_OUT_FORMS = new Set(['arceus-unknown'])
+
+/**
+ * Forms Pokémon HOME never held, so it has no render of them; they take the
+ * official artwork instead. Spiky-eared Pichu came to one event in Generation
+ * IV and could never leave it.
+ */
+const NOT_IN_HOME = new Set(['pichu-spiky-eared'])
+
+/** PokéAPI names these forms in English only. */
+const FORM_KO_NAMES: Record<string, string> = {
+  'pichu-spiky-eared': '삐쭉귀',
+  'arceus-normal': '노말타입',
+  'arceus-fighting': '격투타입',
+  'arceus-flying': '비행타입',
+  'arceus-poison': '독타입',
+  'arceus-ground': '땅타입',
+  'arceus-rock': '바위타입',
+  'arceus-bug': '벌레타입',
+  'arceus-ghost': '고스트타입',
+  'arceus-steel': '강철타입',
+  'arceus-fire': '불꽃타입',
+  'arceus-water': '물타입',
+  'arceus-grass': '풀타입',
+  'arceus-electric': '전기타입',
+  'arceus-psychic': '에스퍼타입',
+  'arceus-ice': '얼음타입',
+  'arceus-dragon': '드래곤타입',
+  'arceus-dark': '악타입',
+}
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -79,7 +119,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260927120011_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260928120001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -97,17 +137,32 @@ type Species = {
   is_baby: boolean
   is_legendary: boolean
   is_mythical: boolean
+  has_gender_differences: boolean
   growth_rate: Named
   evolution_chain: { url: string }
   varieties: { is_default: boolean; pokemon: Named }[]
 }
 type Pokemon = {
   id: number
+  name: string
   height: number
   weight: number
   types: { slot: number; type: Named }[]
   stats: { base_stat: number; stat: Named }[]
   forms: Named[]
+}
+/**
+ * One form of a Pokémon. A form with types of its own, as Arceus's have, says
+ * them; the rest take the Pokémon's.
+ */
+type Form = {
+  id: number
+  name: string
+  form_name: string
+  is_default: boolean
+  version_group: Named
+  form_names: ({ name: string } & Localised)[]
+  types: { slot: number; type: Named }[]
 }
 type EvolutionDetail = {
   trigger: Named
@@ -235,7 +290,7 @@ const KNOWN_CONDITIONS = new Set([
   'party_species',
   'condition_expression',
   'required_pokemon_form',
-  // ownWay keeps only the one ending in the default form.
+  // ownWay keeps only the one ending in the form asked for.
   'evolved_pokemon_form',
   'version_group',
   'is_default',
@@ -276,11 +331,10 @@ function chanceOf(detail: EvolutionDetail): number | null {
 const GENDERS: Record<number, 'female' | 'male'> = { 1: 'female', 2: 'male' }
 
 /**
- * The detail for a species' own default form. PokéAPI lists a regional form's
- * way beside it, such as Alolan Rattata evolving only at night, which starts
- * from another form or ends in one; those are that form's to keep. A species
- * whose every form is named, as Burmy's cloaks are, lists a way per form, and
- * the one between the two default forms is kept.
+ * The detail for one form becoming another. PokéAPI lists a regional form's
+ * way beside the rest, such as Alolan Rattata evolving only at night, and no
+ * regional form is kept yet. A species whose every form is named, as Burmy's
+ * cloaks are, lists a way per form, each from its form and to its own.
  */
 function ownWay(details: EvolutionDetail[], from: string, to: string): EvolutionDetail | undefined {
   return details.find(
@@ -401,6 +455,8 @@ type Row = {
   dexNo: number
   generation: number
   names: Record<string, string>
+  formNames: Record<string, string>
+  formOf: number | null
   genus: Record<string, string>
   flavor: Species['flavor_text_entries']
   types: string[]
@@ -415,6 +471,10 @@ type Row = {
   evolvesFrom: number | null
   evolution: Evolution | null
   sprites: Record<string, string>
+  /** The file each style is under in PokeAPI/sprites: a Pokémon's id, or its number and form. */
+  spriteKey: string
+  /** Whether a female looks different, as Pikachu's tail does. */
+  femaleDiffers: boolean
 }
 
 const STATS: Record<string, string> = {
@@ -466,17 +526,50 @@ async function main() {
       )),
     )
   }
-  const pokemons = new Map<number, Pokemon>()
-  for (const s of species) {
-    const variety = s.varieties.find((v) => v.is_default)!
-    pokemons.set(s.id, await get<Pokemon>(`pokemon/${idOf(variety.pokemon)}`))
+  // Every form of every species that its generation's games had: a Pokémon of
+  // its own, as Heat Rotom is, or a form of one, as Unown B is. A species'
+  // default form has its national number for an id; the rest are 10001 on.
+  type Kept = { form: Form; pokemon: Pokemon }
+  const generations = new Map<string, Promise<number>>()
+  const generationOf = (group: Named) => {
+    if (!generations.has(group.name)) {
+      generations.set(
+        group.name,
+        get<{ generation: Named }>(group.url).then((g) => idOf(g.generation)),
+      )
+    }
+    return generations.get(group.name)!
   }
-  const formOf = (s: Named) => pokemons.get(idOf(s))!.forms[0].name
+  const keptOf = async (s: Species): Promise<Kept[]> => {
+    const kept: Kept[] = []
+    for (const variety of s.varieties) {
+      const pokemon = await get<Pokemon>(variety.pokemon.url)
+      for (const form of await Promise.all(pokemon.forms.map((f) => get<Form>(f.url)))) {
+        if (LEFT_OUT_FORMS.has(form.name)) continue
+        if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
+        kept.push({ form, pokemon })
+      }
+    }
+    if (!kept.some((k) => k.form.id === s.id)) throw new Error(`no default form for ${s.name}`)
+    return kept.sort((a, b) => a.form.id - b.form.id)
+  }
+  const formsOf = new Map<number, Kept[]>()
+  for (let start = 0; start < species.length; start += 100) {
+    const batch = species.slice(start, start + 100)
+    const kept = await Promise.all(batch.map(keptOf))
+    batch.forEach((s, i) => formsOf.set(s.id, kept[i]))
+  }
+  const defaultOf = (id: number) => formsOf.get(id)!.find((k) => k.form.id === id)!
 
-  // Who each species evolves from, and on what, from the chains. A link to or
-  // from a species outside the table is dropped, and so is one that asks for
-  // nothing: PokéAPI puts Phione in Manaphy's chain, since a Manaphy's egg
+  // Which form each form evolves from, and on what, from the chains. A link to
+  // or from a species outside the table is dropped, and so is one that asks
+  // for nothing: PokéAPI puts Phione in Manaphy's chain, since a Manaphy's egg
   // hatches Phione, but Phione never becomes Manaphy.
+  //
+  // A default form evolves from the default form before it. Another form
+  // evolves from the form of the same name, as East Sea Gastrodon from East
+  // Sea Shellos, and from nothing where there is none: Sunshine Cherrim is
+  // only Cherrim in the sun.
   const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
   const chainUrls = [...new Set(species.map((s) => s.evolution_chain.url))]
   for (const url of chainUrls) {
@@ -486,10 +579,17 @@ async function main() {
         const from = idOf(link.species)
         const to = idOf(next.species)
         if (from <= LAST_DEX_NO && to <= LAST_DEX_NO && next.evolution_details.length > 0) {
-          const detail = ownWay(next.evolution_details, formOf(link.species), formOf(next.species))
-          if (!detail)
-            throw new Error(`no way of its own from ${link.species.name} to ${next.species.name}`)
-          reached.set(to, { from, detail })
+          for (const target of formsOf.get(to)!) {
+            const source =
+              target.form.id === to
+                ? defaultOf(from)
+                : formsOf.get(from)!.find((k) => k.form.form_name === target.form.form_name)
+            if (!source) continue
+            const detail = ownWay(next.evolution_details, source.form.name, target.form.name)
+            if (!detail)
+              throw new Error(`no way of its own from ${source.form.name} to ${target.form.name}`)
+            reached.set(target.form.id, { from: source.form.id, detail })
+          }
         }
         walk(next)
       }
@@ -499,63 +599,113 @@ async function main() {
 
   const rows: Row[] = []
   for (const s of species) {
-    const pokemon = pokemons.get(s.id)!
-    const formId = idOf(pokemon.forms[0])
-    const evolution = reached.get(s.id)
-    rows.push({
-      id: formId,
-      slug: pokemon.forms[0].name,
-      dexNo: s.id,
-      generation: idOf(s.generation),
-      names: localise(s.names, (n) => n.name),
-      genus: localise(s.genera, (g) => g.genus),
-      flavor: s.flavor_text_entries,
-      types: pokemon.types.sort((a, b) => a.slot - b.slot).map((t) => t.type.name),
-      stats: Object.fromEntries(pokemon.stats.map((st) => [STATS[st.stat.name], st.base_stat])),
-      height: pokemon.height,
-      weight: pokemon.weight,
-      growthRate: s.growth_rate.name,
-      captureRate: s.capture_rate,
-      hatchCounter: s.hatch_counter,
-      genderRate: s.gender_rate,
-      category: s.is_baby
-        ? 'baby'
-        : s.is_legendary
-          ? 'legendary'
-          : s.is_mythical
-            ? 'mythical'
-            : null,
-      evolvesFrom: evolution ? evolution.from : null,
-      evolution: evolution ? await evolutionOf(evolution.detail) : null,
-      sprites: {
-        front: `/sprites/pokemon/${s.id}.png`,
-        front_shiny: `/sprites/pokemon/shiny/${s.id}.png`,
-        artwork: `/sprites/pokemon/artwork/${s.id}.png`,
-        artwork_shiny: `/sprites/pokemon/artwork/shiny/${s.id}.png`,
-      },
-    })
+    const kept = formsOf.get(s.id)!
+    for (const { form, pokemon } of kept) {
+      const evolution = reached.get(form.id)
+      // Named only where there is more than one to tell apart, so Kyogre, whose
+      // Primal form is a later game's, has no name for its one.
+      const formNames: Record<string, string> =
+        kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
+      if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
+      // PokéAPI names a few default forms nothing, as Pichu's; a screen calls
+      // those 기본. Any other form it cannot name is a name missing here.
+      if (kept.length > 1 && form.id !== s.id && !formNames.ko)
+        throw new Error(`no Korean name for the form ${form.name}`)
+      const types = form.types.length > 0 ? form.types : pokemon.types
+      // Of the species' default form only: no other form kept has a female of
+      // its own. PokéAPI's front_female is no guide, as it gives Nidoran♀
+      // her one sprite there.
+      const femaleDiffers = s.has_gender_differences && form.id === s.id
+      rows.push({
+        id: form.id,
+        slug: form.name,
+        dexNo: s.id,
+        generation: idOf(s.generation),
+        names: localise(s.names, (n) => n.name),
+        formNames,
+        formOf: form.id === s.id ? null : s.id,
+        genus: localise(s.genera, (g) => g.genus),
+        flavor: s.flavor_text_entries,
+        types: [...types].sort((a, b) => a.slot - b.slot).map((t) => t.type.name),
+        stats: Object.fromEntries(pokemon.stats.map((st) => [STATS[st.stat.name], st.base_stat])),
+        height: pokemon.height,
+        weight: pokemon.weight,
+        growthRate: s.growth_rate.name,
+        captureRate: s.capture_rate,
+        hatchCounter: s.hatch_counter,
+        genderRate: s.gender_rate,
+        category: s.is_baby
+          ? 'baby'
+          : s.is_legendary
+            ? 'legendary'
+            : s.is_mythical
+              ? 'mythical'
+              : null,
+        evolvesFrom: evolution ? evolution.from : null,
+        evolution: evolution ? await evolutionOf(evolution.detail) : null,
+        // Under the form's id, which is the national number for a default form.
+        // A female that looks different has sprites of her own, in pixels and
+        // large.
+        sprites: {
+          front: `/sprites/pokemon/${form.id}.png`,
+          front_shiny: `/sprites/pokemon/shiny/${form.id}.png`,
+          ...(femaleDiffers && {
+            front_female: `/sprites/pokemon/female/${form.id}.png`,
+            front_shiny_female: `/sprites/pokemon/shiny/female/${form.id}.png`,
+          }),
+          artwork: `/sprites/pokemon/artwork/${form.id}.png`,
+          artwork_shiny: `/sprites/pokemon/artwork/shiny/${form.id}.png`,
+          ...(femaleDiffers && {
+            artwork_female: `/sprites/pokemon/artwork/female/${form.id}.png`,
+            artwork_shiny_female: `/sprites/pokemon/artwork/shiny/female/${form.id}.png`,
+          }),
+        },
+        // PokeAPI/sprites files a Pokémon's own default form by the Pokémon's
+        // id, as 10008 for Heat Rotom, and its other forms by number and form,
+        // as 201-b for Unown B. Pokémon and form ids differ: form 10001 is Unown
+        // B, and Pokémon 10001 is Attack Forme Deoxys.
+        spriteKey: form.is_default ? String(pokemon.id) : `${s.id}-${form.form_name}`,
+        femaleDiffers,
+      })
+    }
   }
 
   // Each pokedex's numbering, and its entry text in the game it prefers.
-  // PokéAPI lists a species' entries oldest first.
-  const byDexNo = new Map(rows.map((r) => [r.dexNo, r]))
-  const entries: { dex: string; number: number; row: Row; description: Record<string, string> }[] =
-    []
+  // PokéAPI lists a species' entries oldest first. Every form of a species is
+  // under its number, with the same text, and the default form is the one a
+  // list shows.
+  const byDexNo = new Map<number, Row[]>()
+  for (const row of rows) byDexNo.set(row.dexNo, [...(byDexNo.get(row.dexNo) ?? []), row])
+  const entries: {
+    dex: string
+    number: number
+    row: Row
+    isDefault: boolean
+    description: Record<string, string>
+  }[] = []
   for (const [dex, { apiId, versions }] of Object.entries(POKEDEXES)) {
     const listed = await get<{
       pokemon_entries: { entry_number: number; pokemon_species: Named }[]
     }>(`pokedex/${apiId}`)
     for (const entry of listed.pokemon_entries) {
-      const row = byDexNo.get(idOf(entry.pokemon_species))
-      if (!row) continue
+      const forms = byDexNo.get(idOf(entry.pokemon_species))
+      if (!forms) continue
       const description = localise(
-        row.flavor,
+        forms[0].flavor,
         (f) => prose(f.flavor_text),
         (matching) =>
           versions.map((v) => matching.find((f) => f.version.name === v)).find(Boolean) ??
           matching.at(-1),
       )
-      entries.push({ dex, number: entry.entry_number, row, description })
+      for (const row of forms) {
+        entries.push({
+          dex,
+          number: entry.entry_number,
+          row,
+          isDefault: row.formOf === null,
+          description,
+        })
+      }
     }
   }
 
@@ -579,21 +729,56 @@ async function main() {
     )
   }
 
-  const sprites: { path: string; source: string; sha256: string }[] = []
-  const add = async (path: string, source: string) => {
-    sprites.push({ path, source, sha256: await sha256Of(source) })
+  // The commit is pinned, so a hash the manifest already has for a source is
+  // still that file's, and a run fetches only what is new.
+  const known = new Map<string, string>()
+  try {
+    const previous = JSON.parse(await readFile(MANIFEST, 'utf8')) as {
+      commit: string
+      files: { source: string; sha256: string }[]
+    }
+    if (previous.commit === SPRITES_COMMIT) {
+      for (const f of previous.files) known.set(f.source, f.sha256)
+    }
+  } catch {
+    // No manifest yet: every file is fetched.
   }
+  const files: { path: string; source: string }[] = []
+  const add = (path: string, source: string) => files.push({ path, source })
   // A list shows the 96px front sprite, the one style every generation has
-  // in pixels; a Pokémon's own page shows the official artwork, which every
-  // generation has too and which stays sharp at any size.
-  await add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
-  const artwork = `${SPRITES_BASE}/other/official-artwork`
+  // in pixels. A Pokémon's own page shows its render from Pokémon HOME, the
+  // one large style with every species, its shiny and, where she looks
+  // different, its female, and which stays sharp at any size. The official
+  // artwork draws no females.
+  add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
+  const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
-    const n = row.dexNo
-    await add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${n}.png`)
-    await add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${n}.png`)
-    await add(`sprites/pokemon/artwork/${n}.png`, `${artwork}/${n}.png`)
-    await add(`sprites/pokemon/artwork/shiny/${n}.png`, `${artwork}/shiny/${n}.png`)
+    const n = row.id
+    const k = row.spriteKey
+    add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
+    add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${k}.png`)
+    if (row.femaleDiffers) {
+      add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
+      add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
+    }
+    const large = NOT_IN_HOME.has(row.slug) ? `${SPRITES_BASE}/other/official-artwork` : home
+    add(`sprites/pokemon/artwork/${n}.png`, `${large}/${k}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${large}/shiny/${k}.png`)
+    if (row.femaleDiffers) {
+      add(`sprites/pokemon/artwork/female/${n}.png`, `${large}/female/${k}.png`)
+      add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${large}/shiny/female/${k}.png`)
+    }
+  }
+  // Sixteen at a time, in the manifest's order.
+  const sprites: { path: string; source: string; sha256: string }[] = []
+  for (let start = 0; start < files.length; start += 16) {
+    sprites.push(
+      ...(await Promise.all(
+        files
+          .slice(start, start + 16)
+          .map(async (f) => ({ ...f, sha256: known.get(f.source) ?? (await sha256Of(f.source)) })),
+      )),
+    )
   }
 
   await writeFile(
@@ -602,13 +787,17 @@ async function main() {
       '\n',
   )
 
-  // A row's pre-evolution goes in first, so evolves_from_id always finds it.
+  // A row's pre-evolution and default form go in first, so evolves_from_id
+  // and form_of always find theirs.
   const inserted = new Set<number>()
   const ordered: Row[] = []
   while (ordered.length < rows.length) {
     for (const row of rows) {
       if (inserted.has(row.id)) continue
-      if (row.evolvesFrom === null || inserted.has(row.evolvesFrom)) {
+      if (
+        (row.evolvesFrom === null || inserted.has(row.evolvesFrom)) &&
+        (row.formOf === null || inserted.has(row.formOf))
+      ) {
         ordered.push(row)
         inserted.add(row.id)
       }
@@ -622,7 +811,7 @@ async function main() {
     `-- ${POKEAPI_NOTICE}`,
     '-- The licence is in LICENSES/PokeAPI-BSD-3-Clause.txt.',
     '--',
-    `-- ${rows.length} forms, the default form of every species up to national No.${LAST_DEX_NO},`,
+    `-- ${rows.length} forms: every form up to national No.${LAST_DEX_NO} that its games had,`,
     `-- and their entries in the ${Object.keys(POKEDEXES).join(', ')} pokedexes. Every row is`,
     '-- upserted, so this says all of it whatever the migrations before it said.',
     '',
@@ -727,6 +916,9 @@ async function main() {
         'slug',
         'ko_name',
         'en_name',
+        'ko_form_name',
+        'en_form_name',
+        'form_of',
         'ko_genus',
         'en_genus',
         'generation',
@@ -752,7 +944,8 @@ async function main() {
       ['id'],
       ordered.map((r) =>
         [
-          `  (${r.id}, ${sql(r.slug)}, ${sql(r.names.ko)}, ${sql(r.names.en)}, ${sql(r.genus.ko)}, ${sql(r.genus.en)},` +
+          `  (${r.id}, ${sql(r.slug)}, ${sql(r.names.ko)}, ${sql(r.names.en)},` +
+            ` ${sql(r.formNames.ko)}, ${sql(r.formNames.en)}, ${sql(r.formOf)}, ${sql(r.genus.ko)}, ${sql(r.genus.en)},` +
             ` ${r.generation}, ${sql(r.category)},`,
           `   ${sql(r.types[0])}, ${sql(r.types[1] ?? null)}, ${r.stats.hp}, ${r.stats.attack}, ${r.stats.defense},` +
             ` ${r.stats.special_attack}, ${r.stats.special_defense}, ${r.stats.speed}, ${r.height}, ${r.weight},`,
@@ -777,7 +970,7 @@ async function main() {
       ['dex', 'species_id'],
       entries.map(
         (e) =>
-          `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, true, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
+          `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, ${e.isDefault}, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
       ),
     ),
     '',

@@ -22,6 +22,7 @@ import {
 } from '@/lib/game'
 
 import { useCountUp } from '../../game/count-up'
+import { Gender } from '../../game/gender'
 import { Marks } from '../../game/marks'
 import { say } from '../../game/say'
 import { useGame } from '../../game/use-game'
@@ -157,6 +158,7 @@ function PokemonDetail({
           <p className="flex items-baseline gap-2">
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
             <span className="text-3xl font-semibold tracking-tight">{ko(p)}</span>
+            <Gender gender={p.gender} />
             <span className="text-muted font-mono text-xs">
               No.{String(p.dex_no).padStart(3, '0')}
             </span>
