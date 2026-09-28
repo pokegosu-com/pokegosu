@@ -58,7 +58,11 @@ export function LookLink({ href, ...props }: ComponentProps<'a'> & { href: strin
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
           return
         event.preventDefault()
-        window.history.replaceState(null, '', href)
+        // Another form keeps the page's shiny choice.
+        const url = new URL(href, window.location.href)
+        const shiny = new URLSearchParams(window.location.search).get('shiny')
+        if (shiny) url.searchParams.set('shiny', shiny)
+        window.history.replaceState(null, '', url)
       }}
     />
   )

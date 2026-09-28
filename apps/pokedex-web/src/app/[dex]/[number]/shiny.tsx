@@ -23,7 +23,8 @@ const Shiny = createContext<[boolean, (shiny: boolean) => void]>([false, () => {
  *
  * Until it is chosen, a link that says ?shiny=1 or ?shiny=0, as the box's does
  * for one Pokémon, decides; else a trainer who has had the form the page
- * opened on shiny sees it shiny, as the list showed it.
+ * opened on shiny sees it shiny, as the list showed it. Choosing writes it
+ * into the address.
  */
 export function ShinyChoice({
   forms,
@@ -43,8 +44,16 @@ export function ShinyChoice({
   const query = new URLSearchParams(address)
   const opened = forms.find(([slug]) => slug === query.get('form')) ?? forms[0]
   const asked = query.get('shiny')
-  const [chosen, choose] = useState<boolean | null>(null)
+  const [chosen, setChosen] = useState<boolean | null>(null)
   const shiny = chosen ?? (asked ? asked === '1' : dex?.forms.get(opened[1]) === 'shiny')
+  // The address says the choice, as it says the form, so it can be shared;
+  // it is replaced rather than added to, so going back leaves the entry.
+  const choose = (value: boolean) => {
+    setChosen(value)
+    const url = new URL(window.location.href)
+    url.searchParams.set('shiny', value ? '1' : '0')
+    window.history.replaceState(null, '', url)
+  }
   return <Shiny.Provider value={[shiny, choose]}>{children}</Shiny.Provider>
 }
 
