@@ -84,9 +84,9 @@ function Ware({
   )
 }
 
-/** "관동 지역의 포켓몬", from an egg named 관동 알. */
+/** "관동 지방의 포켓몬", from an egg named 관동 알. */
 function regionNote(egg: Named): string {
-  return `${ko(egg).replace(/ 알$/, '')} 지역의 포켓몬`
+  return `${ko(egg).replace(/ 알$/, '')} 지방의 포켓몬`
 }
 
 export function ShopView() {
