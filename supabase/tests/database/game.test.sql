@@ -192,7 +192,7 @@ select ok(not (public.box() -> 'eggs' -> 0 ? 'species_id') and not (public.box()
 select throws_ok($$ select * from public.coder_companions $$, '42501', null,
   'a person cannot read their companions directly, so an egg cannot be looked into');
 
--- Charmander from here on: 20 cycles, so 20,000,000 tokens; Medium Slow.
+-- Charmander from here on: 20 cycles, so 40,000,000 tokens; Medium Slow.
 reset role;
 update public.coder_companions set species_id = 4, is_shiny = false where id = pg_temp.main();
 
@@ -220,14 +220,14 @@ select is(public.claim(pg_temp.main(), 1500000),
   'an egg takes tokens, not cycles');
 
 select is(public.claim(pg_temp.main(), 90000000),
-  '{"outcome": "claimed", "tokens": 18500000, "level_before": null, "level_after": null, "balance": "40000999"}'::jsonb,
+  '{"outcome": "claimed", "tokens": 38500000, "level_before": null, "level_after": null, "balance": "20000999"}'::jsonb,
   'more than an egg needs is cut to what it needs');
 
-select is(public.claim(pg_temp.main(), 1000000), '{"outcome": "nothing", "balance": "40000999"}'::jsonb,
+select is(public.claim(pg_temp.main(), 1000000), '{"outcome": "nothing", "balance": "20000999"}'::jsonb,
   'a full egg takes nothing until it hatches');
 
-select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '20000000'::jsonb,
-  'the box says how far it has to go, in tokens: 20 cycles at 1,000,000 each');
+select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '40000000'::jsonb,
+  'the box says how far it has to go, in tokens: 20 cycles at 2,000,000 each');
 
 
 -- ------------------------------------------------------------
@@ -246,7 +246,7 @@ select is(public.box() -> 'eggs', '[]'::jsonb, 'and leaves the egg box');
 -- Claiming into a Pokémon
 -- ------------------------------------------------------------
 reset role;
-select pg_temp.use(40000999, '2026-09-23T09:00:00Z');
+select pg_temp.use(60000999, '2026-09-23T09:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 -- The 80,001,998 there is now, to the token, is Lv.14 on the game's Medium Slow curve.

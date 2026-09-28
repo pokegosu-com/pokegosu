@@ -1,10 +1,11 @@
--- The experience curve takes twice the tokens, and has the two growth rates
--- Hoenn brought: Erratic and Fluctuating, PokéAPI's slow-then-very-fast and
--- fast-then-very-slow. The curve was written before they came, so a Pokémon
--- growing at either had no rows: it never levelled and the box left it out.
+-- The experience curve and eggs take twice the tokens, and the curve has
+-- the two growth rates Hoenn brought: Erratic and Fluctuating, PokéAPI's
+-- slow-then-very-fast and fast-then-very-slow. The curve was written before
+-- they came, so a Pokémon growing at either had no rows: it never levelled
+-- and the box left it out.
 --
 -- Medium Fast now reaches Lv.50 on 400M tokens and Lv.100 on 1B. The four
--- rates there were keep their shape, doubled.
+-- rates there were keep their shape, doubled. An egg cycle is 2M tokens.
 --
 -- Erratic and Fluctuating are what their shape is: Erratic slow early and
 -- very fast late, Fluctuating the other way round. The other rates only
@@ -17,11 +18,16 @@
 --   tokens(level) = medium(level) × ratio(level) ^ 0.7 × ratio(100) ^ 0.3,
 --   ratio(level) = the games' exp at level / Medium Fast's
 --
--- Nothing already earned is lost. A Pokémon of the four rates keeps its
--- level and how far it is into the next, its experience doubled with the
--- curve. One of the two new rates keeps the tokens it took, and they now
--- count: it reaches the level they buy, and takes back as balance whatever
--- went past Lv.100.
+-- Nothing already earned is lost. An egg keeps how far it is from
+-- hatching, its tokens doubled with the cycle. A Pokémon of the four rates
+-- keeps its level and how far it is into the next, its experience doubled
+-- with the curve. One of the two new rates keeps the tokens it took, and
+-- they now count: it reaches the level they buy, and takes back as balance
+-- whatever went past Lv.100.
+
+update public.coder_settings set tokens_per_cycle = tokens_per_cycle * 2;
+
+update public.coder_companions set egg_tokens = egg_tokens * 2 where hatched_at is null;
 
 update public.coder_experience_levels set tokens = tokens * 2;
 
