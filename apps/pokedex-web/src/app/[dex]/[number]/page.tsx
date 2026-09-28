@@ -5,7 +5,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
-import { FormMarks } from './marks'
+import { FormMarks, FormSprite } from './marks'
 import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
@@ -156,7 +156,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const members = await db
     .from('pokedex_species')
     .select(
-      `id, slug, ko_name, en_name, front:sprites->>front,
+      `id, slug, ko_name, en_name, front:sprites->>front, front_shiny:sprites->>front_shiny,
       method:pokedex_evolution_methods!evolution_method(
         level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
         trigger:pokedex_evolution_triggers(id, ko_name, en_name),
@@ -189,10 +189,16 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   // the male and the female each. Each links to itself.
   const manyForms = forms.data.length > 1
   const looks = forms.data.flatMap(({ is_default, species: f }) => {
-    const s = f.sprites as { front?: string; front_female?: string }
+    const s = f.sprites as {
+      front?: string
+      front_female?: string
+      front_shiny?: string
+      front_shiny_female?: string
+    }
     const look = (key: string, src: string | undefined, label: string, isFemale: boolean) => ({
       key,
       src,
+      shiny: isFemale ? s.front_shiny_female : s.front_shiny,
       label,
       href: hrefOf(n, { is_default, slug: f.slug }, isFemale),
       id: f.id,
@@ -299,14 +305,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           <FormMarks id={look.id} />
                         </span>
                         <span className="grid size-24 place-items-center rounded-md">
-                          {look.src && (
-                            // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
-                            <img
-                              src={look.src}
-                              alt=""
-                              className="size-24 [image-rendering:pixelated]"
-                            />
-                          )}
+                          <FormSprite id={look.id} src={look.src} shiny={look.shiny} />
                         </span>
                         {look.label}
                       </LookLink>
@@ -375,14 +374,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           <FormMarks id={f.id} />
                         </span>
                         <span className="grid size-24 place-items-center rounded-md">
-                          {f.front && (
-                            // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
-                            <img
-                              src={f.front}
-                              alt=""
-                              className="size-24 [image-rendering:pixelated]"
-                            />
-                          )}
+                          <FormSprite
+                            id={f.id}
+                            src={f.front ?? undefined}
+                            shiny={f.front_shiny ?? undefined}
+                          />
                         </span>
                         {ko(f)}
                         <span className="text-muted font-mono text-[11px]">{dexNo(f.number)}</span>
