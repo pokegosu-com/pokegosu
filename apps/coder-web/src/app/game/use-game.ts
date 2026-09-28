@@ -33,7 +33,9 @@ export type Outcome = { outcome: string } & Record<string, unknown>
  *
  * Opening the game is what invests tokens: the first load claims into the main
  * companion everything that fits, in one go. Watching it fill is the
- * screen's doing, counting up along the curve. Everything after that is a
+ * screen's doing, counting up along the curve. Starting and hatching claim
+ * the same way, since each leaves room the tokens waiting can fill. Everything
+ * after that is a
  * button, and every button reloads the box, since what one changes can change
  * what others offer.
  */
@@ -50,10 +52,11 @@ export function useGame() {
     const { data, error } = await createClient().rpc('box')
     if (error) {
       setFailure(error.message)
-      return
+      return null
     }
     setFailure(null)
     setBox(data as Box)
+    return data as Box
   }, [])
 
   const act = useCallback(
@@ -66,7 +69,19 @@ export function useGame() {
       } else {
         setLast({ action, outcome: data as Outcome })
       }
-      await load()
+      const loaded = await load()
+      // Starting and hatching leave tokens the partner can now take, which
+      // opening the game would have claimed; claim them now rather than on
+      // the next visit. The line said stays the start's or the hatch's.
+      const tokens = loaded ? claimable(loaded) : 0
+      if (!error && (fn === 'start_game' || fn === 'hatch') && loaded?.started && tokens > 0) {
+        const claimed = await createClient().rpc('claim', {
+          companion_id: loaded.main_companion_id,
+          tokens,
+        })
+        if (claimed.error) setFailure(claimed.error.message)
+        else await load()
+      }
       setBusy(false)
       return error ? null : (data as Outcome)
     },

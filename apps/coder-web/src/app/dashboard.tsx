@@ -8,16 +8,7 @@ import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { exactTokens } from '@/lib/format'
-import {
-  claimable,
-  eggHint,
-  eggSpriteUrl,
-  ko,
-  levelAt,
-  spriteUrl,
-  type Box,
-  type Curve,
-} from '@/lib/game'
+import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
 import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
 import { HourChart, Legend } from './charts'
@@ -67,36 +58,18 @@ function Tasks({
   box,
   game,
   acted,
-  onAct,
   children,
 }: {
   box: Extract<Box, { started: true }>
   game: Game
   acted: boolean
-  onAct: () => void
   children: React.ReactNode
 }) {
-  const { act, busy, last, opening } = game
-  const tokens = claimable(box)
+  const { last, opening } = game
   const message = acted && last ? say(box, last.action.fn, last.outcome) : null
   return (
     <>
-      <div className="flex flex-wrap gap-2 empty:hidden">
-        {children}
-        {tokens > 0 && (
-          <button
-            type="button"
-            className={primary}
-            disabled={busy}
-            onClick={() => {
-              onAct()
-              act({ fn: 'claim', companion_id: box.main_companion_id, tokens })
-            }}
-          >
-            토큰 주기
-          </button>
-        )}
-      </div>
+      <div className="flex flex-wrap gap-2 empty:hidden">{children}</div>
       {message ? (
         <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>
       ) : (
@@ -191,7 +164,7 @@ function PokemonPartner({
         {/* Hidden while the level is still counting up, so nothing is
             pressed on a level the bar hasn't reached. */}
         {!climbing && (
-          <Tasks box={box} game={game} acted={acted} onAct={onAct}>
+          <Tasks box={box} game={game} acted={acted}>
             {p.can_evolve && p.evolves_to && (
               <button
                 type="button"
@@ -278,7 +251,7 @@ function EggPartner({
           <Leftover balance={box.balance} />
         </div>
         {!climbing && (
-          <Tasks box={box} game={game} acted={acted} onAct={onAct}>
+          <Tasks box={box} game={game} acted={acted}>
             {egg.tokens >= egg.tokens_needed && (
               <button
                 type="button"
