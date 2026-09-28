@@ -19,9 +19,7 @@ export function CodeForm() {
         // The server normalises what was typed, so anything goes from here.
         router.push(`/devices/add/${encodeURIComponent(code.trim())}`)
       }}
-      // The box, not the bare input, is what reads as the field, so it takes the
-      // focus ring.
-      className="border-line-strong has-[input:focus]:outline-accent flex items-center gap-2 rounded-md border py-[7px] pr-[7px] pl-3 has-[input:focus]:outline-2 has-[input:focus]:outline-offset-2"
+      className="flex items-center gap-2"
     >
       <input
         value={code}
@@ -29,11 +27,11 @@ export function CodeForm() {
         required
         aria-label="코드"
         placeholder="XPTQ-4F2K"
-        className="min-w-0 flex-1 bg-transparent font-mono text-[13px] tracking-[0.15em] uppercase outline-none"
+        className="border-line-strong min-w-0 flex-1 rounded-md border px-3 py-2 text-center font-mono text-sm tracking-[0.15em] uppercase"
       />
       <button
         type="submit"
-        className="border-accent bg-accent text-surface flex-none rounded-md border px-3 py-1.5 text-xs font-medium"
+        className="border-accent bg-accent text-surface flex-none rounded-md border px-4 py-2 text-sm font-medium"
       >
         확인
       </button>
