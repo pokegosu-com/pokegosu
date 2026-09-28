@@ -34,7 +34,7 @@ select public.start_game();
 
 -- A Charmander egg, full.
 reset role;
-update public.coder_companions set species_id = 4, is_shiny = false, egg_tokens = 20000000
+update public.coder_companions set species_id = 4, is_shiny = false, egg_tokens = 40000000
  where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
