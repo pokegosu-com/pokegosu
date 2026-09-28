@@ -951,10 +951,6 @@ export type Database = {
         Returns: Json
       }
       companion_history: { Args: { companion_id: string }; Returns: Json }
-      draw_form: {
-        Args: { owner: string; species_id: number }
-        Returns: number
-      }
       draw_gender: { Args: { species_id: number }; Returns: string }
       eligible_ribbons: {
         Args: {
