@@ -70,20 +70,20 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines) and the pencil that edits a value in place, both in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 
 Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thing again.
 
-| Import                   | What it is                                                                                                                                                                   |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections, and the app drawer it opens. Each app's layout places it once.                          |
-| `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                                               |
-| `@pokegosu/ui/artwork`   | `Artwork`: a Pokémon's large render in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still. |
-| `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, and `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link).                            |
-| `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                     |
-| `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; and `faviconUrl`, the same drawing for each layout's `metadata.icons`.                |
+| Import                   | What it is                                                                                                                                                                                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections, and the app drawer it opens. Each app's layout places it once.                                                                                            |
+| `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                                                                                                                 |
+| `@pokegosu/ui/artwork`   | `Artwork`: a Pokémon's large render in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still.                                                                   |
+| `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in). |
+| `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                                                                                       |
+| `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; `faviconUrl`, the same drawing for each layout's `metadata.icons`; and `CaughtIcon`, the ball alone, thin, for `CaughtMarks`.                           |
 
 ## Behaviour
 

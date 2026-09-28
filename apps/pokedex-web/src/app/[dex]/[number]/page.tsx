@@ -5,6 +5,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
+import { FormMarks } from './marks'
 import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
@@ -256,13 +257,16 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                 <p className="text-muted font-mono text-xs tabular-nums">
                   {dexName} {dexNo(n)}
                 </p>
-                <h1 className="text-3xl font-semibold tracking-tight">
+                <h1 className="flex items-baseline gap-2 text-3xl font-semibold tracking-tight">
                   {ko(p)}
                   {manyForms && (
-                    <span className="text-muted ml-2 text-base font-normal tracking-normal">
+                    <span className="text-muted text-base font-normal tracking-normal">
                       {formName(p)}
                     </span>
                   )}
+                  <span className="self-center text-base">
+                    <FormMarks id={p.id} />
+                  </span>
                 </h1>
                 <p className="text-muted text-sm">
                   {p.ko_genus ?? p.en_genus}
@@ -290,8 +294,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                         aria-current={
                           look.id === p.id && look.female === !!female ? 'page' : undefined
                         }
-                        className="border-line hover:border-line-strong aria-[current=page]:border-accent flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
                       >
+                        <span className="absolute top-1.5 right-1.5">
+                          <FormMarks id={look.id} />
+                        </span>
                         <span className="bg-surface-raised grid size-24 place-items-center rounded-md">
                           {look.src && (
                             // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are

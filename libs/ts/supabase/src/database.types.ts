@@ -127,6 +127,35 @@ export type Database = {
           },
         ]
       }
+      coder_dex_entries: {
+        Row: {
+          caught_at: string
+          shiny_caught_at: string | null
+          species_id: number
+          user_id: string
+        }
+        Insert: {
+          caught_at?: string
+          shiny_caught_at?: string | null
+          species_id: number
+          user_id: string
+        }
+        Update: {
+          caught_at?: string
+          shiny_caught_at?: string | null
+          species_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_dex_entries_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_egg_forms: {
         Row: {
           species_id: number
@@ -992,6 +1021,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      my_dex: {
+        Args: never
+        Returns: {
+          default_id: number
+          shiny: boolean
+          shiny_front: string
+          species_id: number
+        }[]
       }
       normalize_code: { Args: { typed: string }; Returns: string }
       pending_enrollment: { Args: { code: string }; Returns: Json }

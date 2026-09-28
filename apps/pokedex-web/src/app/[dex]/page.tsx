@@ -46,7 +46,7 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
       db
         .from('pokedex_entries')
         .select(
-          'number, species:pokedex_species(ko_name, en_name, type1, type2, front:sprites->>front)',
+          'number, species:pokedex_species(id, ko_name, en_name, type1, type2, front:sprites->>front)',
         )
         .eq('dex', dex)
         .eq('is_default', true)
@@ -66,6 +66,7 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
       <DexGrid
         dex={dex}
         rows={data.map(({ number, species: s }) => ({
+          id: s.id,
           number,
           name: ko(s),
           types: [s.type1, s.type2].filter((t): t is string => !!t),

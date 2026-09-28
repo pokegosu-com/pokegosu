@@ -60,3 +60,25 @@ export function PokeGosuIcon({ size = 20 }: { size?: number }) {
     />
   )
 }
+
+/**
+ * A Poké Ball, as the games mark a pokedex entry the trainer has caught. The
+ * same ball as PokeGosu's icon, without the cap, drawn thin to sit beside text.
+ */
+export function CaughtIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M1.75 8H6M10 8H14.25" />
+      <circle cx="8" cy="8" r="2" />
+    </svg>
+  )
+}
