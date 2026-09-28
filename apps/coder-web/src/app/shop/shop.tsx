@@ -145,10 +145,6 @@ export function ShopView() {
             />
           ))}
         </ul>
-        <p className="text-muted text-xs">
-          산 돌은 가방에 들어갑니다. 박스에서 포켓몬을 고르면 그 포켓몬에게 쓸 수 있는 돌이
-          보입니다.
-        </p>
       </section>
 
       <section className="space-y-3">
@@ -167,16 +163,7 @@ export function ShopView() {
             />
           ))}
         </ul>
-        <p className="text-muted text-xs">산 알은 박스에 들어갑니다.</p>
       </section>
-
-      <p className="text-muted text-xs">
-        포인트는{' '}
-        <Link href="/requests" className="text-accent hover:text-ink">
-          의뢰
-        </Link>
-        로 법니다.
-      </p>
     </>
   )
 }
