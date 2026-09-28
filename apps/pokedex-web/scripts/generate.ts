@@ -33,8 +33,8 @@ const POKEAPI_NOTICE =
 const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
-/** Generations I to III: national dex numbers 1 to 386, in their default forms. */
-const LAST_DEX_NO = 386
+/** Generations I to IV: national dex numbers 1 to 493, in their default forms. */
+const LAST_DEX_NO = 493
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -68,11 +68,18 @@ const POKEDEXES: Record<
     names: { ko: '호연도감', en: 'Hoenn Pokédex' },
     versions: ['omega-ruby', 'alpha-sapphire', 'emerald', 'ruby', 'sapphire'],
   },
+  // Diamond and Pearl's, not Platinum's, which lists 59 more, as the others
+  // are the first games'.
+  sinnoh: {
+    apiId: 5,
+    names: { ko: '신오도감', en: 'Sinnoh Pokédex' },
+    versions: ['brilliant-diamond', 'shining-pearl', 'platinum', 'diamond', 'pearl'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260927120004_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260927120011_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -111,6 +118,10 @@ type EvolutionDetail = {
   time_of_day: string
   relative_physical_stats: number | null
   min_beauty: number | null
+  gender: number | null
+  known_move: Named | null
+  location: Named | null
+  party_species: Named | null
   condition_expression: {
     percentage_chance: number | null
     variables: Named[]
@@ -166,8 +177,20 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   shed: '탈피',
 }
 
+/**
+ * PokéAPI names locations in English only, and only those an evolution in a
+ * kept game asks for are needed.
+ */
+const LOCATION_KO_NAMES: Record<string, string> = {
+  'mt-coronet': '천관산',
+  'eterna-forest': '영원의숲',
+  'sinnoh-route-217': '217번도로',
+}
+
 const triggers = new Map<string, Record<string, string>>()
 const items = new Map<string, Record<string, string>>()
+const moves = new Map<string, Record<string, string>>()
+const locations = new Map<string, Record<string, string>>()
 
 type Evolution = {
   id: string
@@ -180,6 +203,11 @@ type Evolution = {
   physicalStats: number | null
   beauty: number | null
   chance: number | null
+  gender: 'female' | 'male' | null
+  move: string | null
+  location: string | null
+  partySpecies: number | null
+  partySlug: string | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -198,8 +226,17 @@ const KNOWN_CONDITIONS = new Set([
   'time_of_day',
   'relative_physical_stats',
   'min_beauty',
+  'gender',
+  'known_move',
+  'location',
+  // The moss and ice rocks Leafeon and Glaceon need are in the place a
+  // location names, so the location says it.
+  'near_special_rock',
+  'party_species',
   'condition_expression',
   'required_pokemon_form',
+  // ownWay keeps only the one ending in the default form.
+  'evolved_pokemon_form',
   'version_group',
   'is_default',
 ])
@@ -235,16 +272,21 @@ function chanceOf(detail: EvolutionDetail): number | null {
   return expression.percentage_chance
 }
 
+/** PokéAPI's genders, as a method names them. */
+const GENDERS: Record<number, 'female' | 'male'> = { 1: 'female', 2: 'male' }
+
 /**
  * The detail for a species' own default form. PokéAPI lists a regional form's
  * way beside it, such as Alolan Rattata evolving only at night, which starts
- * from another form or ends in one; those are that form's to keep.
+ * from another form or ends in one; those are that form's to keep. A species
+ * whose every form is named, as Burmy's cloaks are, lists a way per form, and
+ * the one between the two default forms is kept.
  */
-function ownWay(details: EvolutionDetail[], from: string): EvolutionDetail | undefined {
+function ownWay(details: EvolutionDetail[], from: string, to: string): EvolutionDetail | undefined {
   return details.find(
     (d) =>
       !d.region &&
-      !d.evolved_pokemon_form &&
+      (!d.evolved_pokemon_form || d.evolved_pokemon_form.name === to) &&
       (!d.required_pokemon_form || d.required_pokemon_form.name === from),
   )
 }
@@ -258,9 +300,26 @@ async function nameItem(item: string) {
   )
 }
 
+async function nameMove(move: string) {
+  if (moves.has(move)) return
+  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`move/${move}`)
+  moves.set(
+    move,
+    localise(fetched.names, (n) => n.name),
+  )
+}
+
+async function nameLocation(location: string) {
+  if (locations.has(location)) return
+  const ko = LOCATION_KO_NAMES[location]
+  if (!ko) throw new Error(`no Korean name for the location ${location}`)
+  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`location/${location}`)
+  locations.set(location, { ...localise(fetched.names, (n) => n.name), ko })
+}
+
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to III ask; anything
+ * A method has a column for each condition Generations I to IV ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -290,6 +349,13 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   const physicalStats = detail.relative_physical_stats ?? null
   const beauty = detail.min_beauty ?? null
   const chance = chanceOf(detail)
+  const gender = detail.gender ? GENDERS[detail.gender] : null
+  const move = detail.known_move?.name ?? null
+  if (move) await nameMove(move)
+  const location = detail.location?.name ?? null
+  if (location) await nameLocation(location)
+  const partySlug = detail.party_species?.name ?? null
+  const partySpecies = detail.party_species ? idOf(detail.party_species) : null
   const id = [
     trigger,
     level,
@@ -300,6 +366,10 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     physicalStats !== null && PHYSICAL_STATS[physicalStats],
     beauty && `beauty-${beauty}`,
     chance && `chance-${chance}`,
+    gender,
+    move && `knowing-${move}`,
+    location && `at-${location}`,
+    partySlug && `with-${partySlug}`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -315,6 +385,11 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       physicalStats,
       beauty,
       chance,
+      gender,
+      move,
+      location,
+      partySpecies,
+      partySlug,
     })
   }
   return methods.get(id)!
@@ -381,12 +456,27 @@ async function sha256Of(url: string): Promise<string> {
 }
 
 async function main() {
-  const species = await Promise.all(
-    Array.from({ length: LAST_DEX_NO }, (_, i) => get<Species>(`pokemon-species/${i + 1}`)),
-  )
+  // A hundred at a time: all 493 at once time out on connecting.
+  const species: Species[] = []
+  for (let start = 1; start <= LAST_DEX_NO; start += 100) {
+    const count = Math.min(100, LAST_DEX_NO - start + 1)
+    species.push(
+      ...(await Promise.all(
+        Array.from({ length: count }, (_, i) => get<Species>(`pokemon-species/${start + i}`)),
+      )),
+    )
+  }
+  const pokemons = new Map<number, Pokemon>()
+  for (const s of species) {
+    const variety = s.varieties.find((v) => v.is_default)!
+    pokemons.set(s.id, await get<Pokemon>(`pokemon/${idOf(variety.pokemon)}`))
+  }
+  const formOf = (s: Named) => pokemons.get(idOf(s))!.forms[0].name
 
   // Who each species evolves from, and on what, from the chains. A link to or
-  // from a species outside the table is dropped.
+  // from a species outside the table is dropped, and so is one that asks for
+  // nothing: PokéAPI puts Phione in Manaphy's chain, since a Manaphy's egg
+  // hatches Phione, but Phione never becomes Manaphy.
   const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
   const chainUrls = [...new Set(species.map((s) => s.evolution_chain.url))]
   for (const url of chainUrls) {
@@ -395,8 +485,8 @@ async function main() {
       for (const next of link.evolves_to) {
         const from = idOf(link.species)
         const to = idOf(next.species)
-        const detail = ownWay(next.evolution_details, link.species.name)
-        if (from <= LAST_DEX_NO && to <= LAST_DEX_NO) {
+        if (from <= LAST_DEX_NO && to <= LAST_DEX_NO && next.evolution_details.length > 0) {
+          const detail = ownWay(next.evolution_details, formOf(link.species), formOf(next.species))
           if (!detail)
             throw new Error(`no way of its own from ${link.species.name} to ${next.species.name}`)
           reached.set(to, { from, detail })
@@ -409,8 +499,7 @@ async function main() {
 
   const rows: Row[] = []
   for (const s of species) {
-    const variety = s.varieties.find((v) => v.is_default)!
-    const pokemon = await get<Pokemon>(`pokemon/${idOf(variety.pokemon)}`)
+    const pokemon = pokemons.get(s.id)!
     const formId = idOf(pokemon.forms[0])
     const evolution = reached.get(s.id)
     rows.push({
@@ -584,6 +673,24 @@ async function main() {
     ),
     '',
     upsert(
+      'pokedex_moves',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...moves]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
+    '',
+    upsert(
+      'pokedex_locations',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...locations]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
+    '',
+    upsert(
       'pokedex_evolution_methods',
       [
         'id',
@@ -596,6 +703,10 @@ async function main() {
         'relative_physical_stats',
         'min_beauty',
         'chance',
+        'gender',
+        'known_move',
+        'location',
+        'party_species_id',
       ],
       ['id'],
       [...methods.values()]
@@ -604,7 +715,8 @@ async function main() {
           (m) =>
             `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)},` +
             ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)},` +
-            ` ${sql(m.beauty)}, ${sql(m.chance)})`,
+            ` ${sql(m.beauty)}, ${sql(m.chance)}, ${sql(m.gender)}, ${sql(m.move)},` +
+            ` ${sql(m.location)}, ${sql(m.partySpecies)})`,
         ),
     ),
     '',

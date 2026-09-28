@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { dexNo, ko, pokedex, typeNames } from '@/lib/pokedex'
+import { dexNo, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
 import { Sprite } from './sprite'
 
@@ -17,6 +17,10 @@ type Method = {
   relative_physical_stats: number | null
   min_beauty: number | null
   chance: number | null
+  gender: string | null
+  known_move: string | null
+  location: string | null
+  party: Named | null
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -27,7 +31,8 @@ const PHYSICAL_STATS: Record<number, string> = {
 
 /**
  * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
- * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%".
+ * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%", "Lv.20 · ♀",
+ * "구르기 배운 채 레벨업", "천관산에서 레벨업", "레벨업 · 동료 총어".
  */
 function takes(method: Method | undefined, names: Map<string, string>): string {
   if (!method) return ''
@@ -36,6 +41,11 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   else if (method.held_item)
     parts.push(`${names.get(method.held_item)} 지닌 채 ${names.get(method.trigger)}`)
   else if (method.trigger === 'level-up' && method.level) parts.push(`Lv.${method.level}`)
+  else if (method.known_move)
+    parts.push(`${names.get(method.known_move)} 배운 채 ${names.get(method.trigger)}`)
+  else if (method.location)
+    parts.push(`${names.get(method.location)}에서 ${names.get(method.trigger)}`)
+  else if (method.party) parts.push(`${names.get(method.trigger)} · 동료 ${ko(method.party)}`)
   // Without the number: the games ask 220 up to Generation VII and 160 since,
   // the same for every species in a game, and PokéAPI mixes the two.
   if (method.min_happiness) parts.push('친밀도')
@@ -45,6 +55,7 @@ function takes(method: Method | undefined, names: Map<string, string>): string {
   if (method.min_beauty) parts.push('아름다움')
   // Which half is fixed for each Pokémon, by its personality value.
   if (method.chance) parts.push(`성격값 ${method.chance}%`)
+  if (method.gender) parts.push(method.gender === 'female' ? '♀' : '♂')
   return parts.join(' · ') || (names.get(method.trigger) ?? '')
 }
 
@@ -71,41 +82,44 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   if (!Number.isInteger(n) || n < 1) notFound()
 
   const db = pokedex()
-  const [forms, all, around, kinds, triggers, items, methods, types] = await Promise.all([
-    db
-      .from('pokedex_entries')
-      .select('is_default, species:pokedex_species(*)')
-      .eq('dex', dex)
-      .eq('number', n)
-      .order('is_default', { ascending: false }),
-    // Every form in this pokedex, small enough to take whole: the family is
-    // found by following evolves_from_id, and each links by its number here.
-    // A stage this pokedex does not list is left out: Kanto's has no Pichu.
-    db
-      .from('pokedex_entries')
-      .select(
-        'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
-      )
-      .eq('dex', dex),
-    // The numbers either side, in the same pokedex.
-    db
-      .from('pokedex_entries')
-      .select('number, species:pokedex_species(ko_name, en_name)')
-      .eq('dex', dex)
-      .eq('is_default', true)
-      .in('number', [n - 1, n + 1])
-      .order('number'),
-    db.from('pokedex_kinds').select('id, ko_name, en_name'),
-    db.from('pokedex_evolution_triggers').select('id, ko_name, en_name'),
-    db.from('pokedex_items').select('id, ko_name, en_name'),
-    db
-      .from('pokedex_evolution_methods')
-      .select(
-        'id, trigger, level, item, held_item, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance',
-      ),
-    typeNames(),
-  ])
-  for (const result of [forms, all, around, kinds, triggers, items, methods]) {
+  const [forms, all, around, kinds, triggers, items, moves, locations, methods, types] =
+    await Promise.all([
+      db
+        .from('pokedex_entries')
+        .select('is_default, species:pokedex_species(*)')
+        .eq('dex', dex)
+        .eq('number', n)
+        .order('is_default', { ascending: false }),
+      // Every form in this pokedex, small enough to take whole: the family is
+      // found by following evolves_from_id, and each links by its number here.
+      // A stage this pokedex does not list is left out: Kanto's has no Pichu.
+      db
+        .from('pokedex_entries')
+        .select(
+          'number, species:pokedex_species(id, ko_name, en_name, sprites, evolves_from_id, evolution_method)',
+        )
+        .eq('dex', dex),
+      // The numbers either side, in the same pokedex.
+      db
+        .from('pokedex_entries')
+        .select('number, species:pokedex_species(ko_name, en_name)')
+        .eq('dex', dex)
+        .eq('is_default', true)
+        .in('number', [n - 1, n + 1])
+        .order('number'),
+      db.from('pokedex_kinds').select('id, ko_name, en_name'),
+      db.from('pokedex_evolution_triggers').select('id, ko_name, en_name'),
+      db.from('pokedex_items').select('id, ko_name, en_name'),
+      db.from('pokedex_moves').select('id, ko_name, en_name'),
+      db.from('pokedex_locations').select('id, ko_name, en_name'),
+      db
+        .from('pokedex_evolution_methods')
+        .select(
+          'id, trigger, level, item, held_item, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender, known_move, location, party:pokedex_species!party_species_id(ko_name, en_name)',
+        ),
+      typeNames(),
+    ])
+  for (const result of [forms, all, around, kinds, triggers, items, moves, locations, methods]) {
     if (result.error) throw result.error
   }
   const kindNames = new Map(kinds.data!.map((k) => [k.id, ko(k)]))
@@ -136,7 +150,12 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const family = [...rows.values()]
     .filter((f) => firstOf(f.id) === firstOf(p.id))
     .sort((a, b) => stageOf(a.id) - stageOf(b.id) || a.number - b.number)
-  const evolutionNames = new Map([...triggers.data!, ...items.data!].map((t) => [t.id, ko(t)]))
+  const evolutionNames = new Map(
+    [...triggers.data!, ...items.data!, ...moves.data!, ...locations.data!].map((t) => [
+      t.id,
+      ko(t),
+    ]),
+  )
   const methodOf = new Map(methods.data!.map((m) => [m.id, m]))
   const entries = entriesOf.data!.filter((e) => e.ko_description || e.en_description)
   const sprites = p.sprites as { artwork?: string; artwork_shiny?: string }
