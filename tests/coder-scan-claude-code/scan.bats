@@ -62,8 +62,8 @@ assert_case() {
     assert_case session-resume
 }
 
-@test "the same message id in another session is another message" {
-    assert_case different-sessions
+@test "a message copied into a forked session counts once" {
+    assert_case forked-session
 }
 
 @test "without a request id the timestamp separates records" {

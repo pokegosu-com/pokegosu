@@ -58,9 +58,8 @@ func TestParseSumsAllFourTokenFields(t *testing.T) {
 	if got.MessageID != "msg_1" {
 		t.Errorf("MessageID = %q, want msg_1 (the message id, not the line uuid)", got.MessageID)
 	}
-	if got.SessionID != "s1" || got.RequestID != "req_1" {
-		t.Errorf("SessionID/RequestID = %q/%q, want s1/req_1: both sit at the top level of the line",
-			got.SessionID, got.RequestID)
+	if got.RequestID != "req_1" {
+		t.Errorf("RequestID = %q, want req_1: it sits at the top level of the line", got.RequestID)
 	}
 	if got.Provider != ID {
 		t.Errorf("Provider = %q, want %q", got.Provider, ID)
