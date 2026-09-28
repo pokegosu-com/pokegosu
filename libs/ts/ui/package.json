@@ -7,6 +7,7 @@
     "./apps": "./src/apps.ts",
     "./app-shell": "./src/app-shell.tsx",
     "./artwork": "./src/artwork.tsx",
+    "./command": "./src/command.tsx",
     "./pokemon": "./src/pokemon.tsx",
     "./fonts": "./src/fonts.tsx",
     "./icon": "./src/icon.tsx",

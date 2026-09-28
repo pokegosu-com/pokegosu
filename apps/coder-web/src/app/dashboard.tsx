@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { Artwork } from '@pokegosu/ui/artwork'
+import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { exactTokens } from '@/lib/format'
@@ -167,27 +168,6 @@ const STEPS = [
     hint: '이벤트마다 훅이 있는지, 로그 폴더가 있는지 확인하고, 문제가 있으면 고치는 방법을 알려줍니다.',
   },
 ]
-
-function Command({ command }: { command: string }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="bg-surface-raised flex items-center gap-2 rounded-md py-2 pr-2 pl-3">
-      <code className="flex-1 font-mono text-[13px]">{command}</code>
-      <button
-        type="button"
-        onClick={() =>
-          navigator.clipboard
-            .writeText(command)
-            .then(() => setCopied(true))
-            .catch(() => {})
-        }
-        className="border-line-strong hover:border-ink rounded-md border px-3 py-1.5 text-xs font-medium"
-      >
-        {copied ? '복사함' : '복사'}
-      </button>
-    </div>
-  )
-}
 
 function Empty() {
   return (
