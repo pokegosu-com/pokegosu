@@ -5,7 +5,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
-import { Shown } from './shown'
+import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
 type Method = {
@@ -285,7 +285,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                 <ul className="flex flex-wrap gap-2">
                   {looks.map((look) => (
                     <li key={look.key}>
-                      <Link
+                      <LookLink
                         href={look.href}
                         aria-current={
                           look.id === p.id && look.female === !!female ? 'page' : undefined
@@ -303,7 +303,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           )}
                         </span>
                         {look.label}
-                      </Link>
+                      </LookLink>
                     </li>
                   ))}
                 </ul>
