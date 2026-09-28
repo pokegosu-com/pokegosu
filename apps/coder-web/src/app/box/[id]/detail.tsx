@@ -250,14 +250,6 @@ function PokemonDetail({
           label="다음 레벨까지"
           size="lg"
         />
-        {p.workplace_id && (
-          <p className="text-muted text-xs">
-            의뢰를 하는 중이다.{' '}
-            <Link href="/requests" className="text-accent hover:text-ink">
-              의뢰
-            </Link>
-          </p>
-        )}
       </section>
 
       <Records history={history} tokens={p.tokens} ribbons={p.ribbons} />
