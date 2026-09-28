@@ -110,9 +110,6 @@ export function ShopView() {
   }
 
   const held = (id: string) => box.bag.find((b) => b.id === id)?.quantity ?? 0
-  // How many in the box a stone would evolve, so it is clear what it is for.
-  const takers = (id: string) =>
-    box.pokemon.filter((p) => p.item_evolutions.some((e) => e.item.id === id)).length
   const stones = shop.items.filter((s) => s.item)
   const eggs = shop.items.filter((s) => s.egg)
 
@@ -130,21 +127,18 @@ export function ShopView() {
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">진화의 돌</h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {stones.map((s) => {
-            const n = takers(s.item!.id)
-            return (
-              <Ware
-                key={s.id}
-                sprite={itemSpriteUrl(s.item!)}
-                large={false}
-                name={ko(s.item!)}
-                note={`가방에 ${held(s.item!.id)}개${n > 0 ? ` · 쓸 포켓몬 ${n}` : ''}`}
-                price={s.price}
-                disabled={busy || box.points < s.price}
-                onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
-              />
-            )
-          })}
+          {stones.map((s) => (
+            <Ware
+              key={s.id}
+              sprite={itemSpriteUrl(s.item!)}
+              large={false}
+              name={ko(s.item!)}
+              note={`${held(s.item!.id)}개 보유`}
+              price={s.price}
+              disabled={busy || box.points < s.price}
+              onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
+            />
+          ))}
         </ul>
         <p className="text-muted text-xs">
           산 돌은 가방에 들어갑니다. 박스에서 포켓몬을 고르면 그 포켓몬에게 쓸 수 있는 돌이
