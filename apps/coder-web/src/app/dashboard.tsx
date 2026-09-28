@@ -8,7 +8,16 @@ import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { compactTokens, exactTokens } from '@/lib/format'
-import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
+import {
+  eggHint,
+  eggSpriteUrl,
+  ko,
+  levelAt,
+  spriteUrl,
+  usableItems,
+  type Box,
+  type Curve,
+} from '@/lib/game'
 import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
 import { HourChart, Legend } from './charts'
@@ -209,6 +218,20 @@ function PokemonPartner({
                 }}
               >
                 {ko(r)} 받기
+              </button>
+            ))}
+            {usableItems(p, box.bag).map((e) => (
+              <button
+                key={e.item.id}
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })
+                }}
+              >
+                {ko(e.item)} 사용
               </button>
             ))}
           </Tasks>

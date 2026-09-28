@@ -15,6 +15,7 @@ import {
   ko,
   levelAt,
   spriteUrl,
+  usableItems,
   type Curve,
   type Egg,
   type Named,
@@ -135,7 +136,8 @@ function PokemonDetail({
   game: Game
   history: History | null
 }) {
-  const { act, busy } = game
+  const { act, busy, box } = game
+  const stones = usableItems(p, box?.started ? box.bag : [])
   const { shown, climbing } = useCountUp(p.tokens, (from, to) => {
     const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
     const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
@@ -187,6 +189,17 @@ function PokemonDetail({
                   {ko(p.evolves_to)}(으)로 진화
                 </button>
               )}
+              {stones.map((e) => (
+                <button
+                  key={e.item.id}
+                  type="button"
+                  className={primary}
+                  disabled={busy}
+                  onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
+                >
+                  {ko(e.item)} 사용
+                </button>
+              ))}
               {p.can_receive_egg && (
                 <button
                   type="button"
@@ -239,6 +252,27 @@ function PokemonDetail({
         {p.evolves_to && !p.can_evolve && (
           <p className="text-muted text-xs">
             Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
+          </p>
+        )}
+        {p.item_evolutions.map((e) => (
+          <p key={e.item.id} className="text-muted text-xs">
+            {ko(e.item)}을(를) 쓰면 {ko(e)}(으)로 진화할 수 있다
+            {!stones.includes(e) && (
+              <>
+                {' · '}
+                <Link href="/shop" className="text-accent hover:text-ink">
+                  상점
+                </Link>
+              </>
+            )}
+          </p>
+        ))}
+        {p.workplace_id && (
+          <p className="text-muted text-xs">
+            업장에서 일하는 중이다.{' '}
+            <Link href="/work" className="text-accent hover:text-ink">
+              업장
+            </Link>
           </p>
         )}
       </section>

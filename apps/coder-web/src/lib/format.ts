@@ -11,6 +11,11 @@ export function exactTokens(n: number | bigint | string): string {
   return exact.format(typeof n === 'string' ? BigInt(n) : n)
 }
 
+/** 12480 → "12,480 P". */
+export function points(n: number): string {
+  return `${exact.format(n)} P`
+}
+
 /**
  * When something last happened, in the reader's own clock.
  *

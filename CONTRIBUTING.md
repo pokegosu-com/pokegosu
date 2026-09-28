@@ -50,7 +50,7 @@ The repository holds every app and everything they share, and all of it ships to
   - `landing-web/`: the front page
   - `account-web/`: sign-in, and the machines enrolled in an account
   - `pokedex-web/`: the Pokédex, and the Pokémon information every app uses
-  - `coder-web/`: coding agent token usage, and the box
+  - `coder-web/`: coding agent token usage, the box, workplaces and the shop
   - `cli/`: the `pokegosu` command line
 - `libs/`: code the apps share
   - `go/`

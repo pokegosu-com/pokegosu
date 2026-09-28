@@ -27,6 +27,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           sections={[
             { label: '대시보드', href: '/' },
             { label: '박스', href: '/box' },
+            { label: '업장', href: '/work' },
+            { label: '상점', href: '/shop' },
             { label: '사용량', href: '/usage' },
           ]}
         />

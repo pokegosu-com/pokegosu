@@ -7,9 +7,14 @@ export type Box =
       started: true
       main_companion_id: string
       balance: string
+      /** Points to spend in the shop, and what has been bought and not used. */
+      points: number
+      bag: BagItem[]
       eggs: Egg[]
       pokemon: Pokemon[]
     }
+
+export type BagItem = { id: string; quantity: number } & Named
 
 export type Egg = {
   id: string
@@ -47,6 +52,10 @@ export type Pokemon = {
   max_tokens: number
   evolves_to: ({ species_id: number; level: number } & Named) | null
   can_evolve: boolean
+  /** What it becomes with which item: Eevee has three. */
+  item_evolutions: ({ species_id: number; item: { id: string } & Named } & Named)[]
+  /** The workplace it is working at, if any. */
+  workplace_id: string | null
   can_receive_egg: boolean
   ribbons: ({ id: string; received_at: string } & Named)[]
   ribbons_waiting: ({ id: string } & Named)[]
@@ -151,4 +160,73 @@ export function eggHint(egg: Egg): string {
   if (left <= 0.1) return '가끔 움직이고 있다. 태어나기까지 조금 더 걸릴 것 같다.'
   if (left <= 0.4) return '안에서 소리가 들리는 것 같다. 곧 태어날 것 같다.'
   return '무엇이 태어날까? 태어나려면 아직 시간이 많이 걸릴 것 같다.'
+}
+
+/** The item evolutions the bag holds the item for. */
+export function usableItems(p: Pokemon, bag: BagItem[]) {
+  return p.item_evolutions.filter((e) => bag.some((b) => b.id === e.item.id && b.quantity > 0))
+}
+
+/** What work() answers with. */
+export type Work =
+  | { started: false }
+  | {
+      started: true
+      points: number
+      rules: {
+        points_per_hour: number
+        shift_hours: number
+        min_work_level: number
+        bonus_every_hours: number
+        bonus_points: number
+      }
+      /** The person's own workplace: active hours since it opened, and how many are paid. */
+      trainer: { hours: number; hours_paid: number; points_waiting: number; hours_to_bonus: number }
+      workplaces: Workplace[]
+      pokemon: Worker[]
+    }
+
+export type Workplace = {
+  id: string
+  slot: number
+  types: ({ id: string } & Named)[]
+  /** Active hours since it opened, which a reroll waits on. */
+  hours_open: number
+  can_reroll: boolean
+  worker: {
+    companion_id: string
+    /** Active hours of its shift so far, up to the shift's length. */
+    hours: number
+    aptitude: number
+    /** What settling will pay. */
+    points: number
+    can_settle: boolean
+  } | null
+}
+
+/** A Pokémon that may work, and what each workplace would pay it for a shift. */
+export type Worker = Pick<
+  Pokemon,
+  | 'id'
+  | 'species_id'
+  | 'ko_name'
+  | 'en_name'
+  | 'sprites'
+  | 'is_shiny'
+  | 'gender'
+  | 'level'
+  | 'types'
+> & {
+  workplace_id: string | null
+  offers: { workplace_id: string; aptitude: number; points: number }[]
+}
+
+/** How a Pokémon takes to a workplace, as the multiplier its types give. */
+export function aptitudeLine(aptitude: number): string {
+  if (aptitude >= 4) return '매우 적성에 맞는다'
+  if (aptitude >= 2) return '적성에 맞는다'
+  if (aptitude >= 1) return '보통이다'
+  if (aptitude >= 0.5) return '적성에 맞지 않는다'
+  if (aptitude > 0) return '매우 적성에 맞지 않는다'
+  return '전혀 모르는 분야인 것 같다'
 }

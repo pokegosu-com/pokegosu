@@ -28,6 +28,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      coder_bag: {
+        Row: {
+          item_id: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          item_id: string
+          quantity: number
+          user_id: string
+        }
+        Update: {
+          item_id?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_bag_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_companion_ribbons: {
         Row: {
           companion_id: string
@@ -310,6 +336,30 @@ export type Database = {
           },
         ]
       }
+      coder_point_entries: {
+        Row: {
+          created_at: string
+          id: number
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          points: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coder_ribbons: {
         Row: {
           en_description: string | null
@@ -336,24 +386,81 @@ export type Database = {
       }
       coder_settings: {
         Row: {
+          bonus_every_hours: number
+          bonus_points: number
           id: boolean
+          min_work_level: number
+          points_per_hour: number
+          shift_hours: number
           shiny_odds: number
           tokens_per_cycle: number
           unowned_line_weight: number
+          workplaces: number
         }
         Insert: {
+          bonus_every_hours: number
+          bonus_points: number
           id?: boolean
+          min_work_level: number
+          points_per_hour: number
+          shift_hours: number
           shiny_odds: number
           tokens_per_cycle: number
           unowned_line_weight: number
+          workplaces: number
         }
         Update: {
+          bonus_every_hours?: number
+          bonus_points?: number
           id?: boolean
+          min_work_level?: number
+          points_per_hour?: number
+          shift_hours?: number
           shiny_odds?: number
           tokens_per_cycle?: number
           unowned_line_weight?: number
+          workplaces?: number
         }
         Relationships: []
+      }
+      coder_shop_items: {
+        Row: {
+          egg_kind: string | null
+          id: string
+          item_id: string | null
+          position: number
+          price: number
+        }
+        Insert: {
+          egg_kind?: string | null
+          id: string
+          item_id?: string | null
+          position: number
+          price: number
+        }
+        Update: {
+          egg_kind?: string | null
+          id?: string
+          item_id?: string | null
+          position?: number
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_shop_items_egg_kind_fkey'
+            columns: ['egg_kind']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_shop_items_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+        ]
       }
       coder_species_rarities: {
         Row: {
@@ -390,16 +497,22 @@ export type Database = {
           created_at: string
           main_companion_id: string
           user_id: string
+          work_hours_paid: number
+          work_started_at: string
         }
         Insert: {
           created_at?: string
           main_companion_id: string
           user_id: string
+          work_hours_paid?: number
+          work_started_at?: string
         }
         Update: {
           created_at?: string
           main_companion_id?: string
           user_id?: string
+          work_hours_paid?: number
+          work_started_at?: string
         }
         Relationships: [
           {
@@ -408,6 +521,61 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'coder_companions'
             referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
+      coder_workplaces: {
+        Row: {
+          assigned_at: string | null
+          companion_id: string | null
+          id: string
+          opened_at: string
+          slot: number
+          type1: string
+          type2: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          companion_id?: string | null
+          id?: string
+          opened_at?: string
+          slot: number
+          type1: string
+          type2?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          companion_id?: string | null
+          id?: string
+          opened_at?: string
+          slot?: number
+          type1?: string
+          type2?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_workplaces_companion_id_user_id_fkey'
+            columns: ['companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'coder_companions'
+            referencedColumns: ['id', 'user_id']
+          },
+          {
+            foreignKeyName: 'coder_workplaces_type1_fkey'
+            columns: ['type1']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_workplaces_type2_fkey'
+            columns: ['type2']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -874,6 +1042,39 @@ export type Database = {
           },
         ]
       }
+      pokedex_type_efficacy: {
+        Row: {
+          attacking_type: string
+          damage_factor: number
+          defending_type: string
+        }
+        Insert: {
+          attacking_type: string
+          damage_factor: number
+          defending_type: string
+        }
+        Update: {
+          attacking_type?: string
+          damage_factor?: number
+          defending_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pokedex_type_efficacy_attacking_type_fkey'
+            columns: ['attacking_type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_type_efficacy_defending_type_fkey'
+            columns: ['defending_type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       pokedex_types: {
         Row: {
           en_name: string | null
@@ -972,8 +1173,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      active_hours: { Args: { owner: string; since: string }; Returns: number }
       approve_enrollment: { Args: { code: string }; Returns: Json }
+      aptitude: {
+        Args: { species_id: number; type1: string; type2: string }
+        Returns: number
+      }
+      assign: {
+        Args: { companion_id: string; workplace_id: string }
+        Returns: Json
+      }
       box: { Args: never; Returns: Json }
+      buy: { Args: { shop_item_id: string }; Returns: Json }
       claim: { Args: { companion_id: string; tokens: number }; Returns: Json }
       claim_enrollment: {
         Args: { api_key_hash: string; claim_hash: string }
@@ -990,6 +1201,13 @@ export type Database = {
       evolve: { Args: { companion_id: string }; Returns: Json }
       hatch: { Args: { companion_id: string }; Returns: Json }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
+      item_evolutions: {
+        Args: { from_id: number; gender: string }
+        Returns: {
+          id: number
+          item: string
+        }[]
+      }
       level_up_evolution: {
         Args: { from_id: number; gender: string }
         Returns: {
@@ -1022,6 +1240,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      lock_trainer: {
+        Args: { owner: string }
+        Returns: {
+          created_at: string
+          main_companion_id: string
+          user_id: string
+          work_hours_paid: number
+          work_started_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'coder_trainers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       my_dex: {
         Args: never
         Returns: {
@@ -1032,18 +1266,34 @@ export type Database = {
         }[]
       }
       normalize_code: { Args: { typed: string }; Returns: string }
+      open_workplaces: { Args: { owner: string }; Returns: undefined }
       pending_enrollment: { Args: { code: string }; Returns: Json }
+      point_balance: { Args: { owner: string }; Returns: number }
       pokedex_first_form: { Args: { species_id: number }; Returns: number }
       receive_egg: { Args: { companion_id: string }; Returns: Json }
       receive_ribbon: {
         Args: { companion_id: string; ribbon_id: string }
         Returns: Json
       }
+      replace_workplace: { Args: { workplace_id: string }; Returns: undefined }
+      reroll: { Args: { workplace_id: string }; Returns: Json }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
+      roll_workplace_types: { Args: never; Returns: Record<string, unknown> }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
         Args: { companion_id: string; markings: number }
         Returns: Json
+      }
+      settle: { Args: { workplace_id: string }; Returns: Json }
+      settle_trainer: { Args: never; Returns: Json }
+      shift_pay: {
+        Args: {
+          level: number
+          species_id: number
+          type1: string
+          type2: string
+        }
+        Returns: number
       }
       start_enrollment: {
         Args: {
@@ -1057,6 +1307,11 @@ export type Database = {
       }
       start_game: { Args: never; Returns: Json }
       usage: { Args: { range_end: string; range_start: string }; Returns: Json }
+      use_item: {
+        Args: { companion_id: string; item_id: string }
+        Returns: Json
+      }
+      work: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never

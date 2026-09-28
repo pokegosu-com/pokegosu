@@ -25,6 +25,14 @@ export function say(box: Box | null, fn: string, o: Outcome): string | null {
       return '알을 받았다! 알 박스에 들어갔다.'
     case 'receive_ribbon:received':
       return '리본을 받았다!'
+    case 'use_item:evolved':
+      return `축하합니다! ${nameOf(box, o.to)}(으)로 진화했다!`
+    case 'use_item:no_effect':
+      return '써도 효과가 없을 것 같다.'
+    case 'buy:bought':
+      return o.companion_id ? '알을 샀다! 알 박스에 들어갔다.' : '샀다! 가방에 넣었다.'
+    case 'buy:not_enough_points':
+      return '포인트가 모자랍니다.'
     case 'start_game:started':
       return '알을 받았다! 토큰을 쓰면 알이 자란다.'
     default:

@@ -119,7 +119,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260928120001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260928120008_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -711,12 +711,22 @@ async function main() {
 
   const typeIds = [...new Set(rows.flatMap((r) => r.types))].sort()
   const typeNames = new Map<string, Record<string, string>>()
+  // Attacking type, then defending type, to the damage as a percentage.
+  const efficacy = new Map<string, Map<string, number>>()
   for (const id of typeIds) {
-    const type = await get<{ names: ({ name: string } & Localised)[] }>(`type/${id}`)
+    const type = await get<{
+      names: ({ name: string } & Localised)[]
+      damage_relations: Record<'double_damage_to' | 'half_damage_to' | 'no_damage_to', Named[]>
+    }>(`type/${id}`)
     typeNames.set(
       id,
       localise(type.names, (n) => n.name),
     )
+    const factors = new Map<string, number>()
+    for (const t of type.damage_relations.double_damage_to) factors.set(t.name, 200)
+    for (const t of type.damage_relations.half_damage_to) factors.set(t.name, 50)
+    for (const t of type.damage_relations.no_damage_to) factors.set(t.name, 0)
+    efficacy.set(id, factors)
   }
 
   const rates = [...new Set(rows.map((r) => r.growthRate))].sort()
@@ -821,6 +831,15 @@ async function main() {
       ['id'],
       typeIds.map(
         (id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`,
+      ),
+    ),
+    '',
+    upsert(
+      'pokedex_type_efficacy',
+      ['attacking_type', 'defending_type', 'damage_factor'],
+      ['attacking_type', 'defending_type'],
+      typeIds.flatMap((a) =>
+        typeIds.map((d) => `  (${sql(a)}, ${sql(d)}, ${efficacy.get(a)!.get(d) ?? 100})`),
       ),
     ),
     '',
