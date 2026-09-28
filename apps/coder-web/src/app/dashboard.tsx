@@ -7,14 +7,20 @@ import { Artwork } from '@pokegosu/ui/artwork'
 import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { exactTokens } from '@/lib/format'
+import { compactTokens, exactTokens } from '@/lib/format'
 import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
 import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
 import { Gender } from './game/gender'
+import { say } from './game/say'
 import { useGame, type Opening } from './game/use-game'
+
+type Game = ReturnType<typeof useGame>
+
+const primary =
+  'bg-accent text-surface rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50'
 
 /** A level's worth of climbing takes this long, however many tokens it is. */
 const MS_PER_LEVEL = 350
@@ -43,19 +49,75 @@ function OpeningLine({ opening }: { opening: Opening }) {
   )
 }
 
+/**
+ * What the game is waiting for from the partner, as buttons, so it is done
+ * from here rather than its own page. Once one is pressed, the line under them
+ * says what it did, in place of what opening the page did.
+ */
+function Tasks({
+  box,
+  game,
+  acted,
+  children,
+}: {
+  box: Extract<Box, { started: true }>
+  game: Game
+  acted: boolean
+  children: React.ReactNode
+}) {
+  const { last, opening } = game
+  const message = acted && last ? say(box, last.action.fn, last.outcome) : null
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 empty:hidden">{children}</div>
+      {message ? (
+        <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>
+      ) : (
+        !acted &&
+        opening?.companion_id === box.main_companion_id && <OpeningLine opening={opening} />
+      )}
+    </>
+  )
+}
+
+/**
+ * The tokens used but not yet given to any companion: what is left once the
+ * partner can take no more, or while an egg waits to hatch. It can be below
+ * zero when the game's balance changed after they were given.
+ */
+function Leftover({ balance }: { balance: string }) {
+  return (
+    <section
+      aria-labelledby="leftover"
+      className="border-line flex flex-col justify-center gap-2 rounded-lg border p-6"
+    >
+      <h2 id="leftover" className="text-muted text-sm font-medium">
+        남은 토큰
+      </h2>
+      <p className="text-2xl font-medium" title={`${exactTokens(balance)} 토큰`}>
+        <span className="font-mono tabular-nums">{compactTokens(BigInt(balance))}</span> 토큰
+      </p>
+    </section>
+  )
+}
+
 function PokemonPartner({
   box,
   curve,
-  opening,
+  game,
+  acted,
+  onAct,
 }: {
   box: Extract<Box, { started: true }>
   curve: Curve
-  opening: Opening | null
+  game: Game
+  acted: boolean
+  onAct: () => void
 }) {
   const p = box.pokemon.find((c) => c.id === box.main_companion_id)!
   // The claim lands all at once; the partner climbs to it a level at a time,
   // along the same curve the server used.
-  const { shown } = useCountUp(p.tokens, (from, to) => {
+  const { shown, climbing } = useCountUp(p.tokens, (from, to) => {
     const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
     const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
     return Math.min(8000, Math.max(600, (b - a + 1) * MS_PER_LEVEL))
@@ -105,7 +167,52 @@ function PokemonPartner({
             size="lg"
           />
         </div>
-        {opening?.companion_id === p.id && <OpeningLine opening={opening} />}
+        {/* Hidden while the level is still counting up, so nothing is
+            pressed on a level the bar hasn't reached. */}
+        {!climbing && (
+          <Tasks box={box} game={game} acted={acted}>
+            {p.can_evolve && p.evolves_to && (
+              <button
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'evolve', companion_id: p.id })
+                }}
+              >
+                {ko(p.evolves_to)}(으)로 진화
+              </button>
+            )}
+            {p.can_receive_egg && (
+              <button
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'receive_egg', companion_id: p.id })
+                }}
+              >
+                알 받기
+              </button>
+            )}
+            {p.ribbons_waiting.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
+                }}
+              >
+                {ko(r)} 받기
+              </button>
+            ))}
+          </Tasks>
+        )}
         <Link href={`/box/${p.id}`} className="text-accent hover:text-ink text-sm">
           자세히 보기 →
         </Link>
@@ -116,13 +223,17 @@ function PokemonPartner({
 
 function EggPartner({
   box,
-  opening,
+  game,
+  acted,
+  onAct,
 }: {
   box: Extract<Box, { started: true }>
-  opening: Opening | null
+  game: Game
+  acted: boolean
+  onAct: () => void
 }) {
   const egg = box.eggs.find((c) => c.id === box.main_companion_id)!
-  const { shown } = useCountUp(egg.tokens, () => 1500)
+  const { shown, climbing } = useCountUp(egg.tokens, () => 1500)
   return (
     <section
       aria-label="파트너"
@@ -144,7 +255,23 @@ function EggPartner({
           </p>
           <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
         </div>
-        {opening?.companion_id === egg.id && <OpeningLine opening={opening} />}
+        {!climbing && (
+          <Tasks box={box} game={game} acted={acted}>
+            {egg.tokens >= egg.tokens_needed && (
+              <button
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'hatch', companion_id: egg.id })
+                }}
+              >
+                부화시키기
+              </button>
+            )}
+          </Tasks>
+        )}
         <Link href={`/box/${egg.id}`} className="text-accent hover:text-ink text-sm">
           자세히 보기 →
         </Link>
@@ -226,7 +353,11 @@ function LastDay({ usage, now }: { usage: Usage; now: Date }) {
  */
 export function Dashboard() {
   const game = useGame()
-  const { box, curve, busy, act, opening } = game
+  const { box, curve, busy, act } = game
+  // Until a button here is pressed, the partner's card says what opening the
+  // page gave it; after, what the button did.
+  const [acted, setActed] = useState(false)
+  const onAct = () => setActed(true)
   const [recent, setRecent] = useState<{ usage: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
@@ -277,10 +408,15 @@ export function Dashboard() {
             알 받기
           </button>
         </section>
-      ) : box.pokemon.some((p) => p.id === box.main_companion_id) ? (
-        <PokemonPartner box={box} curve={curve} opening={opening} />
       ) : (
-        <EggPartner box={box} opening={opening} />
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+          {box.pokemon.some((p) => p.id === box.main_companion_id) ? (
+            <PokemonPartner box={box} curve={curve} game={game} acted={acted} onAct={onAct} />
+          ) : (
+            <EggPartner box={box} game={game} acted={acted} onAct={onAct} />
+          )}
+          <Leftover balance={box.balance} />
+        </div>
       )}
       {nothingYet ? <Empty /> : <LastDay usage={recent.usage} now={recent.now} />}
     </>
