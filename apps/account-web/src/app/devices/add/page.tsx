@@ -17,10 +17,10 @@ const STEPS = [
 
 export default function AddMachinePage() {
   return (
-    <main className="mx-auto flex w-full max-w-task flex-1 flex-col justify-center gap-6 px-6 py-24">
-      <div className="space-y-1">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-10">
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">기기 추가</h1>
-        <p className="text-muted text-sm">추가할 기기의 터미널에서 차례로 실행하세요.</p>
+        <p className="text-muted">추가할 기기의 터미널에서 차례로 실행하세요.</p>
       </div>
 
       <ol className="border-line divide-line divide-y rounded-lg border">
@@ -43,7 +43,9 @@ export default function AddMachinePage() {
             <p className="text-muted text-xs">
               링크를 열 수 없는 기기라면, 나온 코드를 여기에 입력하세요.
             </p>
-            <CodeForm />
+            <div className="max-w-task">
+              <CodeForm />
+            </div>
           </div>
         </li>
       </ol>
