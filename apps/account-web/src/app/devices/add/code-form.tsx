@@ -19,22 +19,19 @@ export function CodeForm() {
         // The server normalises what was typed, so anything goes from here.
         router.push(`/devices/add/${encodeURIComponent(code.trim())}`)
       }}
-      className="space-y-3"
+      className="flex items-center gap-2"
     >
-      <label className="block space-y-1">
-        <span className="text-muted text-sm">코드</span>
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          required
-          placeholder="XPTQ-4F2K"
-          className="border-line-strong w-full rounded-md border px-3 py-2 text-center font-mono text-lg tracking-[0.2em]"
-        />
-      </label>
-
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        required
+        aria-label="코드"
+        placeholder="XPTQ-4F2K"
+        className="border-line-strong w-44 min-w-0 rounded-md border px-3 py-2 text-center font-mono text-sm tracking-[0.15em] uppercase"
+      />
       <button
         type="submit"
-        className="bg-accent text-surface w-full rounded-md px-4 py-2 text-sm font-medium"
+        className="bg-accent text-surface flex-none rounded-md px-4 py-2 text-sm font-medium"
       >
         확인
       </button>
