@@ -23,8 +23,6 @@ const quiet =
 
 function useShop() {
   const [items, setItems] = useState<ShopItem[] | null>(null)
-  // An egg holds what the pokedex of the same id lists: 관동도감 for a Kanto egg.
-  const [dexes, setDexes] = useState<Map<string, Named>>(new Map())
   const [failure, setFailure] = useState<string | null>(null)
   useEffect(() => {
     createClient()
@@ -37,14 +35,8 @@ function useShop() {
         if (error) setFailure(error.message)
         else setItems(data as unknown as ShopItem[])
       })
-    createClient()
-      .from('pokedex_kinds')
-      .select('id, ko_name, en_name')
-      .then(({ data }) => {
-        if (data) setDexes(new Map(data.map((d) => [d.id, d])))
-      })
   }, [])
-  return { items, dexes, failure }
+  return { items, failure }
 }
 
 /**
@@ -92,9 +84,9 @@ function Ware({
   )
 }
 
-/** "관동도감의 포켓몬", once the pokedexes have loaded. */
-function dexNote(dex: Named | undefined): string {
-  return dex ? `${ko(dex)}의 포켓몬` : ''
+/** "관동 지역의 포켓몬", from an egg named 관동 알. */
+function regionNote(egg: Named): string {
+  return `${ko(egg).replace(/ 알$/, '')} 지역의 포켓몬`
 }
 
 export function ShopView() {
@@ -168,7 +160,7 @@ export function ShopView() {
               sprite={eggSpriteUrl}
               large
               name={ko(s.egg!)}
-              note={dexNote(shop.dexes.get(s.egg!.id))}
+              note={regionNote(s.egg!)}
               price={s.price}
               disabled={busy || box.points < s.price}
               onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
