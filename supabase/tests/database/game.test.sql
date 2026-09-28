@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(85);
+select plan(91);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 202,
-  'a national egg holds the first form of every family up to Generation III');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 247,
+  'a national egg holds the first form of every family up to Generation IV');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -81,6 +81,26 @@ select is(
     where g.egg_kind = 'hoenn' and s.slug in ('pichu', 'zubat', 'bulbasaur', 'chikorita', 'treecko')),
   'zubat pichu treecko',
   'Generation III''s and those from before that Hoenn''s pokedex lists');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'national' and s.slug in ('snorlax', 'roselia', 'munchlax', 'budew')),
+  'budew munchlax',
+  'a national egg holds Generation IV''s babies');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'hoenn' and s.slug in ('roselia', 'budew', 'chimecho', 'chingling')),
+  'roselia chimecho',
+  'where a Hoenn egg keeps what grows from them, as Ruby and Sapphire''s pokedex lists no baby of theirs');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'sinnoh'), 72,
+  'a Sinnoh egg holds the first form of every family as Diamond and Pearl''s pokedex lists it');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+    where g.egg_kind = 'sinnoh' and s.slug in ('zubat', 'bulbasaur', 'feebas', 'turtwig', 'giratina-altered')),
+  'zubat feebas turtwig',
+  'Generation IV''s and those from before that Diamond and Pearl''s pokedex lists');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -92,14 +112,14 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 36), ('uncommon', 89), ('rare', 37), ('very-rare', 19), ('mythic', 21) $$,
+  $$ values ('common', 44), ('uncommon', 101), ('rare', 43), ('very-rare', 24), ('mythic', 35) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
      from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
      join public.coder_species_rarities sr on sr.species_id = g.species_id
-    where g.egg_kind = 'national' and s.slug in ('pidgey', 'charmander', 'omanyte', 'dratini', 'snorlax', 'mewtwo')),
-  'charmander:very-rare pidgey:common omanyte:very-rare snorlax:rare dratini:very-rare mewtwo:mythic',
+    where g.egg_kind = 'national' and s.slug in ('pidgey', 'charmander', 'omanyte', 'dratini', 'mewtwo')),
+  'charmander:very-rare pidgey:common omanyte:very-rare dratini:very-rare mewtwo:mythic',
   'the starters, fossils and Dratini are very rare, legendaries mythic');
 select is(
   (select string_agg(distinct r.rarity, ' ')
@@ -119,6 +139,10 @@ select is_empty($$ select * from public.level_up_evolution(265) $$,
   'Wurmple''s Lv.7 hangs on its personality, so it waits rather than always becoming Silcoon');
 select is(public.level_up_evolution(290), row(291, 20::smallint)::record,
   'Nincada becomes Ninjask at Lv.20, and Shedinja is left to wait');
+select is_empty($$ select * from public.level_up_evolution(412) $$,
+  'Burmy''s Lv.20 asks for a gender too, so it waits');
+select is(public.level_up_evolution(443), row(444, 24::smallint)::record,
+  'Gible becomes Gabite at Lv.24');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   200000000::bigint, 'Medium Fast reaches Lv.50 on 200M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),

@@ -9,7 +9,7 @@ export function ko(named: Named): string {
 }
 
 /** The pokedexes, in the order the top bar shows them: national first, then by generation. */
-export const DEXES = ['national', 'kanto', 'johto', 'hoenn']
+export const DEXES = ['national', 'kanto', 'johto', 'hoenn', 'sinnoh']
 
 export function dexNo(n: number): string {
   return `No.${String(n).padStart(3, '0')}`

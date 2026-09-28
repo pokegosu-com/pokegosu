@@ -467,36 +467,48 @@ export type Database = {
       pokedex_evolution_methods: {
         Row: {
           chance: number | null
+          gender: string | null
           held_item: string | null
           id: string
           item: string | null
+          known_move: string | null
           level: number | null
+          location: string | null
           min_beauty: number | null
           min_happiness: number | null
+          party_species_id: number | null
           relative_physical_stats: number | null
           time_of_day: string | null
           trigger: string
         }
         Insert: {
           chance?: number | null
+          gender?: string | null
           held_item?: string | null
           id: string
           item?: string | null
+          known_move?: string | null
           level?: number | null
+          location?: string | null
           min_beauty?: number | null
           min_happiness?: number | null
+          party_species_id?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trigger: string
         }
         Update: {
           chance?: number | null
+          gender?: string | null
           held_item?: string | null
           id?: string
           item?: string | null
+          known_move?: string | null
           level?: number | null
+          location?: string | null
           min_beauty?: number | null
           min_happiness?: number | null
+          party_species_id?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trigger?: string
@@ -514,6 +526,27 @@ export type Database = {
             columns: ['item']
             isOneToOne: false
             referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_known_move_fkey'
+            columns: ['known_move']
+            isOneToOne: false
+            referencedRelation: 'pokedex_moves'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_location_fkey'
+            columns: ['location']
+            isOneToOne: false
+            referencedRelation: 'pokedex_locations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_party_species_id_fkey'
+            columns: ['party_species_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
             referencedColumns: ['id']
           },
           {
@@ -600,6 +633,42 @@ export type Database = {
         Relationships: []
       }
       pokedex_kinds: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      pokedex_locations: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      pokedex_moves: {
         Row: {
           en_name: string | null
           id: string
