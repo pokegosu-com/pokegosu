@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-
 import { Artwork } from '@pokegosu/ui/artwork'
 
-/** The large render, with the shiny one a press away. */
+import { useShiny } from './shiny'
+
+/** The large render, and the choice between it and the shiny one for the whole page. */
 export function Sprite({ name, normal, shiny }: { name: string; normal?: string; shiny?: string }) {
-  const [showShiny, setShowShiny] = useState(false)
+  const [wantShiny, setShowShiny] = useShiny()
+  const showShiny = wantShiny && !!shiny
   const src = showShiny ? shiny : normal
   return (
     <div className="flex flex-none flex-col items-center gap-2">

@@ -245,14 +245,20 @@ function PokemonDetail({
 
       <Records history={history} tokens={p.tokens} ribbons={p.ribbons} />
 
-      <a
-        href={`${env.NEXT_PUBLIC_POKEDEX_URL}/national/${p.dex_no}`}
-        className="text-accent hover:text-ink text-sm"
-      >
+      <a href={pokedexHref(p)} className="text-accent hover:text-ink text-sm">
         도감에서 보기 →
       </a>
     </>
   )
+}
+
+/** This Pokémon's own look in the Pokédex: its form, a female's look, and shiny or not. */
+function pokedexHref(p: Pokemon): string {
+  const query = new URLSearchParams()
+  if (p.form_slug) query.set('form', p.form_slug)
+  if (p.gender === 'female') query.set('gender', 'female')
+  query.set('shiny', p.is_shiny ? '1' : '0')
+  return `${env.NEXT_PUBLIC_POKEDEX_URL}/national/${p.dex_no}?${query}`
 }
 
 function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: History | null }) {
@@ -262,7 +268,7 @@ function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: Hist
   return (
     <>
       <header className="flex items-center gap-8">
-        <span className="bg-surface-raised grid size-48 flex-none place-items-center rounded-lg">
+        <span className="grid size-48 flex-none place-items-center rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}
           <img src={eggSpriteUrl} alt="알" className="size-24 [image-rendering:pixelated]" />
         </span>

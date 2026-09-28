@@ -4,7 +4,10 @@ import { useState } from 'react'
 
 import { PokemonTile } from '@pokegosu/ui/pokemon'
 
-export type Row = { number: number; name: string; types: string[]; sprite?: string }
+import { useMyDex } from '@/lib/my-dex'
+
+/** id is the species' default form. */
+export type Row = { id: number; number: number; name: string; types: string[]; sprite?: string }
 
 /** A pokedex's tiles, narrowed by name or number and by type, all in the browser. */
 export function DexGrid({
@@ -19,6 +22,7 @@ export function DexGrid({
 }) {
   const [query, setQuery] = useState('')
   const [type, setType] = useState<string | null>(null)
+  const mine = useMyDex()
   const q = query.trim().replace(/^no\.?\s*/i, '')
   const shown = rows.filter(
     (r) =>
@@ -56,16 +60,20 @@ export function DexGrid({
       </div>
       {shown.length > 0 ? (
         <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-          {shown.map((r) => (
-            <li key={r.number} className="grid">
-              <PokemonTile
-                href={`/${dex}/${r.number}`}
-                name={r.name}
-                caption={`No.${String(r.number).padStart(3, '0')}`}
-                sprite={r.sprite}
-              />
-            </li>
-          ))}
+          {shown.map((r) => {
+            const had = mine?.species.get(r.id)
+            return (
+              <li key={r.number} className="grid">
+                <PokemonTile
+                  href={`/${dex}/${r.number}`}
+                  name={r.name}
+                  caption={`No.${String(r.number).padStart(3, '0')}`}
+                  sprite={had?.shinyFront ?? r.sprite}
+                  caught={had?.caught}
+                />
+              </li>
+            )
+          })}
         </ol>
       ) : (
         <p className="text-muted py-12 text-center">찾는 포켓몬이 없습니다</p>

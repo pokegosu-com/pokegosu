@@ -58,7 +58,7 @@ select is_empty($$ select name from pg_temp.callable where anon $$,
 select set_eq($$ select name from pg_temp.callable where authenticated $$,
   array['pending_enrollment', 'approve_enrollment', 'usage',
         'start_game', 'box', 'claim', 'hatch', 'evolve', 'receive_egg', 'receive_ribbon',
-        'set_main', 'set_markings', 'companion_history'],
+        'set_main', 'set_markings', 'companion_history', 'my_dex'],
   'a signed-in person can look at a request, approve it, read usage, and play');
 
 select set_eq($$ select name from pg_temp.callable where service_role and not authenticated $$,
