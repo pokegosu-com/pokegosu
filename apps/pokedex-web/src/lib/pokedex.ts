@@ -23,6 +23,24 @@ export function pokedex() {
   return createClient({ getAll: () => [], setAll: () => {} })
 }
 
+/**
+ * PostgREST gives at most a thousand rows a request, and cuts the rest off
+ * without saying so; the national pokedex outgrows that. The query is asked
+ * a page at a time, so it needs an order.
+ */
+export async function every<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: Error | null }>,
+): Promise<T[]> {
+  const size = 1000
+  const rows: T[] = []
+  for (let from = 0; ; from += size) {
+    const { data, error } = await page(from, from + size - 1)
+    if (error) throw error
+    rows.push(...data!)
+    if (data!.length < size) return rows
+  }
+}
+
 export async function typeNames(): Promise<Map<string, string>> {
   const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
   if (error) throw error

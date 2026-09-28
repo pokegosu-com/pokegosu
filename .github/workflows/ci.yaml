@@ -31,6 +31,11 @@ jobs:
 
       # Builds here only check the code, so they run without production
       # NEXT_PUBLIC_* values. A deploy workflow must never set this.
+      #
+      # pokedex-web's build reads the local database that `supabase:verify`
+      # starts, at the fixed local-development URL and key.
       - run: 'moon ci'
         env:
           SKIP_ENV_VALIDATION: '1'
+          NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321'
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'

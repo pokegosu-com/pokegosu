@@ -3,13 +3,9 @@ import { notFound } from 'next/navigation'
 
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { dexNo, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
+import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
 import { Sprite } from './sprite'
-
-// The pokedex changes with a deploy, which starts the edge's cache afresh; a
-// day is only a fallback.
-export const revalidate = 86400
 
 type Method = {
   trigger: Named & { id: string }
@@ -76,6 +72,20 @@ const STATS = [
   ['speed', '스피드'],
 ] as const
 
+/** Every number the pokedex lists, each built as a file. */
+export async function generateStaticParams({ params }: { params: { dex: string } }) {
+  const rows = await every((from, to) =>
+    pokedex()
+      .from('pokedex_entries')
+      .select('number')
+      .eq('dex', params.dex)
+      .eq('is_default', true)
+      .order('number')
+      .range(from, to),
+  )
+  return rows.map(({ number }) => ({ number: String(number) }))
+}
+
 export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const { dex, number } = await params
   const n = Number(number)
@@ -93,10 +103,14 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     // Every form in this pokedex, only as much as finds the family: follow
     // evolves_from_id, and link each by its number here. A stage this pokedex
     // does not list is left out: Kanto's has no Pichu.
-    db
-      .from('pokedex_entries')
-      .select('number, species:pokedex_species(id, evolves_from_id)')
-      .eq('dex', dex),
+    every((from, to) =>
+      db
+        .from('pokedex_entries')
+        .select('number, species:pokedex_species(id, evolves_from_id)')
+        .eq('dex', dex)
+        .order('species_id')
+        .range(from, to),
+    ),
     // The numbers either side, in the same pokedex.
     db
       .from('pokedex_entries')
@@ -108,7 +122,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     db.from('pokedex_kinds').select('ko_name, en_name').eq('id', dex).maybeSingle(),
     typeNames(),
   ])
-  for (const result of [forms, chain, around, kind]) {
+  for (const result of [forms, around, kind]) {
     if (result.error) throw result.error
   }
   if (!kind.data) notFound()
@@ -117,8 +131,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   if (!shown) notFound()
   const p = shown.species
 
-  const numbers = new Map(chain.data!.map(({ number, species }) => [species.id, number]))
-  const parents = new Map(chain.data!.map(({ species: s }) => [s.id, s.evolves_from_id]))
+  const numbers = new Map(chain.map(({ number, species }) => [species.id, number]))
+  const parents = new Map(chain.map(({ species: s }) => [s.id, s.evolves_from_id]))
   const firstOf = (id: number): number => {
     const parent = parents.get(id)
     return parent ? firstOf(parent) : id

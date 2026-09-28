@@ -1,12 +1,8 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 
-import { ko, pokedex } from '@/lib/pokedex'
+import { every, ko, pokedex } from '@/lib/pokedex'
 
 import { DexGrid } from './grid'
-
-// The pokedex changes with a deploy, which starts the edge's cache afresh; a
-// day is only a fallback.
-export const revalidate = 86400
 
 /** The games' order of types, which the table does not keep. */
 const TYPE_ORDER = [
@@ -31,25 +27,35 @@ const TYPE_ORDER = [
 ]
 const typeRank = (id: string) => TYPE_ORDER.indexOf(id) + 1 || TYPE_ORDER.length + 1
 
+/** Every pokedex, each built as a file. */
+export async function generateStaticParams() {
+  const { data, error } = await pokedex().from('pokedex_kinds').select('id')
+  if (error) throw error
+  return data.map(({ id }) => ({ dex: id }))
+}
+
 export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
   const { dex } = await params
-  // Entries used to live at /25, which meant the national number.
+  // Entries used to live at /25, which meant the national number. No file is
+  // built for one, so the Worker answers it.
   if (/^\d+$/.test(dex)) permanentRedirect(`/national/${dex}`)
 
   const db = pokedex()
-  const [{ data, error }, kind, types] = await Promise.all([
-    db
-      .from('pokedex_entries')
-      .select(
-        'number, species:pokedex_species(ko_name, en_name, type1, type2, front:sprites->>front)',
-      )
-      .eq('dex', dex)
-      .eq('is_default', true)
-      .order('number'),
+  const [data, kind, types] = await Promise.all([
+    every((from, to) =>
+      db
+        .from('pokedex_entries')
+        .select(
+          'number, species:pokedex_species(ko_name, en_name, type1, type2, front:sprites->>front)',
+        )
+        .eq('dex', dex)
+        .eq('is_default', true)
+        .order('number')
+        .range(from, to),
+    ),
     db.from('pokedex_kinds').select('ko_name, en_name').eq('id', dex).maybeSingle(),
     db.from('pokedex_types').select('id, ko_name, en_name'),
   ])
-  if (error) throw error
   if (kind.error) throw kind.error
   if (types.error) throw types.error
   if (!kind.data) notFound()
