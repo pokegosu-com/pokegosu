@@ -149,7 +149,7 @@ export function ShopView() {
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">알</h2>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {eggs.map((s) => (
             <Ware
               key={s.id}
