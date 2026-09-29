@@ -203,8 +203,9 @@ export type Work =
 
 /**
  * A request (의뢰): a Pokémon asking for help with a task of one of its types.
- * The next one, after one is settled or turned down, arrives only after a
- * shift's length of coding, and says nothing of who it is from until then.
+ * The next one after a settled request is up at once; after one turned down,
+ * it arrives only after a shift's length of coding, and says nothing of who
+ * it is from until then.
  */
 export type Workplace = {
   id: string

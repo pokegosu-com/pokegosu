@@ -333,7 +333,7 @@ function Picker({
   )
 }
 
-/** The slot of a request settled or turned down, until the next one arrives. */
+/** The slot of a request turned down, until the next one arrives. */
 function Waiting({ hours, shift }: { hours: number; shift: number }) {
   return (
     <li className="border-line text-muted flex flex-col justify-center gap-3.5 rounded-lg border border-dashed p-5">
