@@ -7,6 +7,7 @@ import { createClient } from '@pokegosu/supabase/client'
 import { Command } from '@pokegosu/ui/command'
 import { PokeGosuIcon } from '@pokegosu/ui/icon'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
+import { Toast } from '@pokegosu/ui/toast'
 
 import { env } from '@/env'
 import { points } from '@/lib/format'
@@ -116,7 +117,11 @@ function Notice({
         <span className="font-mono text-[22px] font-medium tabular-nums">{points(reward)}</span>
       </p>
       {status}
-      <div className="border-line mt-auto flex items-center gap-2 border-t pt-3">{footer}</div>
+      {/* As tall as the picker's button, so the rule sits level across notices
+          whatever the footer holds. */}
+      <div className="border-line mt-auto flex min-h-[42px] items-center gap-2 border-t pt-3 [box-sizing:content-box]">
+        {footer}
+      </div>
     </li>
   )
 }
@@ -243,8 +248,18 @@ function Picker({
   if (!picked) {
     return (
       <p className="text-muted text-xs">
-        보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 파트너가 아니며 다른
-        의뢰를 하고 있지 않은 포켓몬이 갈 수 있습니다.
+        <span
+          className="cursor-help underline decoration-dotted underline-offset-2"
+          title={[
+            '보낼 수 있는 포켓몬',
+            `- Lv.${work.rules.min_work_level} 이상`,
+            '- 파트너가 아님',
+            '- 다른 의뢰를 하고 있지 않음',
+          ].join('\n')}
+        >
+          보낼 수 있는 포켓몬
+        </span>
+        이 없습니다.
       </p>
     )
   }
@@ -318,7 +333,7 @@ function Picker({
   )
 }
 
-/** The slot of a request settled or turned down, until the next one arrives. */
+/** The slot of a request turned down, until the next one arrives. */
 function Waiting({ hours, shift }: { hours: number; shift: number }) {
   return (
     <li className="border-line text-muted flex flex-col justify-center gap-3.5 rounded-lg border border-dashed p-5">
@@ -512,7 +527,7 @@ export function RequestsView() {
       {failure && (
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
-      {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
+      <Toast id={last}>{message}</Toast>
 
       <ul className="grid gap-3 sm:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />

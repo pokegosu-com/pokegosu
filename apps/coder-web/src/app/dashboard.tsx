@@ -23,14 +23,16 @@ import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
 import { UseItemLabel } from './game/item-label'
+import { ActionToasts } from './game/action-toasts'
 import { Gender } from './game/gender'
-import { say } from './game/say'
-import { useGame, type Opening } from './game/use-game'
+import { useGame } from './game/use-game'
 
 type Game = ReturnType<typeof useGame>
 
+// The clear border makes a primary button as tall as a quiet one, so a row of
+// either holds the same height.
 const primary =
-  'bg-accent text-surface rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50'
+  'bg-accent text-surface rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50'
 
 /** A level's worth of climbing takes this long, however many tokens it is. */
 const MS_PER_LEVEL = 350
@@ -43,50 +45,30 @@ function Notice({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** "+18,240 토큰 · Lv.13 → Lv.15": what opening the page put into the partner. */
-function OpeningLine({ opening }: { opening: Opening }) {
-  const levels =
-    opening.level_before !== null && opening.level_after !== opening.level_before
-      ? ` · Lv.${opening.level_before} → Lv.${opening.level_after}`
-      : ''
-  return (
-    <p className="flex items-baseline gap-2 text-sm">
-      <span className="text-accent font-mono font-medium tabular-nums">
-        +{exactTokens(opening.tokens)} 토큰
-      </span>
-      <span className="text-muted">지난 방문 이후{levels}</span>
-    </p>
-  )
-}
-
 /**
- * What the game is waiting for from the partner, as buttons, so it is done
- * from here rather than its own page. Once one is pressed, the line under them
- * says what it did, in place of what opening the page did.
+ * The card's last row: what the game is waiting for from the partner, as
+ * buttons, so it is done from here rather than its own page, then the link to
+ * its page. The link holds the row at a button's height with or without them,
+ * so the card does not move as they come and go.
  */
 function Tasks({
-  box,
-  game,
-  acted,
+  href,
+  climbing,
   children,
 }: {
-  box: Extract<Box, { started: true }>
-  game: Game
-  acted: boolean
+  href: string
+  climbing: boolean
   children: React.ReactNode
 }) {
-  const { last, opening } = game
-  const message = acted && last ? say(box, last.action.fn, last.outcome) : null
   return (
-    <>
-      <div className="flex flex-wrap gap-2 empty:hidden">{children}</div>
-      {message ? (
-        <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>
-      ) : (
-        !acted &&
-        opening?.companion_id === box.main_companion_id && <OpeningLine opening={opening} />
-      )}
-    </>
+    <div className="flex min-h-9.5 flex-wrap items-center gap-2">
+      {/* Hidden while the level is still counting up, so nothing is
+          pressed on a level the bar hasn't reached. */}
+      {!climbing && children}
+      <Link href={href} className="text-accent hover:text-ink ml-auto text-sm">
+        자세히 보기 →
+      </Link>
+    </div>
   )
 }
 
@@ -132,14 +114,10 @@ function PokemonPartner({
   box,
   curve,
   game,
-  acted,
-  onAct,
 }: {
   box: Extract<Box, { started: true }>
   curve: Curve
   game: Game
-  acted: boolean
-  onAct: () => void
 }) {
   const p = box.pokemon.find((c) => c.id === box.main_companion_id)!
   // The claim lands all at once; the partner climbs to it a level at a time,
@@ -162,6 +140,7 @@ function PokemonPartner({
       aria-label="파트너"
       className="border-accent flex items-center gap-8 rounded-lg border p-6"
     >
+      <ActionToasts game={game} level={at.level} />
       <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
       <div className="flex min-w-0 flex-1 flex-col gap-3.5">
         <div className="space-y-1">
@@ -194,85 +173,58 @@ function PokemonPartner({
             size="lg"
           />
         </div>
-        {/* Hidden while the level is still counting up, so nothing is
-            pressed on a level the bar hasn't reached. */}
-        {!climbing && (
-          <Tasks box={box} game={game} acted={acted}>
-            {p.can_evolve && p.evolves_to && (
-              <button
-                type="button"
-                className={primary}
-                disabled={game.busy}
-                onClick={() => {
-                  onAct()
-                  game.act({ fn: 'evolve', companion_id: p.id })
-                }}
-              >
-                {ko(p.evolves_to)}(으)로 진화
-              </button>
-            )}
-            {p.can_receive_egg && (
-              <button
-                type="button"
-                className={primary}
-                disabled={game.busy}
-                onClick={() => {
-                  onAct()
-                  game.act({ fn: 'receive_egg', companion_id: p.id })
-                }}
-              >
-                알 받기
-              </button>
-            )}
-            {p.ribbons_waiting.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className={primary}
-                disabled={game.busy}
-                onClick={() => {
-                  onAct()
-                  game.act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
-                }}
-              >
-                {ko(r)} 받기
-              </button>
-            ))}
-            {usableItems(p, box.bag).map((e) => (
-              <button
-                key={e.item.id}
-                type="button"
-                className={primary}
-                disabled={game.busy}
-                onClick={() => {
-                  onAct()
-                  game.act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })
-                }}
-              >
-                <UseItemLabel item={e.item} />
-              </button>
-            ))}
-          </Tasks>
-        )}
-        <Link href={`/box/${p.id}`} className="text-accent hover:text-ink text-sm">
-          자세히 보기 →
-        </Link>
+        <Tasks href={`/box/${p.id}`} climbing={climbing}>
+          {p.can_evolve && p.evolves_to && (
+            <button
+              type="button"
+              className={primary}
+              disabled={game.busy}
+              onClick={() => game.act({ fn: 'evolve', companion_id: p.id })}
+            >
+              {ko(p.evolves_to)}(으)로 진화
+            </button>
+          )}
+          {p.can_receive_egg && (
+            <button
+              type="button"
+              className={primary}
+              disabled={game.busy}
+              onClick={() => game.act({ fn: 'receive_egg', companion_id: p.id })}
+            >
+              알 받기
+            </button>
+          )}
+          {p.ribbons_waiting.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={primary}
+              disabled={game.busy}
+              onClick={() =>
+                game.act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
+              }
+            >
+              {ko(r)} 받기
+            </button>
+          ))}
+          {usableItems(p, box.bag).map((e) => (
+            <button
+              key={e.item.id}
+              type="button"
+              className={primary}
+              disabled={game.busy}
+              onClick={() => game.act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
+            >
+              <UseItemLabel item={e.item} />
+            </button>
+          ))}
+        </Tasks>
       </div>
     </section>
   )
 }
 
-function EggPartner({
-  box,
-  game,
-  acted,
-  onAct,
-}: {
-  box: Extract<Box, { started: true }>
-  game: Game
-  acted: boolean
-  onAct: () => void
-}) {
+function EggPartner({ box, game }: { box: Extract<Box, { started: true }>; game: Game }) {
   const egg = box.eggs.find((c) => c.id === box.main_companion_id)!
   const { shown, climbing } = useCountUp(egg.tokens, () => 1500)
   return (
@@ -296,26 +248,18 @@ function EggPartner({
           </p>
           <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
         </div>
-        {!climbing && (
-          <Tasks box={box} game={game} acted={acted}>
-            {egg.tokens >= egg.tokens_needed && (
-              <button
-                type="button"
-                className={primary}
-                disabled={game.busy}
-                onClick={() => {
-                  onAct()
-                  game.act({ fn: 'hatch', companion_id: egg.id })
-                }}
-              >
-                부화시키기
-              </button>
-            )}
-          </Tasks>
-        )}
-        <Link href={`/box/${egg.id}`} className="text-accent hover:text-ink text-sm">
-          자세히 보기 →
-        </Link>
+        <Tasks href={`/box/${egg.id}`} climbing={climbing}>
+          {egg.tokens >= egg.tokens_needed && (
+            <button
+              type="button"
+              className={primary}
+              disabled={game.busy}
+              onClick={() => game.act({ fn: 'hatch', companion_id: egg.id })}
+            >
+              부화시키기
+            </button>
+          )}
+        </Tasks>
       </div>
     </section>
   )
@@ -395,10 +339,6 @@ function LastDay({ usage, now }: { usage: Usage; now: Date }) {
 export function Dashboard() {
   const game = useGame()
   const { box, curve, busy, act } = game
-  // Until a button here is pressed, the partner's card says what opening the
-  // page gave it; after, what the button did.
-  const [acted, setActed] = useState(false)
-  const onAct = () => setActed(true)
   const [recent, setRecent] = useState<{ usage: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
@@ -428,11 +368,14 @@ export function Dashboard() {
   }
 
   const nothingYet = recent.usage.hours.length === 0 && BigInt(box.balance) === 0n
+  const partnerIsPokemon = box.started && box.pokemon.some((p) => p.id === box.main_companion_id)
   if (nothingYet && !box.started) return <Empty />
 
   return (
     <>
       {problem && <Notice>{problem}</Notice>}
+      {/* A Pokémon partner's card says them itself, as its bar climbs. */}
+      {!partnerIsPokemon && <ActionToasts game={game} />}
       {!box.started ? (
         <section className="border-line space-y-3 rounded-lg border p-6">
           <p className="text-sm">
@@ -451,10 +394,10 @@ export function Dashboard() {
         </section>
       ) : (
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
-          {box.pokemon.some((p) => p.id === box.main_companion_id) ? (
-            <PokemonPartner box={box} curve={curve} game={game} acted={acted} onAct={onAct} />
+          {partnerIsPokemon ? (
+            <PokemonPartner box={box} curve={curve} game={game} />
           ) : (
-            <EggPartner box={box} game={game} acted={acted} onAct={onAct} />
+            <EggPartner box={box} game={game} />
           )}
           <div className="grid gap-3">
             <Leftover balance={box.balance} />

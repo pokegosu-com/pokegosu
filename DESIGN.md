@@ -84,6 +84,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 | `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in). |
 | `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                                                                                       |
 | `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; `faviconUrl`, the same drawing for each layout's `metadata.icons`; and `CaughtIcon`, the ball alone, thin, for `CaughtMarks`.                           |
+| `@pokegosu/ui/toast`     | `Toast`: what just happened, for four seconds just under the top bar, in `surface` on an `ink` fill, so nothing on the page moves. Two at once stack, and each goes four seconds after it came.                                                |
 
 ## Behaviour
 
@@ -102,7 +103,8 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 
 - The action the game is waiting for is the primary button; housekeeping, such as 파트너로, is quiet.
 - Nothing irreversible happens in one press. Retiring a device asks inside its row; a page never uses the browser's `confirm()`.
-- A button disables while its request is out, and the page updates in place when it lands. A failure is said under the buttons and leaves things as they were.
+- Buttons that come and go share a row with something that stays, such as a link or the marks, so the row keeps its height and the page does not move. Never hold the place with blank space.
+- A button disables while its request is out, and the page updates in place when it lands. What it did is said in a `Toast`, never in a line that pushes the page down. A failure is said under the buttons and leaves things as they were.
 - Buttons stay hidden while a level is still counting up, so nothing is pressed on a level the bar has not reached.
 
 **Reading.** Pair every bar with the number it draws. Right-align numbers in lists. A Pokémon's name links to its page wherever it appears.
