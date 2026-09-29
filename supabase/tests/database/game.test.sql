@@ -93,14 +93,15 @@ select is(
     where g.egg_kind = 'hoenn' and s.slug in ('roselia', 'budew', 'chimecho', 'chingling')),
   'roselia chimecho',
   'where a Hoenn egg keeps what grows from them, as Ruby and Sapphire''s pokedex lists no baby of theirs');
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'sinnoh'), 72,
-  'a Sinnoh egg holds the first form of every family as Diamond and Pearl''s pokedex lists it');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'sinnoh'), 102,
+  'a Sinnoh egg holds the first form of every family as the Sinnoh pokedex lists it');
 select is(
   (select string_agg(s.slug, ' ' order by s.id)
      from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
-    where g.egg_kind = 'sinnoh' and s.slug in ('zubat', 'bulbasaur', 'feebas', 'turtwig', 'giratina-altered')),
-  'zubat feebas turtwig',
-  'Generation IV''s and those from before that Diamond and Pearl''s pokedex lists');
+    where g.egg_kind = 'sinnoh'
+      and s.slug in ('zubat', 'bulbasaur', 'magnemite', 'feebas', 'turtwig', 'rotom', 'giratina-altered', 'arceus-normal')),
+  'zubat magnemite feebas turtwig rotom giratina-altered arceus-normal',
+  'Generation IV''s, those from before that Platinum''s pokedex lists, and the legendaries and mythicals it leaves out');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');

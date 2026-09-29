@@ -10,12 +10,12 @@
 //
 // A migration that has been applied never changes, so each run that changes
 // what is included writes a new one, named in MIGRATION below, and leaves the
-// earlier ones alone. It upserts every row rather than inserting the new
-// ones: a later generation reaches back into an earlier one, as Pichu does
-// into Pikachu's row, and the newest migration always says all of it.
+// earlier ones alone. It upserts only the rows that differ from what the
+// earlier ones wrote, a changed row as well as a new one: a later generation
+// reaches back into an earlier one, as Pichu does into Pikachu's row.
 
 import { createHash } from 'node:crypto'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 /** PokeAPI/sprites at the commit every hash in the manifest was taken from. */
@@ -85,7 +85,7 @@ const LANGUAGES = ['ko', 'en']
  */
 const POKEDEXES: Record<
   string,
-  { apiId: number; names: Record<string, string>; versions: string[] }
+  { apiId: number; names: Record<string, string>; versions: string[]; appended?: number[] }
 > = {
   national: { apiId: 1, names: { ko: '전국도감', en: 'National Pokédex' }, versions: [] },
   kanto: {
@@ -108,18 +108,23 @@ const POKEDEXES: Record<
     names: { ko: '호연도감', en: 'Hoenn Pokédex' },
     versions: ['omega-ruby', 'alpha-sapphire', 'emerald', 'ruby', 'sapphire'],
   },
-  // Diamond and Pearl's, not Platinum's, which lists 59 more, as the others
-  // are the first games'.
+  // Platinum's, not Diamond and Pearl's, unlike the others, which are the
+  // first games': those leave out 26 Generation IV species, Magnezone and
+  // Togekiss among them, where Platinum leaves out 7. Those 7, all legendary
+  // or mythical, are appended after its last number in national order, so
+  // every Generation I to IV species is in its own region's pokedex.
   sinnoh: {
-    apiId: 5,
+    apiId: 6,
     names: { ko: '신오도감', en: 'Sinnoh Pokédex' },
     versions: ['brilliant-diamond', 'shining-pearl', 'platinum', 'diamond', 'pearl'],
+    // Heatran, Regigigas, Cresselia, Phione, Darkrai, Shaymin and Arceus.
+    appended: [485, 486, 488, 489, 491, 492, 493],
   },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260928120001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260929130000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -494,17 +499,45 @@ function sql(value: unknown): string {
 }
 
 /** Rows into a table, each replacing the one already under its key. */
-function upsert(table: string, columns: string[], key: string[], values: string[]): string {
+/**
+ * Every row the earlier generated migrations wrote, under its table and
+ * columns. A row written with other columns, before one was added, counts as
+ * not written.
+ */
+async function writtenBefore(): Promise<Set<string>> {
+  const dir = new URL('./', `file://${MIGRATION}`)
+  const earlier = (await readdir(dir))
+    .filter((f) => f.endsWith('_pokedex_data.sql') && f < MIGRATION.split('/').pop()!)
+    .sort()
+  const written = new Set<string>()
+  for (const file of earlier) {
+    const text = await readFile(new URL(file, dir), 'utf8')
+    for (const [, head, values] of text.matchAll(
+      /^(insert into .*? values)\n([\s\S]*?)\non conflict/gm,
+    )) {
+      for (const row of values.split(/,\n(?=  \()/)) written.add(`${head}\n${row}`)
+    }
+  }
+  return written
+}
+
+/** An upsert of the rows not written before, or nothing if there are none. */
+function upsert(
+  written: Set<string>,
+  table: string,
+  columns: string[],
+  key: string[],
+  all: string[],
+): string[] {
+  const head = `insert into public.${table} (${columns.join(', ')}) values`
+  const values = all.filter((v) => !written.has(`${head}\n${v}`))
+  if (values.length === 0) return []
   const rest = columns.filter((c) => !key.includes(c))
   const onConflict =
     rest.length === 0
       ? 'do nothing'
       : `do update set\n  ${rest.map((c) => `${c} = excluded.${c}`).join(',\n  ')}`
-  return [
-    `insert into public.${table} (${columns.join(', ')}) values`,
-    values.join(',\n'),
-    `on conflict (${key.join(', ')}) ${onConflict};`,
-  ].join('\n')
+  return [head, values.join(',\n'), `on conflict (${key.join(', ')}) ${onConflict};`, '']
 }
 
 async function sha256Of(url: string): Promise<string> {
@@ -683,11 +716,18 @@ async function main() {
     isDefault: boolean
     description: Record<string, string>
   }[] = []
-  for (const [dex, { apiId, versions }] of Object.entries(POKEDEXES)) {
+  for (const [dex, { apiId, versions, appended = [] }] of Object.entries(POKEDEXES)) {
     const listed = await get<{
-      pokemon_entries: { entry_number: number; pokemon_species: Named }[]
+      pokemon_entries: { entry_number: number; pokemon_species: { url: string } }[]
     }>(`pokedex/${apiId}`)
-    for (const entry of listed.pokemon_entries) {
+    const last = Math.max(...listed.pokemon_entries.map((e) => e.entry_number))
+    for (const entry of [
+      ...listed.pokemon_entries,
+      ...appended.map((id, i) => ({
+        entry_number: last + 1 + i,
+        pokemon_species: { url: `pokemon-species/${id}/` },
+      })),
+    ]) {
       const forms = byDexNo.get(idOf(entry.pokemon_species))
       if (!forms) continue
       const description = localise(
@@ -804,6 +844,7 @@ async function main() {
     }
   }
 
+  const written = await writtenBefore()
   const out = [
     '-- Generated by apps/pokedex-web/scripts/generate.ts from PokéAPI. Do not edit;',
     '-- change the script and run it again.',
@@ -811,11 +852,13 @@ async function main() {
     `-- ${POKEAPI_NOTICE}`,
     '-- The licence is in LICENSES/PokeAPI-BSD-3-Clause.txt.',
     '--',
-    `-- ${rows.length} forms: every form up to national No.${LAST_DEX_NO} that its games had,`,
-    `-- and their entries in the ${Object.keys(POKEDEXES).join(', ')} pokedexes. Every row is`,
-    '-- upserted, so this says all of it whatever the migrations before it said.',
+    '-- With the earlier generated migrations, it says every form up to national',
+    `-- No.${LAST_DEX_NO} that its games had, ${rows.length} of them, and their entries in the`,
+    `-- ${Object.keys(POKEDEXES).join(', ')} pokedexes. Only the rows that differ from what`,
+    '-- those wrote are here.',
     '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_types',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -823,15 +866,15 @@ async function main() {
         (id) => `  (${sql(id)}, ${sql(typeNames.get(id)!.ko)}, ${sql(typeNames.get(id)!.en)})`,
       ),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_growth_rates',
       ['id'],
       ['id'],
       rates.map((r) => `  (${sql(r)})`),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_experience_levels',
       ['growth_rate', 'level', 'exp'],
       ['growth_rate', 'level'],
@@ -842,8 +885,8 @@ async function main() {
           .map((l) => `  (${sql(rate)}, ${l.level}, ${l.experience})`),
       ),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_evolution_triggers',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -851,8 +894,8 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_items',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -860,8 +903,8 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_moves',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -869,8 +912,8 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_locations',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -878,8 +921,8 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_evolution_methods',
       [
         'id',
@@ -908,8 +951,8 @@ async function main() {
             ` ${sql(m.location)}, ${sql(m.partySpecies)})`,
         ),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_species',
       [
         'id',
@@ -954,8 +997,8 @@ async function main() {
         ].join('\n'),
       ),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_kinds',
       ['id', 'ko_name', 'en_name'],
       ['id'],
@@ -963,8 +1006,8 @@ async function main() {
         ([id, { names }]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`,
       ),
     ),
-    '',
-    upsert(
+    ...upsert(
+      written,
       'pokedex_entries',
       ['dex', 'number', 'species_id', 'is_default', 'ko_description', 'en_description'],
       ['dex', 'species_id'],
@@ -973,7 +1016,6 @@ async function main() {
           `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, ${e.isDefault}, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
       ),
     ),
-    '',
   ]
   await writeFile(MIGRATION, out.join('\n'))
 
