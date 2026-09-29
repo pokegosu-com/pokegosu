@@ -7,8 +7,6 @@ import { VersionFooter } from '@pokegosu/ui/version-footer'
 
 import { DEXES, ko, pokedex } from '@/lib/pokedex'
 
-import { HandleGate } from './handle-gate'
-
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -34,7 +32,6 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <Fonts />
       </head>
       <body className="bg-surface text-ink flex min-h-full flex-col antialiased">
-        <HandleGate />
         <AppHeader app="pokedex" name="PokeGosu Pokédex" sections={sections} />
         {children}
         <p className="text-muted max-w-wide mx-auto px-6 pb-2 text-center text-xs">
