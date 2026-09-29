@@ -14,7 +14,7 @@ func newAuthCmd() *cobra.Command {
 
 A machine is enrolled once, whatever services it goes on to use.`,
 	}
-	cmd.AddCommand(newLoginCmd())
+	cmd.AddCommand(newLoginCmd(), newStatusCmd())
 	return cmd
 }
 
@@ -44,4 +44,20 @@ a new machine, and the old one keeps the history it earned.`,
 	cmd.Flags().StringVar(&opts.DeviceName, "device-name", "",
 		"call this machine `NAME` in the web (default: the hostname)")
 	return cmd
+}
+
+func newStatusCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "status",
+		Short: "Say whether this machine is enrolled, and with what",
+		Long: `Says whether this machine is enrolled: its name, the deployment it is
+enrolled with, and where its settings are. The key is never printed.
+
+It reads the settings alone and asks no server. It fails when this machine is
+not enrolled, so a script can tell from the exit status.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return auth.Status(cmd.OutOrStdout())
+		},
+	}
 }

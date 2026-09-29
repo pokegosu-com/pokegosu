@@ -46,6 +46,8 @@ enrolled "laptop" with https://pokegosu.com
 
 Nothing secret is typed or pasted. The code is worth little — ten minutes, one use, and only a signed-in person can approve it — and the key is handed to the machine that asked, never through the browser.
 
+`pokegosu auth status` says whether this machine is enrolled, with what, and where its settings are, from the settings alone. It never prints the key, and it fails when the machine is not enrolled, so a script can tell from the exit status.
+
 For a deployment other than the default, give its address: `pokegosu auth login --url https://pokegosu.example.com`. The CLI reads `/.well-known/pokegosu.json` there to find the rest, so no backend address has to be known or typed.
 
 Then have your coding agent run the sync:

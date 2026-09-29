@@ -11,9 +11,10 @@ func TestTheTreeHasTheWordsPeopleAreToldToType(t *testing.T) {
 	root := newRoot()
 
 	cases := map[string][]string{
-		"auth login": {"url", "device-name"},
-		"coder scan": {"since", "format", "path", "provider"},
-		"coder sync": {"all", "quiet", "jsonl", "no-fail", "min-interval", "path", "provider"},
+		"auth login":  {"url", "device-name"},
+		"auth status": nil,
+		"coder scan":  {"since", "format", "path", "provider"},
+		"coder sync":  {"all", "quiet", "jsonl", "no-fail", "min-interval", "path", "provider"},
 		// "coder hook install" writes "coder sync --jsonl --no-fail
 		// --min-interval" into agents' settings, so renaming any of those
 		// breaks every hook already installed.
