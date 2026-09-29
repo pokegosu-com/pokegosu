@@ -9,18 +9,10 @@ import { createClient } from '@pokegosu/supabase/client'
  * The name at the top of the account page, changed where it stands. Onboarding
  * called it changeable later; this is later. The handle beside it is not.
  */
-export function DisplayName({
-  userId,
-  displayName,
-  username,
-}: {
-  userId: string
-  displayName: string | null
-  username: string
-}) {
+export function DisplayName({ userId, displayName }: { userId: string; displayName: string }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
-  const [name, setName] = useState(displayName ?? '')
+  const [name, setName] = useState(displayName)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +20,7 @@ export function DisplayName({
     event.preventDefault()
     setSaving(true)
     setError(null)
-    // Cleared, the handle stands in, as it does before a name is ever set.
+    // Cleared, the database names them after the handle again.
     const { error: saveError } = await createClient()
       .from('profiles')
       .update({ display_name: name.trim() || null })
@@ -45,7 +37,7 @@ export function DisplayName({
   if (!editing) {
     return (
       <div className="flex items-center gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{displayName ?? username}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{displayName}</h1>
         <button
           type="button"
           aria-label="이름 변경"
@@ -84,7 +76,7 @@ export function DisplayName({
         <button
           type="button"
           onClick={() => {
-            setName(displayName ?? '')
+            setName(displayName)
             setEditing(false)
           }}
           className="text-muted text-sm"

@@ -19,7 +19,8 @@ function messageFor(code: string | undefined, fallback: string) {
   }
 }
 
-export function OnboardingForm({ userId }: { userId: string }) {
+/** returnTo is already checked by the page; it is only carried from here. */
+export function OnboardingForm({ userId, returnTo }: { userId: string; returnTo: string | null }) {
   const router = useRouter()
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -34,7 +35,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
     const supabase = createClient()
     const { error: saveError } = await supabase
       .from('profiles')
-      .update({ username, display_name: displayName || null })
+      // Left blank, the database names them after the handle.
+      .update({ username, display_name: displayName.trim() || null })
       .eq('id', userId)
 
     if (saveError) {
@@ -44,6 +46,11 @@ export function OnboardingForm({ userId }: { userId: string }) {
       return
     }
 
+    // Another app is another site, out of the router's reach.
+    if (returnTo) {
+      window.location.replace(returnTo)
+      return
+    }
     router.replace('/')
     router.refresh()
   }
@@ -53,6 +60,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
       <div className="space-y-4">
         <p className="border-line-strong rounded-md border px-4 py-3 text-sm">
           핸들을 <strong>@{username}</strong> 으로 정합니다.
+          <br />
+          표시 이름은 <strong>{displayName.trim() || `@${username}`}</strong> 입니다.
           <br />
           <span className="text-muted">한 번 정하면 변경할 수 없습니다.</span>
         </p>
@@ -104,7 +113,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="앨리스"
+          maxLength={100}
+          placeholder={username ? `@${username}` : '비우면 핸들과 같습니다'}
           className="border-line-strong w-full rounded-md border px-3 py-2 text-sm"
         />
       </label>

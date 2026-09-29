@@ -36,6 +36,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login)
   }
 
+  // Choosing a handle is the account app's too, and comes before anything
+  // here: a session alone is not yet a trainer.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.username) {
+    const onboarding = new URL('/onboarding', env.NEXT_PUBLIC_ACCOUNT_URL)
+    onboarding.searchParams.set('next', request.url)
+    return NextResponse.redirect(onboarding)
+  }
+
   return response
 }
 
