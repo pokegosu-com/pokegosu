@@ -445,7 +445,7 @@ function RequestNotice({
       reward={offered}
       status={
         <p className="text-muted text-xs">
-          아직 아무도 오지 않았다 ·{' '}
+          도와줄 포켓몬을 기다리고 있다 ·{' '}
           <button
             type="button"
             className="text-accent hover:text-ink"
