@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(35);
+select plan(37);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -26,8 +26,17 @@ select is((select number from public.pokedex_entries e join public.pokedex_speci
             where e.dex = 'johto' and s.slug = 'pikachu'), 22::smallint, 'Pikachu is Johto''s No.22');
 select is((select count(*)::int from public.pokedex_entries where dex = 'hoenn' and is_default), 202,
   'and Hoenn''s 202, from Generation III and before');
-select is((select count(*)::int from public.pokedex_entries where dex = 'sinnoh' and is_default), 151,
-  'and Diamond and Pearl''s 151, from Generation IV and before');
+select is((select count(*)::int from public.pokedex_entries where dex = 'sinnoh' and is_default), 217,
+  'and Platinum''s 210, from Generation IV and before, with the 7 legendaries and mythicals it leaves out after them');
+select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+            where e.dex = 'sinnoh' and s.slug = 'arceus-normal'), 217::smallint, 'Arceus is Sinnoh''s last, No.217');
+select is(
+  (select count(*)::int from public.pokedex_species s
+    where s.form_of is null
+      and not exists (select 1 from public.pokedex_entries e
+                       where e.species_id = s.id
+                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh'])[s.generation])),
+  0, 'every species is in its own generation''s regional pokedex');
 
 select isnt(
   (select ko_description from public.pokedex_entries where dex = 'national' and number = 6),
