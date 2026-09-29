@@ -201,17 +201,16 @@ export type Work =
       pokemon: Worker[]
     }
 
-/** A request (의뢰): a Pokémon asking for help with a task of one of its types. */
+/**
+ * A request (의뢰): a Pokémon asking for help with a task of one of its types.
+ * The next one, after one is settled or turned down, arrives only after a
+ * shift's length of coding, and says nothing of who it is from until then.
+ */
 export type Workplace = {
   id: string
   slot: number
-  /** The Pokémon it is for, as the pokedex has it. */
-  client: { species_id: number; sprites: Sprites } & Named
-  /** What it asks help with: 터널 파기, 디버깅. */
-  task: { id: string } & Named
-  types: ({ id: string } & Named)[]
-  /** Active hours since it opened, which a reroll waits on. */
-  hours_open: number
+  /** Active hours until the next request arrives; 0 once it has. */
+  hours_to_arrive: number
   can_reroll: boolean
   worker: {
     companion_id: string
@@ -222,7 +221,17 @@ export type Workplace = {
     points: number
     can_settle: boolean
   } | null
-}
+} & (
+  | {
+      arrived: true
+      /** The Pokémon it is for, as the pokedex has it. */
+      client: { species_id: number; sprites: Sprites } & Named
+      /** What it asks help with: 터널 파기, 디버깅. */
+      task: { id: string } & Named
+      types: ({ id: string } & Named)[]
+    }
+  | { arrived: false; client: null; task: null; types: null }
+)
 
 /** A Pokémon that may work, and what each workplace would pay it for a shift. */
 export type Worker = Pick<

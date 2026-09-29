@@ -10,7 +10,7 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { env } from '@/env'
 import { points } from '@/lib/format'
-import { aptitudeLine, ko, spriteUrl, type Work, type Workplace } from '@/lib/game'
+import { aptitudeLine, ko, spriteUrl, type Named, type Work, type Workplace } from '@/lib/game'
 
 import type { Outcome } from '../game/use-game'
 import { useWork, type WorkAction } from '../game/use-work'
@@ -49,7 +49,7 @@ function say(action: WorkAction, o: Outcome): string | null {
         ? `${points(Number(o.points))} 와 보너스 ${points(Number(o.bonus))} 를 받았다!`
         : `${points(Number(o.points))} 를 받았다!`
     case 'reroll:rerolled':
-      return '새 의뢰가 들어왔다.'
+      return '의뢰를 거절했다.'
     case 'assign:assigned':
       return '의뢰를 하러 떠났다.'
     default:
@@ -146,7 +146,7 @@ function Progress({
   )
 }
 
-function Chips({ types }: { types: Workplace['types'] }) {
+function Chips({ types }: { types: ({ id: string } & Named)[] }) {
   return (
     <>
       {types.map((t) => (
@@ -317,6 +317,24 @@ function Picker({
   )
 }
 
+/** The slot of a request settled or turned down, until the next one arrives. */
+function Waiting({ hours, shift }: { hours: number; shift: number }) {
+  return (
+    <li className="border-line text-muted flex flex-col justify-center gap-3.5 rounded-lg border border-dashed p-5">
+      <span className="text-xs">다음 의뢰</span>
+      <span className="text-ink text-lg font-semibold tracking-tight">
+        <N>{hours}</N>시간 뒤에 온다
+      </span>
+      <Progress
+        left="코딩하는 동안 시간이 흐른다"
+        value={shift - hours}
+        max={shift}
+        label="다음 의뢰까지"
+      />
+    </li>
+  )
+}
+
 function RequestNotice({
   place,
   work,
@@ -329,11 +347,12 @@ function RequestNotice({
   act: Act
 }) {
   const shift = work.rules.shift_hours
+  const [offered, setOffered] = useState(0)
+  if (!place.arrived) return <Waiting hours={place.hours_to_arrive} shift={shift} />
   const client = place.client
   const worker = place.worker
     ? work.pokemon.find((p) => p.id === place.worker!.companion_id)
     : undefined
-  const [offered, setOffered] = useState(0)
 
   const who = (
     <>
@@ -427,20 +446,14 @@ function RequestNotice({
       status={
         <p className="text-muted text-xs">
           아직 아무도 오지 않았다 ·{' '}
-          {place.can_reroll ? (
-            <button
-              type="button"
-              className="text-accent hover:text-ink"
-              disabled={busy}
-              onClick={() => act({ fn: 'reroll', workplace_id: place.id })}
-            >
-              다른 의뢰 찾기
-            </button>
-          ) : (
-            <>
-              <N>{shift - Math.min(place.hours_open, shift)}</N>시간 뒤 바꿀 수 있다
-            </>
-          )}
+          <button
+            type="button"
+            className="text-accent hover:text-ink"
+            disabled={busy}
+            onClick={() => act({ fn: 'reroll', workplace_id: place.id })}
+          >
+            거절하기
+          </button>
         </p>
       }
       footer={<Picker place={place} work={work} busy={busy} act={act} onPick={setOffered} />}

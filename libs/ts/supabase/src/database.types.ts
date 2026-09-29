@@ -558,8 +558,8 @@ export type Database = {
           assigned_at: string | null
           client_id: number
           companion_id: string | null
+          emptied_at: string | null
           id: string
-          opened_at: string
           slot: number
           task_id: string
           user_id: string
@@ -568,8 +568,8 @@ export type Database = {
           assigned_at?: string | null
           client_id: number
           companion_id?: string | null
+          emptied_at?: string | null
           id?: string
-          opened_at?: string
           slot: number
           task_id: string
           user_id: string
@@ -578,8 +578,8 @@ export type Database = {
           assigned_at?: string | null
           client_id?: number
           companion_id?: string | null
+          emptied_at?: string | null
           id?: string
-          opened_at?: string
           slot?: number
           task_id?: string
           user_id?: string
@@ -1308,6 +1308,10 @@ export type Database = {
         Returns: Json
       }
       replace_workplace: { Args: { workplace_id: string }; Returns: undefined }
+      request_arrived: {
+        Args: { emptied_at: string; owner: string }
+        Returns: boolean
+      }
       reroll: { Args: { workplace_id: string }; Returns: Json }
       roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }

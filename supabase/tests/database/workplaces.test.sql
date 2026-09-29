@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(62);
+select plan(67);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -152,13 +152,22 @@ select is(pg_temp.boxed((select machop from mon)) ->> 'workplace_id', pg_temp.wo
 -- Settling and rerolling
 -- ------------------------------------------------------------
 select is(public.settle(pg_temp.workplace(1)), '{"outcome": "not_ready"}'::jsonb, 'a shift is not done at once');
-select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "not_ready"}'::jsonb, 'nor can a workplace be swapped');
+select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "rerolled"}'::jsonb,
+  'a request can be turned down as soon as it is up');
+select is(public.work() -> 'workplaces' -> 1,
+  jsonb_build_object('id', pg_temp.workplace(2), 'slot', 2, 'arrived', false, 'hours_to_arrive', 8,
+                     'client', null, 'task', null, 'types', null, 'can_reroll', false, 'worker', null),
+  'and the next one is 8 hours away, saying nothing of who it is from');
+select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"outcome": "not_arrived"}'::jsonb,
+  'nobody can be sent to it before it arrives');
+select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "not_arrived"}'::jsonb, 'nor can it be turned down');
 
 reset role;
 select pg_temp.work_hours(1, 7);
 select pg_temp.as_person();
 select is(public.work() -> 'workplaces' -> 0 -> 'worker' -> 'hours', '7'::jsonb, 'hours are the hours with usage');
 select is(public.settle(pg_temp.workplace(1)), '{"outcome": "not_ready"}'::jsonb, 'seven is not a shift');
+select is(public.work() -> 'workplaces' -> 1 -> 'hours_to_arrive', '1'::jsonb, 'the next request is an hour away');
 
 reset role;
 select pg_temp.work_hours(0, 0);
@@ -169,14 +178,14 @@ select pg_temp.as_person();
 select is(public.work() -> 'workplaces' -> 0 -> 'worker' -> 'hours', '8'::jsonb,
   'the hour it was sent in counts, and an hour two agents worked in counts once');
 select ok((public.work() -> 'workplaces' -> 0 -> 'worker' ->> 'can_settle')::boolean, 'eight is a shift');
+select ok((public.work() -> 'workplaces' -> 1 ->> 'arrived')::boolean, 'and the next request has arrived');
+select ok(public.work() -> 'workplaces' -> 1 -> 'client' <> 'null'::jsonb, 'saying who it is from');
 
 select is(public.settle(pg_temp.workplace(1)), '{"outcome": "settled", "points": 160}'::jsonb, 'settling pays the shift');
 select is((public.work() ->> 'points')::int, 160, 'into the points');
 select is(public.work() -> 'workplaces' -> 0 -> 'worker', 'null'::jsonb, 'and the workplace becomes a new one');
 select is(pg_temp.boxed((select machop from mon)) -> 'workplace_id', 'null'::jsonb, 'with its worker back');
 
-select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "rerolled"}'::jsonb,
-  'an empty workplace can be swapped once it has stood a shift');
 select public.assign(pg_temp.workplace(3), (select rattata from mon));
 select is(public.reroll(pg_temp.workplace(3)), '{"outcome": "occupied"}'::jsonb, 'but not with someone at it');
 

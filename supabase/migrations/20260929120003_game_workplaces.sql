@@ -174,8 +174,13 @@ insert into public.coder_request_tasks (id, type, ko_name, en_name) values
 -- pokedex, client_id, asks for help with task_id, and the work wants its
 -- types.
 --
--- opened_at starts the clock for a reroll, assigned_at the worker's shift. A
--- Pokémon works at one workplace at a time.
+-- A request can be rerolled as soon as it is up, but the next one, after a
+-- reroll or a settled shift, only arrives once the person has coded a
+-- shift's length since: emptied_at is when the last one left, and null for
+-- the first, which is up from the start. The next client is drawn when the
+-- last leaves and kept hidden until it arrives, as an egg keeps what it
+-- holds. assigned_at starts the worker's shift. A Pokémon works at one
+-- workplace at a time.
 -- ============================================================
 create table public.coder_workplaces (
   id           uuid primary key default gen_random_uuid(),
@@ -183,7 +188,7 @@ create table public.coder_workplaces (
   slot         smallint not null check (slot > 0),
   client_id    integer not null references public.pokedex_species,
   task_id      text not null references public.coder_request_tasks,
-  opened_at    timestamptz not null default now(),
+  emptied_at   timestamptz,
   companion_id uuid unique,
   assigned_at  timestamptz,
   unique (user_id, slot),
@@ -372,7 +377,19 @@ begin
 end;
 $$;
 
--- Turns a workplace into the next one, with nobody at it.
+-- Whether a workplace's request is up: the first always, the next once a
+-- shift's length of active hours has passed since the last one left.
+create function public.request_arrived(owner uuid, emptied_at timestamptz)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select emptied_at is null
+      or public.active_hours(owner, emptied_at) >= (select g.shift_hours from public.coder_settings g);
+$$;
+
+-- Turns a workplace into the next one, with nobody at it, to arrive later.
 create function public.replace_workplace(workplace_id uuid)
 returns void
 language plpgsql
@@ -383,7 +400,7 @@ declare
   client integer := public.roll_client();
 begin
   update public.coder_workplaces w
-     set client_id = client, task_id = public.roll_task(client), opened_at = now(),
+     set client_id = client, task_id = public.roll_task(client), emptied_at = now(),
          companion_id = null, assigned_at = null
    where w.id = replace_workplace.workplace_id;
 end;
@@ -476,18 +493,23 @@ $$;
 --      "rules": {"points_per_hour", "shift_hours", "min_work_level",
 --                "bonus_every_hours", "bonus_points"},
 --      "trainer": {"name", "hours", "hours_paid", "points_waiting", "hours_to_bonus"},
---      "workplaces": [{"id", "slot", "client": {"species_id", "ko_name", "en_name", "sprites"},
---                      "task": {"id", "ko_name", "en_name"},
---                      "types": [{"id", "ko_name", "en_name"}],
---                      "hours_open", "can_reroll",
+--      "workplaces": [{"id", "slot", "arrived", "hours_to_arrive",
+--                      "client": {"species_id", "ko_name", "en_name", "sprites"} | null,
+--                      "task": {"id", "ko_name", "en_name"} | null,
+--                      "types": [{"id", "ko_name", "en_name"}] | null,
+--                      "can_reroll",
 --                      "worker": null | {"companion_id", "hours", "aptitude", "points", "can_settle"}}],
 --      "pokemon": [{"id", "species_id", "ko_name", "en_name", "sprites", "is_shiny", "gender", "level",
 --                   "types", "workplace_id",
 --                   "offers": [{"workplace_id", "aptitude", "points"}]}]}
 --   → {"started": false}
 --
--- pokemon is every Pokémon that may work, with what each workplace would pay
--- it for a shift, so the screen can say how well it suits one before it goes.
+-- A request not yet arrived says how many active hours it has to go, and
+-- nothing of who it is from.
+--
+-- pokemon is every Pokémon that may work, with what each request that is up
+-- would pay it for a shift, so the screen can say how well it suits one
+-- before it goes.
 -- A worker's hours stop counting at a shift's length; the rest wait for the
 -- next one.
 -- ============================================================
@@ -537,15 +559,19 @@ begin
       select jsonb_agg(jsonb_build_object(
                'id', w.id,
                'slot', w.slot,
-               'client', jsonb_build_object('species_id', k.id, 'ko_name', k.ko_name, 'en_name', k.en_name,
-                                            'sprites', k.sprites),
-               'task', (select jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
-                          from public.coder_request_tasks t where t.id = w.task_id),
-               'types', (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
-                                          order by t.id = k.type2)
-                           from public.pokedex_types t where t.id in (k.type1, k.type2)),
-               'hours_open', open.hours,
-               'can_reroll', w.companion_id is null and open.hours >= g.shift_hours,
+               'arrived', up.arrived,
+               'hours_to_arrive', case when up.arrived then 0 else g.shift_hours - waited.hours end,
+               'client', case when up.arrived then
+                   jsonb_build_object('species_id', k.id, 'ko_name', k.ko_name, 'en_name', k.en_name,
+                                      'sprites', k.sprites) end,
+               'task', case when up.arrived then
+                   (select jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
+                      from public.coder_request_tasks t where t.id = w.task_id) end,
+               'types', case when up.arrived then
+                   (select jsonb_agg(jsonb_build_object('id', t.id, 'ko_name', t.ko_name, 'en_name', t.en_name)
+                                     order by t.id = k.type2)
+                      from public.pokedex_types t where t.id in (k.type1, k.type2)) end,
+               'can_reroll', up.arrived and w.companion_id is null,
                'worker', case when w.companion_id is not null then jsonb_build_object(
                    'companion_id', w.companion_id,
                    'hours', least(shift.hours, g.shift_hours),
@@ -556,7 +582,8 @@ begin
         from public.coder_workplaces w
         join public.pokedex_species k on k.id = w.client_id
         left join public.coder_companions c on c.id = w.companion_id
-        cross join lateral (select public.active_hours(caller, w.opened_at) as hours) open
+        cross join lateral (select public.active_hours(caller, w.emptied_at) as hours) waited
+        cross join lateral (select public.request_arrived(caller, w.emptied_at) as arrived) up
         cross join lateral (select public.active_hours(caller, w.assigned_at) as hours) shift
        where w.user_id = caller), '[]'::jsonb),
     'pokemon', coalesce((
@@ -580,7 +607,7 @@ begin
                                  order by w.slot)
                             from public.coder_workplaces w
                             join public.pokedex_species k on k.id = w.client_id
-                           where w.user_id = caller))
+                           where w.user_id = caller and public.request_arrived(caller, w.emptied_at)))
              order by c.level desc, c.hatched_at)
         from public.coder_companions c
         join public.pokedex_species p on p.id = c.species_id
@@ -597,6 +624,7 @@ $$;
 --   → {"outcome": "too_low"}     under min_work_level, or still an egg
 --   → {"outcome": "occupied"}    someone is already there
 --   → {"outcome": "working"}     it is at another workplace
+--   → {"outcome": "not_arrived"} the next request is not up yet
 --   → {"outcome": "not_found"}
 --
 -- Once sent, it stays until its shift is settled: there is no calling it
@@ -618,6 +646,9 @@ begin
    where w.id = assign.workplace_id and w.user_id = caller for update;
   if pokemon.id is null or place.id is null then
     return jsonb_build_object('outcome', 'not_found');
+  end if;
+  if not public.request_arrived(caller, place.emptied_at) then
+    return jsonb_build_object('outcome', 'not_arrived');
   end if;
   if place.companion_id is not null then
     return jsonb_build_object('outcome', 'occupied');
@@ -643,10 +674,12 @@ $$;
 --   → {"outcome": "settled", "points": 172}
 --   → {"outcome": "not_ready"} | {"outcome": "empty"} | {"outcome": "not_found"}
 --
---   reroll {"workplace_id"}: nobody is there, and it has stood a shift's
---   length; swap it for another.
+--   reroll {"workplace_id"}: nobody is there; turn it down, and wait for the
+--   next.
 --   → {"outcome": "rerolled"}
---   → {"outcome": "not_ready"} | {"outcome": "occupied"} | {"outcome": "not_found"}
+--   → {"outcome": "not_arrived"} | {"outcome": "occupied"} | {"outcome": "not_found"}
+--
+-- Either way the next request arrives a shift's length of active hours later.
 --
 -- Pay is worked out now, so a Pokémon that levelled or evolved during its
 -- shift is paid as it is. A shift that pays nothing, at a workplace its types
@@ -709,8 +742,8 @@ begin
   if place.companion_id is not null then
     return jsonb_build_object('outcome', 'occupied');
   end if;
-  if public.active_hours(caller, place.opened_at) < (select g.shift_hours from public.coder_settings g) then
-    return jsonb_build_object('outcome', 'not_ready');
+  if not public.request_arrived(caller, place.emptied_at) then
+    return jsonb_build_object('outcome', 'not_arrived');
   end if;
 
   perform public.replace_workplace(place.id);
@@ -992,6 +1025,7 @@ revoke execute on function
   public.roll_task(integer),
   public.open_workplaces(uuid),
   public.replace_workplace(uuid),
+  public.request_arrived(uuid, timestamptz),
   public.lock_trainer(uuid),
   public.item_evolutions(integer, text),
   public.work(),
