@@ -25,10 +25,10 @@ export default async function AccountPage() {
   return (
     <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-10">
       <header className="space-y-1">
+        {/* Never null beside a handle; the column is nullable only for before one. */}
         <DisplayName
           userId={user.id}
-          displayName={profile.display_name}
-          username={profile.username}
+          displayName={profile.display_name ?? `@${profile.username}`}
         />
         <p className="text-muted font-mono text-[13px]">@{profile.username}</p>
       </header>

@@ -41,6 +41,23 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // A handle is chosen before anything else is used. The public paths stay
+  // reachable: signing in to another app ends up here through that app, and
+  // signing out is the way out without choosing.
+  if (user && !isPublic && pathname !== '/onboarding') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single()
+    if (!profile?.username) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Lets the landing page and other apps link to /login unconditionally:
   // someone who already has a session goes straight to where they were
   // headed, or to their account, instead of a sign-in form.
