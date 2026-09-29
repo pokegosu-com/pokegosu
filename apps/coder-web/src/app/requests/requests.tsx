@@ -116,7 +116,11 @@ function Notice({
         <span className="font-mono text-[22px] font-medium tabular-nums">{points(reward)}</span>
       </p>
       {status}
-      <div className="border-line mt-auto flex items-center gap-2 border-t pt-3">{footer}</div>
+      {/* As tall as the picker's button, so the rule sits level across notices
+          whatever the footer holds. */}
+      <div className="border-line mt-auto flex min-h-[42px] items-center gap-2 border-t pt-3 [box-sizing:content-box]">
+        {footer}
+      </div>
     </li>
   )
 }
