@@ -243,8 +243,18 @@ function Picker({
   if (!picked) {
     return (
       <p className="text-muted text-xs">
-        보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 파트너가 아니며 다른
-        의뢰를 하고 있지 않은 포켓몬이 갈 수 있습니다.
+        <span
+          className="cursor-help underline decoration-dotted underline-offset-2"
+          title={[
+            '보낼 수 있는 포켓몬',
+            `- Lv.${work.rules.min_work_level} 이상`,
+            '- 파트너가 아님',
+            '- 다른 의뢰를 하고 있지 않음',
+          ].join('\n')}
+        >
+          보낼 수 있는 포켓몬
+        </span>
+        이 없습니다.
       </p>
     )
   }
