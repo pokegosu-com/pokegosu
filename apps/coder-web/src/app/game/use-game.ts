@@ -12,6 +12,8 @@ type Action =
   | { fn: 'hatch' | 'evolve' | 'receive_egg' | 'set_main'; companion_id: string }
   | { fn: 'receive_ribbon'; companion_id: string; ribbon_id: string }
   | { fn: 'set_markings'; companion_id: string; markings: number }
+  | { fn: 'use_item'; companion_id: string; item_id: string }
+  | { fn: 'buy'; shop_item_id: string }
 
 /**
  * What opening the game put into the partner, as claim() answered, for the

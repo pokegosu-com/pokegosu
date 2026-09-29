@@ -26,8 +26,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           name="PokeGosu Coder"
           sections={[
             { label: '대시보드', href: '/' },
-            { label: '박스', href: '/box' },
             { label: '사용량', href: '/usage' },
+            { label: '박스', href: '/box' },
+            { label: '의뢰', href: '/requests' },
+            { label: '상점', href: '/shop' },
           ]}
         />
         {children}

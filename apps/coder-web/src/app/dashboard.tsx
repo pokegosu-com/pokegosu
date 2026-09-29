@@ -7,12 +7,22 @@ import { Artwork } from '@pokegosu/ui/artwork'
 import { Command } from '@pokegosu/ui/command'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { compactTokens, exactTokens } from '@/lib/format'
-import { eggHint, eggSpriteUrl, ko, levelAt, spriteUrl, type Box, type Curve } from '@/lib/game'
+import { compactTokens, exactTokens, points } from '@/lib/format'
+import {
+  eggHint,
+  eggSpriteUrl,
+  ko,
+  levelAt,
+  spriteUrl,
+  usableItems,
+  type Box,
+  type Curve,
+} from '@/lib/game'
 import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage } from '@/lib/usage'
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
+import { UseItemLabel } from './game/item-label'
 import { Gender } from './game/gender'
 import { say } from './game/say'
 import { useGame, type Opening } from './game/use-game'
@@ -96,6 +106,23 @@ function Leftover({ balance }: { balance: string }) {
       </h2>
       <p className="text-2xl font-medium" title={`${exactTokens(balance)} 토큰`}>
         <span className="font-mono tabular-nums">{compactTokens(BigInt(balance))}</span> 토큰
+      </p>
+    </section>
+  )
+}
+
+/** The points to spend in the shop, earned on requests. */
+function Points({ points: amount }: { points: number }) {
+  return (
+    <section
+      aria-labelledby="points"
+      className="border-line flex flex-col justify-center gap-2 rounded-lg border p-6"
+    >
+      <h2 id="points" className="text-muted text-sm font-medium">
+        포인트
+      </h2>
+      <p className="text-2xl font-medium" title={points(amount)}>
+        <span className="font-mono tabular-nums">{compactTokens(amount)}</span> P
       </p>
     </section>
   )
@@ -209,6 +236,20 @@ function PokemonPartner({
                 }}
               >
                 {ko(r)} 받기
+              </button>
+            ))}
+            {usableItems(p, box.bag).map((e) => (
+              <button
+                key={e.item.id}
+                type="button"
+                className={primary}
+                disabled={game.busy}
+                onClick={() => {
+                  onAct()
+                  game.act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })
+                }}
+              >
+                <UseItemLabel item={e.item} />
               </button>
             ))}
           </Tasks>
@@ -415,7 +456,10 @@ export function Dashboard() {
           ) : (
             <EggPartner box={box} game={game} acted={acted} onAct={onAct} />
           )}
-          <Leftover balance={box.balance} />
+          <div className="grid gap-3">
+            <Leftover balance={box.balance} />
+            <Points points={box.points} />
+          </div>
         </div>
       )}
       {nothingYet ? <Empty /> : <LastDay usage={recent.usage} now={recent.now} />}

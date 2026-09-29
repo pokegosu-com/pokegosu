@@ -17,7 +17,7 @@ The apps are in Korean. Write the way the games talk to a trainer: plainly and b
 - Names keep their capitals: PokeGosu, PokeGosu Coder, PokeGosu Pokédex, PokeGosu 계정. Never lowercase them, even in a logo spot.
 - The Pokémon a trainer is raising now is their 파트너, never 메인.
 - Buttons are the action, as short as the games put it: 알 받기, 부화시키기, 파트너로, 진화, 로그인. No trailing period.
-- Lines about a Pokémon use the games' plain declarative: "Lv.16 에 이상해풀(으)로 진화할 수 있다". Lines to the trainer use 합니다체: "아직 기록이 없습니다".
+- Lines about a Pokémon use the games' plain declarative: "적성에 맞는다", "매우 적성에 맞는다". Lines to the trainer use 합니다체: "아직 기록이 없습니다".
 - Numbers read `No.025`, `Lv.16`, `12,480 토큰` when exact, and `12.5K` when compact, with the exact count beside it or in a `title`.
 - Emoji only where the games have a symbol: ✨ for a shiny Pokémon, 🎀 for a ribbon. Never as decoration.
 

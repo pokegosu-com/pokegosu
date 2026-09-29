@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 /** PokeAPI/sprites at the commit every hash in the manifest was taken from. */
 const SPRITES_COMMIT = 'a13b1f4ccd77f35fd1370d2db5f0051221e9683f'
 const SPRITES_BASE = `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITES_COMMIT}/sprites/pokemon`
+const ITEMS_BASE = `https://raw.githubusercontent.com/PokeAPI/sprites/${SPRITES_COMMIT}/sprites/items`
 
 /**
  * What the generated files say about where their contents come from. PokéAPI's
@@ -124,7 +125,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260929130000_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260929140001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -751,12 +752,22 @@ async function main() {
 
   const typeIds = [...new Set(rows.flatMap((r) => r.types))].sort()
   const typeNames = new Map<string, Record<string, string>>()
+  // Attacking type, then defending type, to the damage as a percentage.
+  const efficacy = new Map<string, Map<string, number>>()
   for (const id of typeIds) {
-    const type = await get<{ names: ({ name: string } & Localised)[] }>(`type/${id}`)
+    const type = await get<{
+      names: ({ name: string } & Localised)[]
+      damage_relations: Record<'double_damage_to' | 'half_damage_to' | 'no_damage_to', Named[]>
+    }>(`type/${id}`)
     typeNames.set(
       id,
       localise(type.names, (n) => n.name),
     )
+    const factors = new Map<string, number>()
+    for (const t of type.damage_relations.double_damage_to) factors.set(t.name, 200)
+    for (const t of type.damage_relations.half_damage_to) factors.set(t.name, 50)
+    for (const t of type.damage_relations.no_damage_to) factors.set(t.name, 0)
+    efficacy.set(id, factors)
   }
 
   const rates = [...new Set(rows.map((r) => r.growthRate))].sort()
@@ -791,6 +802,9 @@ async function main() {
   // different, its female, and which stays sharp at any size. The official
   // artwork draws no females.
   add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
+  // Every item an evolution names, in the bag's 30px pixel style.
+  for (const id of [...items.keys()].sort())
+    add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${id}.png`)
   const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
     const n = row.id
@@ -868,6 +882,15 @@ async function main() {
     ),
     ...upsert(
       written,
+      'pokedex_type_efficacy',
+      ['attacking_type', 'defending_type', 'damage_factor'],
+      ['attacking_type', 'defending_type'],
+      typeIds.flatMap((a) =>
+        typeIds.map((d) => `  (${sql(a)}, ${sql(d)}, ${efficacy.get(a)!.get(d) ?? 100})`),
+      ),
+    ),
+    ...upsert(
+      written,
       'pokedex_growth_rates',
       ['id'],
       ['id'],
@@ -897,11 +920,14 @@ async function main() {
     ...upsert(
       written,
       'pokedex_items',
-      ['id', 'ko_name', 'en_name'],
+      ['id', 'ko_name', 'en_name', 'sprite'],
       ['id'],
       [...items]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+        .map(
+          ([id, names]) =>
+            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(`/sprites/items/${id}.png`)})`,
+        ),
     ),
     ...upsert(
       written,

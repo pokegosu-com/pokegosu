@@ -5,7 +5,17 @@ import { useEffect, useState } from 'react'
 import { PokemonTile } from '@pokegosu/ui/pokemon'
 
 import { exactTokens } from '@/lib/format'
-import { MARKS, eggSpriteUrl, ko, markOf, spriteUrl, type Egg, type Pokemon } from '@/lib/game'
+import {
+  MARKS,
+  eggSpriteUrl,
+  ko,
+  markOf,
+  spriteUrl,
+  usableItems,
+  type BagItem,
+  type Egg,
+  type Pokemon,
+} from '@/lib/game'
 
 import { useGame } from '../game/use-game'
 
@@ -88,19 +98,24 @@ const sorts: Record<Sort, (a: Item, b: Item) => number> = {
   name: (a, b) => collator.compare(a.name, b.name) || b.at.localeCompare(a.at),
 }
 
-/** An action the game is waiting for: evolve, hatch, an egg, a ribbon. */
-function hasTask(item: Item): boolean {
+/** An action the game is waiting for: evolve, hatch, an egg, a ribbon, a stone in the bag. */
+function hasTask(item: Item, bag: BagItem[]): boolean {
   if (item.kind === 'egg') return item.e.tokens >= item.e.tokens_needed
   const p = item.p
-  return p.can_evolve || p.can_receive_egg || p.ribbons_waiting.length > 0
+  return (
+    p.can_evolve ||
+    p.can_receive_egg ||
+    p.ribbons_waiting.length > 0 ||
+    usableItems(p, bag).length > 0
+  )
 }
 
-function matches(item: Item, view: View): boolean {
+function matches(item: Item, view: View, bag: BagItem[]): boolean {
   if (view.kind === 'pokemon' && item.kind !== 'pokemon') return false
   if (view.kind === 'eggs' && item.kind !== 'egg') return false
   const query = view.query.trim()
   if (query && !item.name.includes(query)) return false
-  if (view.task && !hasTask(item)) return false
+  if (view.task && !hasTask(item, bag)) return false
   if (view.shiny && !(item.kind === 'pokemon' && item.p.is_shiny)) return false
   if (view.type && !(item.kind === 'pokemon' && item.p.types.some((t) => t.id === view.type)))
     return false
@@ -154,7 +169,7 @@ export function BoxView() {
   ].sort((a, b) => collator.compare(a[1], b[1]))
   // The partner comes first whatever the sort.
   const shown = items
-    .filter((item) => matches(item, view))
+    .filter((item) => matches(item, view, box.bag))
     .sort(
       (a, b) =>
         Number(b.id === box.main_companion_id) - Number(a.id === box.main_companion_id) ||
@@ -309,7 +324,7 @@ export function BoxView() {
                   sprite={spriteUrl(item.p, 'small')}
                   partner={item.id === box.main_companion_id}
                   shiny={item.p.is_shiny}
-                  task={hasTask(item)}
+                  task={hasTask(item, box.bag)}
                 />
               ) : (
                 <PokemonTile
@@ -318,7 +333,7 @@ export function BoxView() {
                   caption={`${exactTokens(item.e.tokens)} / ${exactTokens(item.e.tokens_needed)}`}
                   sprite={eggSpriteUrl}
                   partner={item.id === box.main_companion_id}
-                  task={hasTask(item)}
+                  task={hasTask(item, box.bag)}
                 />
               )}
             </li>
@@ -341,8 +356,8 @@ export function BoxView() {
         </div>
       )}
       <p className="text-muted text-xs">
-        파트너는 정렬과 관계없이 맨 앞에 옵니다. 파란 점은 진화, 부화, 알, 리본처럼 기다리는 일이
-        있다는 뜻입니다.
+        파트너는 정렬과 관계없이 맨 앞에 옵니다. 파란 점은 진화, 부화, 알, 리본, 가방의 돌처럼
+        기다리는 일이 있다는 뜻입니다.
       </p>
     </>
   )

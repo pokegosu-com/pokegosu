@@ -8,6 +8,121 @@
       "sha256": "368c7b805ef6b2bbafcc97a9a2abe09cac3984fd3efdc4c9c931735e2bc0f288"
     },
     {
+      "path": "sprites/items/dawn-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/dawn-stone.png",
+      "sha256": "7d234d687853296a6a4a185a9c27cc637d9da917c70df02770c815f455e6f211"
+    },
+    {
+      "path": "sprites/items/deep-sea-scale.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/deep-sea-scale.png",
+      "sha256": "45548b19e82837db6bb3ee7290eb3e4709ce46d14adda31e1cb4ec4448c6dc8d"
+    },
+    {
+      "path": "sprites/items/deep-sea-tooth.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/deep-sea-tooth.png",
+      "sha256": "2e3de67d55b774ce8302280deb8a19b44715806806dd290363b55b56d4213374"
+    },
+    {
+      "path": "sprites/items/dragon-scale.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/dragon-scale.png",
+      "sha256": "c799da7310254aea308a043252e0f008e9369062d49de4a5ace30f79e868c5e5"
+    },
+    {
+      "path": "sprites/items/dubious-disc.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/dubious-disc.png",
+      "sha256": "ebec32bdd0e33c68ee67659021c17ca191a485638df0cdcf942eb1de02c508e9"
+    },
+    {
+      "path": "sprites/items/dusk-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/dusk-stone.png",
+      "sha256": "a61afc1d5fcf1bc25f70a3b496ce2efdc37ee77fc386d2cf14c7442763693637"
+    },
+    {
+      "path": "sprites/items/electirizer.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/electirizer.png",
+      "sha256": "6844f22b246baf79f76c43add7a0c340aa93f4842b5ec01b9c86dfb949a77d2b"
+    },
+    {
+      "path": "sprites/items/fire-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/fire-stone.png",
+      "sha256": "79b9f7aa7adf5f43465545cfb7b510789c90215b27680d91acaa0690c57f2507"
+    },
+    {
+      "path": "sprites/items/kings-rock.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/kings-rock.png",
+      "sha256": "b29da56002e1d397688ef36f0f3efcc290a6a852cf0ab10bbddfa8155f935bdf"
+    },
+    {
+      "path": "sprites/items/leaf-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/leaf-stone.png",
+      "sha256": "f7987d279723736d568ada3cece6936d441c61f3ccec401a7e236020bacd7f5e"
+    },
+    {
+      "path": "sprites/items/magmarizer.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/magmarizer.png",
+      "sha256": "d676893cc4b679e5dd83b6ad5071030cf80323df7db3042c12d52a0984d02f41"
+    },
+    {
+      "path": "sprites/items/metal-coat.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/metal-coat.png",
+      "sha256": "1330f67b135121a15e27e17d3da64ae9065dfbda5ea85f4ad7bc5285c6aaa92c"
+    },
+    {
+      "path": "sprites/items/moon-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/moon-stone.png",
+      "sha256": "44757f9cc107f23cc6775c93edc5b0eea429f2e08c5e547ee325c699d77c2742"
+    },
+    {
+      "path": "sprites/items/oval-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/oval-stone.png",
+      "sha256": "8be8d081352b631a53f08f8b15990e1d585959586038d6993bd30129662e9d67"
+    },
+    {
+      "path": "sprites/items/protector.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/protector.png",
+      "sha256": "5064bd927ff40b27454bee9b6827d4918e005ba80f0c58a39a2c4624154b0f83"
+    },
+    {
+      "path": "sprites/items/razor-claw.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/razor-claw.png",
+      "sha256": "1f3cbde2d227a8d5afec45ec629352072f9c4938174b99a24dd01277ab582d7e"
+    },
+    {
+      "path": "sprites/items/razor-fang.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/razor-fang.png",
+      "sha256": "a0bf2707c33ed5e936dabe1fad83fb9c08758de0e5f1385c65c0c005af7e5b14"
+    },
+    {
+      "path": "sprites/items/reaper-cloth.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/reaper-cloth.png",
+      "sha256": "04a58d75cd1ff0f0f4565fb5dd0b84a688882d59c3ab7a15a3612f7c06300763"
+    },
+    {
+      "path": "sprites/items/shiny-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/shiny-stone.png",
+      "sha256": "5013cd61e7f9eb724b45fd3e4eb6bc28fd180a56a2f462eaecfb20da94cd9876"
+    },
+    {
+      "path": "sprites/items/sun-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/sun-stone.png",
+      "sha256": "3542840d250e42276ad079d6cf7a3950d5db7b67bb45df1a5182f6a28ff2fab4"
+    },
+    {
+      "path": "sprites/items/thunder-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/thunder-stone.png",
+      "sha256": "74fa4c73cad9285a250f8f7e8e434409b3e89670adc6f30b419b709fce1bad10"
+    },
+    {
+      "path": "sprites/items/up-grade.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/up-grade.png",
+      "sha256": "03bf246e7880dcc155b0f2fb1d896810537078a1589dee871dafb2962a21ec08"
+    },
+    {
+      "path": "sprites/items/water-stone.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/water-stone.png",
+      "sha256": "a213ec2d62b816073a9a78bf659b436de8e196df3b14437b3d768f466b3e9616"
+    },
+    {
       "path": "sprites/pokemon/1.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/1.png",
       "sha256": "7307265558511ea080add119ab7e86b9f87aaab4cedef76df2a13290ca5ad8c9"

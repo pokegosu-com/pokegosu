@@ -15,6 +15,7 @@ import {
   ko,
   levelAt,
   spriteUrl,
+  usableItems,
   type Curve,
   type Egg,
   type Named,
@@ -22,6 +23,7 @@ import {
 } from '@/lib/game'
 
 import { useCountUp } from '../../game/count-up'
+import { UseItemLabel } from '../../game/item-label'
 import { Gender } from '../../game/gender'
 import { Marks } from '../../game/marks'
 import { say } from '../../game/say'
@@ -135,7 +137,8 @@ function PokemonDetail({
   game: Game
   history: History | null
 }) {
-  const { act, busy } = game
+  const { act, busy, box } = game
+  const stones = usableItems(p, box?.started ? box.bag : [])
   const { shown, climbing } = useCountUp(p.tokens, (from, to) => {
     const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
     const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
@@ -187,6 +190,17 @@ function PokemonDetail({
                   {ko(p.evolves_to)}(으)로 진화
                 </button>
               )}
+              {stones.map((e) => (
+                <button
+                  key={e.item.id}
+                  type="button"
+                  className={primary}
+                  disabled={busy}
+                  onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
+                >
+                  <UseItemLabel item={e.item} />
+                </button>
+              ))}
               {p.can_receive_egg && (
                 <button
                   type="button"
@@ -236,11 +250,6 @@ function PokemonDetail({
           label="다음 레벨까지"
           size="lg"
         />
-        {p.evolves_to && !p.can_evolve && (
-          <p className="text-muted text-xs">
-            Lv.{p.evolves_to.level} 에 {ko(p.evolves_to)}(으)로 진화할 수 있다
-          </p>
-        )}
       </section>
 
       <Records history={history} tokens={p.tokens} ribbons={p.ribbons} />
