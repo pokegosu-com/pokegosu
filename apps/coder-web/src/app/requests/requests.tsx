@@ -7,6 +7,7 @@ import { createClient } from '@pokegosu/supabase/client'
 import { Command } from '@pokegosu/ui/command'
 import { PokeGosuIcon } from '@pokegosu/ui/icon'
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
+import { Toast } from '@pokegosu/ui/toast'
 
 import { env } from '@/env'
 import { points } from '@/lib/format'
@@ -512,7 +513,7 @@ export function RequestsView() {
       {failure && (
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
-      {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
+      <Toast id={last}>{message}</Toast>
 
       <ul className="grid gap-3 sm:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />
