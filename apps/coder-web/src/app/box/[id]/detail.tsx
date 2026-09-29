@@ -24,9 +24,9 @@ import {
 
 import { useCountUp } from '../../game/count-up'
 import { UseItemLabel } from '../../game/item-label'
+import { ActionToasts } from '../../game/action-toasts'
 import { Gender } from '../../game/gender'
 import { Marks } from '../../game/marks'
-import { say } from '../../game/say'
 import { useGame } from '../../game/use-game'
 
 type Game = ReturnType<typeof useGame>
@@ -41,8 +41,10 @@ type History = {
 
 const MS_PER_LEVEL = 350
 
+// The clear border makes a primary button as tall as a quiet one, so a row of
+// either holds the same height.
 const primary =
-  'bg-accent text-surface rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50'
+  'bg-accent text-surface rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50'
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50'
 
@@ -154,6 +156,8 @@ function PokemonDetail({
 
   return (
     <>
+      {/* The partner's own bar is climbing here, so its level waits for it. */}
+      {p.is_main && <ActionToasts game={game} level={at.level} />}
       <header className="flex items-center gap-8">
         <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
         <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -171,75 +175,87 @@ function PokemonDetail({
               <TypeChip key={t.id} id={t.id} name={ko(t)} />
             ))}
           </p>
-          <Marks
-            markings={p.markings}
-            disabled={busy}
-            onChange={(markings) => act({ fn: 'set_markings', companion_id: p.id, markings })}
-          />
-          {/* Hidden while the level is still counting up, so nothing is
-              pressed on a level the bar hasn't reached. */}
-          {!climbing && (
-            <div className="flex flex-wrap gap-2">
-              {p.can_evolve && p.evolves_to && (
-                <button
-                  type="button"
-                  className={primary}
-                  disabled={busy}
-                  onClick={() => act({ fn: 'evolve', companion_id: p.id })}
-                >
-                  {ko(p.evolves_to)}(으)로 진화
-                </button>
-              )}
-              {stones.map((e) => (
-                <button
-                  key={e.item.id}
-                  type="button"
-                  className={primary}
-                  disabled={busy}
-                  onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
-                >
-                  <UseItemLabel item={e.item} />
-                </button>
-              ))}
-              {p.can_receive_egg && (
-                <button
-                  type="button"
-                  className={primary}
-                  disabled={busy}
-                  onClick={() => act({ fn: 'receive_egg', companion_id: p.id })}
-                >
-                  알 받기
-                </button>
-              )}
-              {p.ribbons_waiting.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className={primary}
-                  disabled={busy}
-                  onClick={() => act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })}
-                >
-                  {ko(r)} 받기
-                </button>
-              ))}
-              {/* One out on a request becomes the partner only once it is back. */}
-              {!p.is_main &&
-                (p.workplace_id ? (
-                  <Link href="/requests" className="text-muted hover:text-ink self-center text-xs">
-                    의뢰를 하는 중
-                  </Link>
-                ) : (
+          {/* The marks hold the row at a button's height with or without
+              buttons beside them, so the page does not move as they come
+              and go. */}
+          <div className="flex min-h-9.5 flex-wrap items-center gap-2">
+            <span className="mr-4">
+              <Marks
+                markings={p.markings}
+                disabled={busy}
+                onChange={(markings) => act({ fn: 'set_markings', companion_id: p.id, markings })}
+              />
+            </span>
+            {/* Hidden while the level is still counting up, so nothing is
+                pressed on a level the bar hasn't reached. */}
+            {!climbing && (
+              <>
+                {p.can_evolve && p.evolves_to && (
                   <button
                     type="button"
-                    className={quiet}
+                    className={primary}
                     disabled={busy}
-                    onClick={() => act({ fn: 'set_main', companion_id: p.id })}
+                    onClick={() => act({ fn: 'evolve', companion_id: p.id })}
                   >
-                    파트너로
+                    {ko(p.evolves_to)}(으)로 진화
+                  </button>
+                )}
+                {stones.map((e) => (
+                  <button
+                    key={e.item.id}
+                    type="button"
+                    className={primary}
+                    disabled={busy}
+                    onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
+                  >
+                    <UseItemLabel item={e.item} />
                   </button>
                 ))}
-            </div>
-          )}
+                {p.can_receive_egg && (
+                  <button
+                    type="button"
+                    className={primary}
+                    disabled={busy}
+                    onClick={() => act({ fn: 'receive_egg', companion_id: p.id })}
+                  >
+                    알 받기
+                  </button>
+                )}
+                {p.ribbons_waiting.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className={primary}
+                    disabled={busy}
+                    onClick={() =>
+                      act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
+                    }
+                  >
+                    {ko(r)} 받기
+                  </button>
+                ))}
+                {/* One out on a request becomes the partner only once it is back. */}
+                {!p.is_main &&
+                  (p.workplace_id ? (
+                    <Link
+                      href="/requests"
+                      className="text-muted hover:text-ink self-center text-xs"
+                    >
+                      의뢰를 하는 중
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      className={quiet}
+                      disabled={busy}
+                      onClick={() => act({ fn: 'set_main', companion_id: p.id })}
+                    >
+                      파트너로
+                    </button>
+                  ))}
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -291,12 +307,14 @@ function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: Hist
           {egg.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
           <p className="text-3xl font-semibold tracking-tight">알</p>
           <p className="text-muted text-sm">{eggHint(egg)}</p>
-          <Marks
-            markings={egg.markings}
-            disabled={busy}
-            onChange={(markings) => act({ fn: 'set_markings', companion_id: egg.id, markings })}
-          />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-h-9.5 flex-wrap items-center gap-2">
+            <span className="mr-4">
+              <Marks
+                markings={egg.markings}
+                disabled={busy}
+                onChange={(markings) => act({ fn: 'set_markings', companion_id: egg.id, markings })}
+              />
+            </span>
             {ready && (
               <button
                 type="button"
@@ -359,7 +377,6 @@ export function Detail({ id }: { id: string }) {
 
   const pokemon = box?.started ? box.pokemon.find((p) => p.id === id) : undefined
   const egg = box?.started ? box.eggs.find((e) => e.id === id) : undefined
-  const message = last ? say(box, last.action.fn, last.outcome) : null
 
   return (
     <>
@@ -371,7 +388,7 @@ export function Detail({ id }: { id: string }) {
       {failure && (
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
-      {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
+      {!pokemon?.is_main && <ActionToasts game={game} />}
       {pokemon ? (
         <PokemonDetail p={pokemon} curve={curve} game={game} history={history} />
       ) : egg ? (
