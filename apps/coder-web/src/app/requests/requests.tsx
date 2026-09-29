@@ -321,9 +321,9 @@ function Picker({
 function Waiting({ hours, shift }: { hours: number; shift: number }) {
   return (
     <li className="border-line text-muted flex flex-col justify-center gap-3.5 rounded-lg border border-dashed p-5">
-      <span className="text-xs">다음 의뢰</span>
+      <span className="text-xs">새 의뢰를 기다리는 중</span>
       <span className="text-ink text-lg font-semibold tracking-tight">
-        <N>{hours}</N>시간 뒤에 온다
+        <N>{hours}</N>시간 남음
       </span>
       <Progress
         left="코딩하는 동안 시간이 흐른다"
