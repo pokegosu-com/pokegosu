@@ -8,7 +8,7 @@ import { createClient } from '@pokegosu/supabase/client'
 import { points } from '@/lib/format'
 import { eggSpriteUrl, itemSpriteUrl, ko, type Item, type Named } from '@/lib/game'
 
-import { say } from '../game/say'
+import { ActionToasts } from '../game/action-toasts'
 import { useGame } from '../game/use-game'
 
 type ShopItem = {
@@ -91,10 +91,9 @@ function regionNote(egg: Named): string {
 
 export function ShopView() {
   const game = useGame()
-  const { box, busy, last, act } = game
+  const { box, busy, act } = game
   const shop = useShop()
   const failure = game.failure ?? shop.failure
-  const message = last ? say(box, last.action.fn, last.outcome) : null
 
   if (!box || !shop.items) {
     return failure ? (
@@ -127,7 +126,7 @@ export function ShopView() {
       {failure && (
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
-      {message && <p className="bg-accent/10 rounded-md px-3 py-2 text-sm">{message}</p>}
+      <ActionToasts game={game} />
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">진화의 돌</h2>
