@@ -36,7 +36,7 @@ func Login(ctx context.Context, opts LoginOptions) error {
 	// the settings it already has are the ones that work.
 	if enrolled(stored) {
 		fmt.Printf("%q is already enrolled with %s\n", stored.DeviceName, stored.URL)
-		fmt.Printf("to enrol this machine anew, delete %s first\n", settingsPathOrDefault())
+		fmt.Println("to enrol it as a new machine, run pokegosu auth logout first")
 		return nil
 	}
 
@@ -90,9 +90,8 @@ func Login(ctx context.Context, opts LoginOptions) error {
 
 // enrolled reports whether this machine already has everything it needs.
 //
-// Enrolling it again is safe: the machine keeps its id, and the server
-// replaces its key rather than adding one, so the old key stops working.
-// login only says that it is happening.
+// A machine id is enrolled once: the server refuses an id it already has, so
+// an enrolled machine has nothing to ask for.
 func enrolled(cfg *config.Config) bool {
 	return cfg != nil && cfg.URL != "" && cfg.APIURL != "" && cfg.APIKey != "" && cfg.DeviceID != ""
 }
@@ -152,7 +151,7 @@ func explain(err error) error {
 		// The server's wording covers the what; this adds the how. The id is
 		// in the settings file, so new settings are a new machine.
 		return fmt.Errorf("this machine's id is already registered; " +
-			"delete this machine's settings file to enrol it as a new machine")
+			"run pokegosu auth logout to enrol it as a new machine")
 	case authapi.GatewayRefused(err):
 		// Nothing of ours refused anything, so the request did not reach us.
 		return fmt.Errorf("the server rejected the request before it reached pokegosu "+
@@ -160,14 +159,4 @@ func explain(err error) error {
 	default:
 		return err
 	}
-}
-
-// settingsPathOrDefault names the file to delete, and falls back to the
-// documented location rather than failing over a message.
-func settingsPathOrDefault() string {
-	path, err := config.Path()
-	if err != nil {
-		return "~/.config/pokegosu/config.json"
-	}
-	return path
 }

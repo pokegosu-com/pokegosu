@@ -24,7 +24,7 @@ go install github.com/pokegosu-com/pokegosu/apps/cli/cmd/pokegosu@latest
 
 That build says `dev` for its version, since the version is written in only when the release is built.
 
-To uninstall, run `pokegosu coder hook uninstall claude-code codex`, then delete the binary, and `~/.config/pokegosu` with it if you are done with the settings. Delete the machine in the account first, so its key stops working.
+To uninstall, run `pokegosu coder hook uninstall claude-code codex` and `pokegosu auth logout`, which retires the machine so its key stops working, then delete the binary, and `~/.config/pokegosu` with it.
 
 ## Using it
 
@@ -45,6 +45,8 @@ enrolled "laptop" with https://pokegosu.com
 ```
 
 Nothing secret is typed or pasted. The code is worth little — ten minutes, one use, and only a signed-in person can approve it — and the key is handed to the machine that asked, never through the browser.
+
+`pokegosu auth logout` retires this machine in the account, as deleting it in the web does, and deletes its settings. Its key stops working, and the usage it sent stays in the account. Retiring is final: a login afterwards enrols this machine as a new machine. If the server cannot be reached, the settings are kept, since the key may still work.
 
 For a deployment other than the default, give its address: `pokegosu auth login --url https://pokegosu.example.com`. The CLI reads `/.well-known/pokegosu.json` there to find the rest, so no backend address has to be known or typed.
 
@@ -77,7 +79,7 @@ So an open session reports every fifteen minutes or so, and a closing one report
 - A sync reports nothing from before this machine was enrolled. What the logs hold from earlier is nobody's business but this machine's, and the server ignores those hours whoever sends them.
 - A sync reads every agent it knows: Claude Code (`~/.claude/projects`, or under `CLAUDE_CONFIG_DIR`) and Codex (`~/.codex/sessions` and `archived_sessions`, or under `CODEX_HOME`). Whichever agent's hook runs a sync, it sends both.
 - `pokegosu coder scan` prints what the parser found without sending anything. Run it first when a number looks wrong. `--path` reads another directory instead, and needs `--provider claude_code` or `--provider codex` to say whose logs it holds.
-- A machine is enrolled once. Its id lives in the settings, so a machine that was deleted, or that lost its key, enrols as a new machine from new settings, and the old one keeps the history it earned.
+- A machine is enrolled once. Its id lives in the settings, so a machine that was deleted, or that lost its key, enrols as a new machine after `pokegosu auth logout`, and the old one keeps the history it earned.
 - A machine with no browser can be approved from anywhere: the code is all a person carries.
 
 `pokegosu completion <shell>` prints a completion script for bash, zsh, fish or PowerShell; `pokegosu completion zsh --help` says where to put it.
