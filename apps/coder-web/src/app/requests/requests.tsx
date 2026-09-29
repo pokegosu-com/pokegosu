@@ -162,7 +162,7 @@ function GosuNotice({ work, busy, act }: { work: Started; busy: boolean; act: Ac
   return (
     <Notice
       dashed={false}
-      who="고수의 의뢰 · 늘 있는 의뢰"
+      who="고수의 의뢰"
       title="코딩"
       art={
         <span className="grid size-14 flex-none place-items-center">
