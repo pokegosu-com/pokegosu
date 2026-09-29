@@ -247,6 +247,7 @@ export type Worker = Pick<
   | 'types'
 > & {
   workplace_id: string | null
+  is_main: boolean
   offers: { workplace_id: string; aptitude: number; points: number }[]
 }
 

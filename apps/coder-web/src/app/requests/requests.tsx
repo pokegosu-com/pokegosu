@@ -214,7 +214,8 @@ function GosuNotice({ work, busy, act }: { work: Started; busy: boolean; act: Ac
 
 /**
  * Who goes: the choice as a button that opens the list, best paid first. A
- * Pokémon already out on a request is not offered: it stays until done.
+ * Pokémon already out on a request is not offered: it stays until done. Nor
+ * is the partner: tokens raise it, so it stays home.
  */
 function Picker({
   place,
@@ -230,7 +231,7 @@ function Picker({
   onPick: (points: number) => void
 }) {
   const candidates = work.pokemon
-    .filter((p) => p.workplace_id === null)
+    .filter((p) => p.workplace_id === null && !p.is_main)
     .map((p) => ({ p, offer: p.offers.find((o) => o.workplace_id === place.id)! }))
     .sort((a, b) => b.offer.points - a.offer.points)
   const [chosen, setChosen] = useState('')
@@ -242,8 +243,8 @@ function Picker({
   if (!picked) {
     return (
       <p className="text-muted text-xs">
-        보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 다른 의뢰를 하고
-        있지 않은 포켓몬이 갈 수 있습니다.
+        보낼 수 있는 포켓몬이 없습니다. Lv.{work.rules.min_work_level} 이상이고 파트너가 아니며 다른
+        의뢰를 하고 있지 않은 포켓몬이 갈 수 있습니다.
       </p>
     )
   }

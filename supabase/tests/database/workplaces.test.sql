@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(67);
+select plan(71);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -146,6 +146,20 @@ select is(public.assign(pg_temp.workplace(2), (select machop from mon)), '{"outc
   'and stays there: it cannot be sent elsewhere halfway');
 select is(pg_temp.boxed((select machop from mon)) ->> 'workplace_id', pg_temp.workplace(1)::text,
   'the box says where it is');
+
+reset role;
+create temporary table egg as
+select main_companion_id as id from public.coder_trainers where user_id = '00000000-0000-0000-0000-00000000000a';
+grant select on egg to authenticated;
+select pg_temp.as_person();
+
+select is(public.set_main((select machop from mon)), '{"outcome": "working"}'::jsonb,
+  'a Pokémon out on a request cannot become the partner');
+select is(public.set_main((select rattata from mon)), '{"outcome": "set"}'::jsonb, 'one at home can');
+select ok((pg_temp.working((select rattata from mon)) ->> 'is_main')::boolean, 'and work() says which is the partner');
+select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"outcome": "partner"}'::jsonb,
+  'the partner stays home');
+select public.set_main((select id from egg));
 
 
 -- ------------------------------------------------------------
