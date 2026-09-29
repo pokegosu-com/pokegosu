@@ -120,7 +120,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260928120008_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260929120002_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
