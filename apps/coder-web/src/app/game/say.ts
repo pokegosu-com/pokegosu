@@ -10,6 +10,8 @@ function nameOf(box: Box | null, speciesId: unknown): string {
 
 /** One line for what the last button did, in the games' voice where they have one. */
 export function say(box: Box | null, fn: string, o: Outcome): string | null {
+  // Every button refuses a Pokémon out on a request alike.
+  if (o.outcome === 'working') return '의뢰를 하는 중이라 지금은 할 수 없다.'
   switch (`${fn}:${o.outcome}`) {
     case 'claim:claimed':
       return o.level_before === null

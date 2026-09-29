@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(71);
+select plan(76);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -155,6 +155,16 @@ select pg_temp.as_person();
 
 select is(public.set_main((select machop from mon)), '{"outcome": "working"}'::jsonb,
   'a Pokémon out on a request cannot become the partner');
+select is(public.evolve((select machop from mon)), '{"outcome": "working"}'::jsonb,
+  'nor can it evolve');
+select is(public.use_item((select machop from mon), 'fire-stone'), '{"outcome": "working"}'::jsonb,
+  'or be given an item');
+select is(public.receive_egg((select machop from mon)), '{"outcome": "working"}'::jsonb,
+  'or give its egg');
+select is(public.receive_ribbon((select machop from mon), 'level-100'), '{"outcome": "working"}'::jsonb,
+  'or take a ribbon');
+select is(public.set_markings((select machop from mon), 1::smallint), '{"outcome": "working"}'::jsonb,
+  'or be marked, until it is back');
 select is(public.set_main((select rattata from mon)), '{"outcome": "set"}'::jsonb, 'one at home can');
 select ok((pg_temp.working((select rattata from mon)) ->> 'is_main')::boolean, 'and work() says which is the partner');
 select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"outcome": "partner"}'::jsonb,

@@ -102,6 +102,8 @@ const sorts: Record<Sort, (a: Item, b: Item) => number> = {
 function hasTask(item: Item, bag: BagItem[]): boolean {
   if (item.kind === 'egg') return item.e.tokens >= item.e.tokens_needed
   const p = item.p
+  // One out on a request waits until it is back.
+  if (p.workplace_id) return false
   return (
     p.can_evolve ||
     p.can_receive_egg ||
