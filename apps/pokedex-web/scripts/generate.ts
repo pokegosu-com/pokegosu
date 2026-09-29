@@ -35,18 +35,21 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to IV: national dex numbers 1 to 493, in every form those
+ * Generations I to V: national dex numbers 1 to 649, in every form those
  * games had. A form a later game added, such as Alolan Raichu or Mega
  * Venusaur, waits for its generation.
  */
-const LAST_DEX_NO = 493
-const LAST_GENERATION = 4
+const LAST_DEX_NO = 649
+const LAST_GENERATION = 5
 
 /**
  * Forms left out though their generation is in. Arceus's ??? type has no
- * plate to hold, so no game shows it, and no type row to point at.
+ * plate to hold, so no game shows it, and no type row to point at. PokéAPI
+ * makes Frillish's and Jellicent's females forms, where a female who looks
+ * different is her species' default form with sprites of her own, as
+ * Pikachu's is; left out, they are.
  */
-const LEFT_OUT_FORMS = new Set(['arceus-unknown'])
+const LEFT_OUT_FORMS = new Set(['arceus-unknown', 'frillish-female', 'jellicent-female'])
 
 /**
  * Forms Pokémon HOME never held, so it has no render of them; they take the
@@ -121,11 +124,19 @@ const POKEDEXES: Record<
     // Heatran, Regigigas, Cresselia, Phione, Darkrai, Shaymin and Arceus.
     appended: [485, 486, 488, 489, 491, 492, 493],
   },
+  // Black 2 and White 2's, not Black and White's, which lists Generation V's
+  // species only, where every other region's lists some from before. It
+  // lists every Generation V species, from Victini at No.0.
+  unova: {
+    apiId: 9,
+    names: { ko: '하나도감', en: 'Unova Pokédex' },
+    versions: ['black-2', 'white-2', 'black', 'white'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260929140001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260929180001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -183,6 +194,7 @@ type EvolutionDetail = {
   known_move: Named | null
   location: Named | null
   party_species: Named | null
+  trade_species: Named | null
   condition_expression: {
     percentage_chance: number | null
     variables: Named[]
@@ -269,6 +281,8 @@ type Evolution = {
   location: string | null
   partySpecies: number | null
   partySlug: string | null
+  tradeSpecies: number | null
+  tradeSlug: string | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -294,6 +308,7 @@ const KNOWN_CONDITIONS = new Set([
   // location names, so the location says it.
   'near_special_rock',
   'party_species',
+  'trade_species',
   'condition_expression',
   'required_pokemon_form',
   // ownWay keeps only the one ending in the form asked for.
@@ -379,7 +394,7 @@ async function nameLocation(location: string) {
 
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to IV ask; anything
+ * A method has a column for each condition Generations I to V ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -416,6 +431,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   if (location) await nameLocation(location)
   const partySlug = detail.party_species?.name ?? null
   const partySpecies = detail.party_species ? idOf(detail.party_species) : null
+  const tradeSlug = detail.trade_species?.name ?? null
+  const tradeSpecies = detail.trade_species ? idOf(detail.trade_species) : null
   const id = [
     trigger,
     level,
@@ -430,6 +447,7 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     move && `knowing-${move}`,
     location && `at-${location}`,
     partySlug && `with-${partySlug}`,
+    tradeSlug && `for-${tradeSlug}`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -450,6 +468,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       location,
       partySpecies,
       partySlug,
+      tradeSpecies,
+      tradeSlug,
     })
   }
   return methods.get(id)!
@@ -550,7 +570,7 @@ async function sha256Of(url: string): Promise<string> {
 }
 
 async function main() {
-  // A hundred at a time: all 493 at once time out on connecting.
+  // A hundred at a time: all 649 at once time out on connecting.
   const species: Species[] = []
   for (let start = 1; start <= LAST_DEX_NO; start += 100) {
     const count = Math.min(100, LAST_DEX_NO - start + 1)
@@ -965,6 +985,7 @@ async function main() {
         'known_move',
         'location',
         'party_species_id',
+        'trade_species_id',
       ],
       ['id'],
       [...methods.values()]
@@ -974,7 +995,7 @@ async function main() {
             `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)},` +
             ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)},` +
             ` ${sql(m.beauty)}, ${sql(m.chance)}, ${sql(m.gender)}, ${sql(m.move)},` +
-            ` ${sql(m.location)}, ${sql(m.partySpecies)})`,
+            ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)})`,
         ),
     ),
     ...upsert(
