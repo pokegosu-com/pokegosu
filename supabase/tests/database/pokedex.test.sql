@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(37);
+select plan(41);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -15,11 +15,13 @@ select is((select count(*)::int from public.pokedex_species where generation = 3
   'and every Generation III species');
 select is((select count(*)::int from public.pokedex_species where generation = 4 and form_of is null), 107,
   'and every Generation IV species');
+select is((select count(*)::int from public.pokedex_species where generation = 5 and form_of is null), 156,
+  'and every Generation V species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 64,
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 83,
   'and every other form those games had, but Arceus''s ??? type');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 493, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 649, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -30,12 +32,16 @@ select is((select count(*)::int from public.pokedex_entries where dex = 'sinnoh'
   'and Platinum''s 210, from Generation IV and before, with the 7 legendaries and mythicals it leaves out after them');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
             where e.dex = 'sinnoh' and s.slug = 'arceus-normal'), 217::smallint, 'Arceus is Sinnoh''s last, No.217');
+select is((select count(*)::int from public.pokedex_entries where dex = 'unova' and is_default), 301,
+  'and Black 2 and White 2''s 301, from Generation V and before');
+select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+            where e.dex = 'unova' and s.slug = 'victini'), 0::smallint, 'Victini is Unova''s No.0');
 select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh'])[s.generation])),
+                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova'])[s.generation])),
   0, 'every species is in its own generation''s regional pokedex');
 
 select isnt(
@@ -99,6 +105,11 @@ select is(
 select is((select evolves_from_id from public.pokedex_species where slug = 'manaphy'), null,
   'Phione shares Manaphy''s chain, but never becomes it');
 select is(public.pokedex_first_form(143), 446, 'Snorlax''s family starts with Munchlax, from Generation IV');
+select is(
+  (select string_agg(s.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s where s.slug in ('escavalier', 'accelgor')),
+  'escavalier:trade-for-shelmet accelgor:trade-for-karrablast',
+  'a method keeps what Generation V adds: trading for a given species');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)

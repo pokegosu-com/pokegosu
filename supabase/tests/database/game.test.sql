@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(104);
+select plan(106);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 247,
-  'a national egg holds the first form of every family up to Generation IV');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 329,
+  'a national egg holds the first form of every family up to Generation V');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -102,6 +102,15 @@ select is(
       and s.slug in ('zubat', 'bulbasaur', 'magnemite', 'feebas', 'turtwig', 'rotom', 'giratina-altered', 'arceus-normal')),
   'zubat magnemite feebas turtwig rotom giratina-altered arceus-normal',
   'Generation IV''s, those from before that Platinum''s pokedex lists, and the legendaries and mythicals it leaves out');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'unova'), 152,
+  'a Unova egg holds the first form of every family Black 2 and White 2''s pokedex lists, those from before too');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'unova' and s.slug in ('victini', 'snivy', 'patrat', 'tirtouga', 'deino', 'zorua')),
+  'victini:mythic snivy:very-rare patrat:common tirtouga:rare zorua:rare deino:very-rare',
+  'Generation V''s starters and Deino are very rare, its fossils rare, and Victini mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -113,7 +122,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 44), ('uncommon', 101), ('rare', 43), ('very-rare', 24), ('mythic', 35) $$,
+  $$ values ('common', 54), ('uncommon', 146), ('rare', 53), ('very-rare', 28), ('mythic', 48) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)

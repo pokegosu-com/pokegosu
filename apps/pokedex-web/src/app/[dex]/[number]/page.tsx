@@ -24,6 +24,7 @@ type Method = {
   known_move: Named | null
   location: Named | null
   party: Named | null
+  trade_species: Named | null
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -32,10 +33,18 @@ const PHYSICAL_STATS: Record<number, string> = {
   [-1]: '공격 < 방어',
 }
 
+/** A name with 와 or 과, as its last syllable ends in a vowel or not. */
+function withAnd(name: string): string {
+  const last = name.charCodeAt(name.length - 1) - 0xac00
+  const closed = last >= 0 && last < 11172 && last % 28 !== 0
+  return `${name}${closed ? '과' : '와'}`
+}
+
 /**
  * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
  * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%", "Lv.20 · ♀",
- * "구르기 배운 채 레벨업", "천관산에서 레벨업", "레벨업 · 동료 총어".
+ * "구르기 배운 채 레벨업", "천관산에서 레벨업", "레벨업 · 동료 총어",
+ * "쪼마리와 통신교환", "딱정곤과 통신교환".
  */
 function takes(method: Method): string {
   const parts: string[] = []
@@ -45,6 +54,8 @@ function takes(method: Method): string {
   else if (method.known_move) parts.push(`${ko(method.known_move)} 배운 채 ${ko(method.trigger)}`)
   else if (method.location) parts.push(`${ko(method.location)}에서 ${ko(method.trigger)}`)
   else if (method.party) parts.push(`${ko(method.trigger)} · 동료 ${ko(method.party)}`)
+  else if (method.trade_species)
+    parts.push(`${withAnd(ko(method.trade_species))} ${ko(method.trigger)}`)
   // Without the number: the games ask 220 up to Generation VII and 160 since,
   // the same for every species in a game, and PokéAPI mixes the two.
   if (method.min_happiness) parts.push('친밀도')
@@ -97,7 +108,7 @@ export async function generateStaticParams({ params }: { params: { dex: string }
 export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const { dex, number } = await params
   const n = Number(number)
-  if (!Number.isInteger(n) || n < 1) notFound()
+  if (!Number.isInteger(n) || n < 0) notFound()
 
   const db = pokedex()
   const [forms, chain, around, kind, types] = await Promise.all([
@@ -165,7 +176,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         held_item:pokedex_items!held_item(ko_name, en_name),
         known_move:pokedex_moves(ko_name, en_name),
         location:pokedex_locations(ko_name, en_name),
-        party:pokedex_species!party_species_id(ko_name, en_name)
+        party:pokedex_species!party_species_id(ko_name, en_name),
+        trade_species:pokedex_species!trade_species_id(ko_name, en_name)
       )`,
     )
     .in('id', familyIds)

@@ -728,6 +728,7 @@ export type Database = {
           party_species_id: number | null
           relative_physical_stats: number | null
           time_of_day: string | null
+          trade_species_id: number | null
           trigger: string
         }
         Insert: {
@@ -744,6 +745,7 @@ export type Database = {
           party_species_id?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
+          trade_species_id?: number | null
           trigger: string
         }
         Update: {
@@ -760,6 +762,7 @@ export type Database = {
           party_species_id?: number | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
+          trade_species_id?: number | null
           trigger?: string
         }
         Relationships: [
@@ -794,6 +797,13 @@ export type Database = {
           {
             foreignKeyName: 'pokedex_evolution_methods_party_species_id_fkey'
             columns: ['party_species_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_trade_species_id_fkey'
+            columns: ['trade_species_id']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
             referencedColumns: ['id']
