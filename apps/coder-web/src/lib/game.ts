@@ -189,7 +189,14 @@ export type Work =
         bonus_points: number
       }
       /** The person's own workplace: active hours since it opened, and how many are paid. */
-      trainer: { hours: number; hours_paid: number; points_waiting: number; hours_to_bonus: number }
+      trainer: {
+        /** Their display name, which a trainer with a handle always has. */
+        name: string | null
+        hours: number
+        hours_paid: number
+        points_waiting: number
+        hours_to_bonus: number
+      }
       workplaces: Workplace[]
       pokemon: Worker[]
     }

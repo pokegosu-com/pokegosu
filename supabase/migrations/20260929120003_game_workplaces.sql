@@ -475,7 +475,7 @@ $$;
 --   → {"started": true, "points": 1234,
 --      "rules": {"points_per_hour", "shift_hours", "min_work_level",
 --                "bonus_every_hours", "bonus_points"},
---      "trainer": {"hours", "hours_paid", "points_waiting", "hours_to_bonus"},
+--      "trainer": {"name", "hours", "hours_paid", "points_waiting", "hours_to_bonus"},
 --      "workplaces": [{"id", "slot", "client": {"species_id", "ko_name", "en_name", "sprites"},
 --                      "task": {"id", "ko_name", "en_name"},
 --                      "types": [{"id", "ko_name", "en_name"}],
@@ -527,6 +527,7 @@ begin
       'bonus_every_hours', g.bonus_every_hours,
       'bonus_points', g.bonus_points),
     'trainer', jsonb_build_object(
+      'name', (select p.display_name from public.profiles p where p.id = caller),
       'hours', hours,
       'hours_paid', trainer.work_hours_paid,
       'points_waiting', unpaid * g.points_per_hour

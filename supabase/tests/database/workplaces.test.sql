@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(61);
+select plan(62);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -193,11 +193,17 @@ select pg_temp.as_person();
 -- The person's own pay
 -- ------------------------------------------------------------
 select is(public.work() -> 'trainer',
-  '{"hours": 8, "hours_paid": 0, "points_waiting": 80, "hours_to_bonus": 16}'::jsonb,
+  '{"name": null, "hours": 8, "hours_paid": 0, "points_waiting": 80, "hours_to_bonus": 16}'::jsonb,
   'the person earns 10 an hour, from when they started');
 select is(public.settle_trainer(), '{"outcome": "settled", "hours": 8, "points": 80, "bonus": 0}'::jsonb,
   'paid when asked');
 select is(public.settle_trainer(), '{"outcome": "nothing"}'::jsonb, 'and not twice');
+
+reset role;
+update public.profiles set username = 'ash', display_name = '지우'
+ where id = '00000000-0000-0000-0000-00000000000a';
+select pg_temp.as_person();
+select is(public.work() -> 'trainer' ->> 'name', '지우', 'the person works under their display name');
 
 reset role;
 select pg_temp.work_hours(8, 30);
