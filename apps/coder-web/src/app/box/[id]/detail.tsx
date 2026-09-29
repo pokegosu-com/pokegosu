@@ -222,16 +222,22 @@ function PokemonDetail({
                   {ko(r)} 받기
                 </button>
               ))}
-              {!p.is_main && (
-                <button
-                  type="button"
-                  className={quiet}
-                  disabled={busy}
-                  onClick={() => act({ fn: 'set_main', companion_id: p.id })}
-                >
-                  파트너로
-                </button>
-              )}
+              {/* One out on a request becomes the partner only once it is back. */}
+              {!p.is_main &&
+                (p.workplace_id ? (
+                  <Link href="/requests" className="text-muted hover:text-ink self-center text-xs">
+                    의뢰를 하는 중
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className={quiet}
+                    disabled={busy}
+                    onClick={() => act({ fn: 'set_main', companion_id: p.id })}
+                  >
+                    파트너로
+                  </button>
+                ))}
             </div>
           )}
         </div>
