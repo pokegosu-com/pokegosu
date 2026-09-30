@@ -58,8 +58,7 @@ type Claim struct {
 	// the person approved.
 	DeviceName string
 
-	// EnrolledAt is when this machine was first let in, by the server's
-	// clock. Enrolling again does not move it.
+	// EnrolledAt is when this machine was let in, by the server's clock.
 	EnrolledAt time.Time
 }
 
