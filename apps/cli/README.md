@@ -48,6 +48,8 @@ Nothing secret is typed or pasted. The code is worth little — ten minutes, one
 
 `pokegosu auth logout` retires this machine in the account, as deleting it in the web does, and deletes its settings. Its key stops working, and the usage it sent stays in the account. Retiring is final: a login afterwards enrols this machine as a new machine. If the server cannot be reached, the settings are kept, since the key may still work.
 
+`pokegosu auth status` asks the server which machine this is and which account it belongs to. It never prints the key, and it fails when the machine is not enrolled or its key no longer works, such as after the machine was deleted in the web, so a script can tell from the exit status.
+
 For a deployment other than the default, give its address: `pokegosu auth login --url https://pokegosu.example.com`. The CLI reads `/.well-known/pokegosu.json` there to find the rest, so no backend address has to be known or typed.
 
 Then have your coding agent run the sync:

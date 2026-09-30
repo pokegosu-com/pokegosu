@@ -434,3 +434,6 @@ verify_jwt = false
 
 [functions.retire-device]
 verify_jwt = false
+
+[functions.whoami]
+verify_jwt = false
