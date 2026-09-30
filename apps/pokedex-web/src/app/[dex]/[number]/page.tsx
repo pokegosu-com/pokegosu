@@ -25,6 +25,11 @@ type Method = {
   location: Named | null
   party: Named | null
   trade_species: Named | null
+  party_type: Named | null
+  known_move_type: Named | null
+  min_affection: number | null
+  needs_overworld_rain: boolean
+  turn_upside_down: boolean
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -44,7 +49,8 @@ function withAnd(name: string): string {
  * What an evolution takes, as a phrase: "Lv.16", "천둥의돌 사용", "친밀도 · 밤",
  * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%", "Lv.20 · ♀",
  * "구르기 배운 채 레벨업", "천관산에서 레벨업", "레벨업 · 동료 총어",
- * "쪼마리와 통신교환", "딱정곤과 통신교환".
+ * "쪼마리와 통신교환", "딱정곤과 통신교환", "Lv.32 · 동료 악타입",
+ * "페어리타입 기술 배운 채 레벨업 · 절친도", "Lv.50 · 비", "Lv.30 · 기기를 거꾸로".
  */
 function takes(method: Method): string {
   const parts: string[] = []
@@ -52,6 +58,8 @@ function takes(method: Method): string {
   else if (method.held_item) parts.push(`${ko(method.held_item)} 지닌 채 ${ko(method.trigger)}`)
   else if (method.trigger.id === 'level-up' && method.level) parts.push(`Lv.${method.level}`)
   else if (method.known_move) parts.push(`${ko(method.known_move)} 배운 채 ${ko(method.trigger)}`)
+  else if (method.known_move_type)
+    parts.push(`${ko(method.known_move_type)}타입 기술 배운 채 ${ko(method.trigger)}`)
   else if (method.location) parts.push(`${ko(method.location)}에서 ${ko(method.trigger)}`)
   else if (method.party) parts.push(`${ko(method.trigger)} · 동료 ${ko(method.party)}`)
   else if (method.trade_species)
@@ -59,6 +67,11 @@ function takes(method: Method): string {
   // Without the number: the games ask 220 up to Generation VII and 160 since,
   // the same for every species in a game, and PokéAPI mixes the two.
   if (method.min_happiness) parts.push('친밀도')
+  // Pokémon-Amie's hearts, which the games count apart from friendship.
+  if (method.min_affection) parts.push('절친도')
+  if (method.party_type) parts.push(`동료 ${ko(method.party_type)}타입`)
+  if (method.needs_overworld_rain) parts.push('비')
+  if (method.turn_upside_down) parts.push('기기를 거꾸로')
   if (method.time_of_day) parts.push(method.time_of_day === 'day' ? '낮' : '밤')
   if (method.relative_physical_stats !== null)
     parts.push(PHYSICAL_STATS[method.relative_physical_stats])
@@ -89,6 +102,14 @@ const STATS = [
 /** A form's own name, or 기본 for a default form the games name nothing. */
 function formName(form: { ko_form_name: string | null; en_form_name: string | null }): string {
   return form.ko_form_name ?? form.en_form_name ?? '기본'
+}
+
+/**
+ * A form its own species becomes, as Charizard Mega Evolves: a stage in the
+ * family, not a look of the species.
+ */
+function isStage(form: { form_of: number | null; evolves_from_id: number | null }): boolean {
+  return form.form_of !== null && form.evolves_from_id === form.form_of
 }
 
 /** Every number the pokedex lists, each built as a file. */
@@ -168,16 +189,20 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const members = await db
     .from('pokedex_species')
     .select(
-      `id, slug, ko_name, en_name, front:sprites->>front, front_shiny:sprites->>front_shiny,
+      `id, slug, ko_name, en_name, ko_form_name, en_form_name, form_of, evolves_from_id,
+      front:sprites->>front, front_shiny:sprites->>front_shiny,
       method:pokedex_evolution_methods!evolution_method(
         level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
+        min_affection, needs_overworld_rain, turn_upside_down,
         trigger:pokedex_evolution_triggers(id, ko_name, en_name),
         item:pokedex_items!item(ko_name, en_name),
         held_item:pokedex_items!held_item(ko_name, en_name),
         known_move:pokedex_moves(ko_name, en_name),
         location:pokedex_locations(ko_name, en_name),
         party:pokedex_species!party_species_id(ko_name, en_name),
-        trade_species:pokedex_species!trade_species_id(ko_name, en_name)
+        trade_species:pokedex_species!trade_species_id(ko_name, en_name),
+        party_type:pokedex_types!party_type(ko_name, en_name),
+        known_move_type:pokedex_types!known_move_type(ko_name, en_name)
       )`,
     )
     .in('id', familyIds)
@@ -199,9 +224,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   }
 
   // Every form, and where a female looks different, as Pikachu's tail does,
-  // the male and the female each. Each links to itself.
-  const manyForms = forms.data.length > 1
-  const looks = forms.data.flatMap(({ is_default, species: f }) => {
+  // the male and the female each. Each links to itself. A stage is in the
+  // family instead.
+  const lookForms = forms.data.filter(({ species: f }) => !isStage(f))
+  const manyForms = lookForms.length > 1
+  const looks = lookForms.flatMap(({ is_default, species: f }) => {
     const s = f.sprites as {
       front?: string
       front_female?: string
@@ -279,7 +306,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                   </p>
                   <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
                     {ko(p)}
-                    {manyForms && (
+                    {(manyForms || isStage(p)) && (
                       <span className="text-muted text-base font-normal tracking-normal">
                         {formName(p)}
                       </span>
@@ -392,7 +419,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                               shiny={f.front_shiny ?? undefined}
                             />
                           </span>
-                          {ko(f)}
+                          {isStage(f) ? formName(f) : ko(f)}
                           <span className="text-muted font-mono text-[11px]">
                             {dexNo(f.number)}
                           </span>

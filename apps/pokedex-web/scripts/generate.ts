@@ -35,21 +35,48 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to V: national dex numbers 1 to 649, in every form those
- * games had. A form a later game added, such as Alolan Raichu or Mega
- * Venusaur, waits for its generation.
+ * Generations I to VI: national dex numbers 1 to 721, in every form those
+ * games had. A form a later game added, such as Alolan Raichu or Ash-Greninja,
+ * waits for its generation.
  */
-const LAST_DEX_NO = 649
-const LAST_GENERATION = 5
+const LAST_DEX_NO = 721
+const LAST_GENERATION = 6
 
 /**
  * Forms left out though their generation is in. Arceus's ??? type has no
  * plate to hold, so no game shows it, and no type row to point at. PokéAPI
- * makes Frillish's and Jellicent's females forms, where a female who looks
- * different is her species' default form with sprites of her own, as
- * Pikachu's is; left out, they are.
+ * makes Frillish's, Jellicent's and Pyroar's females forms, where a female
+ * who looks different is her species' default form with sprites of her own,
+ * as Pikachu's is; left out, they are. Female Meowstic, with moves of her
+ * own, stays a form. Cosplay Pikachu is only Omega Ruby's and Alpha
+ * Sapphire's, and never leaves them.
  */
-const LEFT_OUT_FORMS = new Set(['arceus-unknown', 'frillish-female', 'jellicent-female'])
+const LEFT_OUT_FORMS = new Set([
+  'arceus-unknown',
+  'frillish-female',
+  'jellicent-female',
+  'pyroar-female',
+  'pikachu-rock-star',
+  'pikachu-belle',
+  'pikachu-pop-star',
+  'pikachu-phd',
+  'pikachu-libre',
+  'pikachu-cosplay',
+])
+
+/**
+ * Species whose forms are all left out but the default. PokéAPI gives
+ * Scatterbug and Spewpa each of Vivillon's patterns, which no game shows
+ * until one becomes a Vivillon; the pattern is where it evolves.
+ */
+const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa'])
+
+/**
+ * Species whose default form alone comes from the form before, as Mothim
+ * comes only from Plant Cloak Burmy: every Vivillon pattern comes from
+ * Spewpa, and twenty in a row would bury the rest of the family.
+ */
+const ONLY_DEFAULT_EVOLVES = new Set(['vivillon'])
 
 /**
  * Forms Pokémon HOME never held, so it has no render of them; they take the
@@ -78,6 +105,7 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-ice': '얼음타입',
   'arceus-dragon': '드래곤타입',
   'arceus-dark': '악타입',
+  'arceus-fairy': '페어리타입',
 }
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
@@ -89,7 +117,12 @@ const LANGUAGES = ['ko', 'en']
  */
 const POKEDEXES: Record<
   string,
-  { apiId: number; names: Record<string, string>; versions: string[]; appended?: number[] }
+  {
+    apiId: number | number[]
+    names: Record<string, string>
+    versions: string[]
+    appended?: number[]
+  }
 > = {
   national: { apiId: 1, names: { ko: '전국도감', en: 'National Pokédex' }, versions: [] },
   kanto: {
@@ -132,11 +165,22 @@ const POKEDEXES: Record<
     names: { ko: '하나도감', en: 'Unova Pokédex' },
     versions: ['black-2', 'white-2', 'black', 'white'],
   },
+  // X and Y's, which the games split in three, Central, Coastal and Mountain,
+  // each numbered from 1. One pokedex here numbers them on from each other,
+  // 1 to 454, as one Kalos egg holds all three. PokéAPI adds Diancie, Hoopa
+  // and Volcanion at Central's end, where no game lists them; they go after
+  // Mountain's last instead, as Platinum's missing seven do.
+  kalos: {
+    apiId: [12, 13, 14],
+    names: { ko: '칼로스도감', en: 'Kalos Pokédex' },
+    versions: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
+    appended: [719, 720, 721],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260929180001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20260930140001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -194,7 +238,12 @@ type EvolutionDetail = {
   known_move: Named | null
   location: Named | null
   party_species: Named | null
+  party_type: Named | null
   trade_species: Named | null
+  known_move_type: Named | null
+  min_affection: number | null
+  needs_overworld_rain: boolean
+  turn_upside_down: boolean
   condition_expression: {
     percentage_chance: number | null
     variables: Named[]
@@ -242,6 +291,70 @@ function prose(text: string): string {
     .trim()
 }
 
+/**
+ * Mega Evolution and Primal Reversion, as a stage after the form they come
+ * from rather than a look of it: what each holds, or for Rayquaza knows.
+ * PokéAPI's chains leave them out, so they are listed here.
+ */
+const MEGA_EVOLUTIONS: Record<string, { trigger: string; item?: string; move?: string }> = {
+  'venusaur-mega': { trigger: 'mega-evolution', item: 'venusaurite' },
+  'charizard-mega-x': { trigger: 'mega-evolution', item: 'charizardite-x' },
+  'charizard-mega-y': { trigger: 'mega-evolution', item: 'charizardite-y' },
+  'blastoise-mega': { trigger: 'mega-evolution', item: 'blastoisinite' },
+  'beedrill-mega': { trigger: 'mega-evolution', item: 'beedrillite' },
+  'pidgeot-mega': { trigger: 'mega-evolution', item: 'pidgeotite' },
+  'alakazam-mega': { trigger: 'mega-evolution', item: 'alakazite' },
+  'slowbro-mega': { trigger: 'mega-evolution', item: 'slowbronite' },
+  'gengar-mega': { trigger: 'mega-evolution', item: 'gengarite' },
+  'kangaskhan-mega': { trigger: 'mega-evolution', item: 'kangaskhanite' },
+  'pinsir-mega': { trigger: 'mega-evolution', item: 'pinsirite' },
+  'gyarados-mega': { trigger: 'mega-evolution', item: 'gyaradosite' },
+  'aerodactyl-mega': { trigger: 'mega-evolution', item: 'aerodactylite' },
+  'mewtwo-mega-x': { trigger: 'mega-evolution', item: 'mewtwonite-x' },
+  'mewtwo-mega-y': { trigger: 'mega-evolution', item: 'mewtwonite-y' },
+  'ampharos-mega': { trigger: 'mega-evolution', item: 'ampharosite' },
+  'steelix-mega': { trigger: 'mega-evolution', item: 'steelixite' },
+  'scizor-mega': { trigger: 'mega-evolution', item: 'scizorite' },
+  'heracross-mega': { trigger: 'mega-evolution', item: 'heracronite' },
+  'houndoom-mega': { trigger: 'mega-evolution', item: 'houndoominite' },
+  'tyranitar-mega': { trigger: 'mega-evolution', item: 'tyranitarite' },
+  'sceptile-mega': { trigger: 'mega-evolution', item: 'sceptilite' },
+  'blaziken-mega': { trigger: 'mega-evolution', item: 'blazikenite' },
+  'swampert-mega': { trigger: 'mega-evolution', item: 'swampertite' },
+  'gardevoir-mega': { trigger: 'mega-evolution', item: 'gardevoirite' },
+  'sableye-mega': { trigger: 'mega-evolution', item: 'sablenite' },
+  'mawile-mega': { trigger: 'mega-evolution', item: 'mawilite' },
+  'aggron-mega': { trigger: 'mega-evolution', item: 'aggronite' },
+  'medicham-mega': { trigger: 'mega-evolution', item: 'medichamite' },
+  'manectric-mega': { trigger: 'mega-evolution', item: 'manectite' },
+  'sharpedo-mega': { trigger: 'mega-evolution', item: 'sharpedonite' },
+  'camerupt-mega': { trigger: 'mega-evolution', item: 'cameruptite' },
+  'altaria-mega': { trigger: 'mega-evolution', item: 'altarianite' },
+  'banette-mega': { trigger: 'mega-evolution', item: 'banettite' },
+  'absol-mega': { trigger: 'mega-evolution', item: 'absolite' },
+  'glalie-mega': { trigger: 'mega-evolution', item: 'glalitite' },
+  'salamence-mega': { trigger: 'mega-evolution', item: 'salamencite' },
+  'metagross-mega': { trigger: 'mega-evolution', item: 'metagrossite' },
+  'latias-mega': { trigger: 'mega-evolution', item: 'latiasite' },
+  'latios-mega': { trigger: 'mega-evolution', item: 'latiosite' },
+  'kyogre-primal': { trigger: 'primal-reversion', item: 'blue-orb' },
+  'groudon-primal': { trigger: 'primal-reversion', item: 'red-orb' },
+  'rayquaza-mega': { trigger: 'mega-evolution', move: 'dragon-ascent' },
+  'lopunny-mega': { trigger: 'mega-evolution', item: 'lopunnite' },
+  'garchomp-mega': { trigger: 'mega-evolution', item: 'garchompite' },
+  'lucario-mega': { trigger: 'mega-evolution', item: 'lucarionite' },
+  'abomasnow-mega': { trigger: 'mega-evolution', item: 'abomasite' },
+  'gallade-mega': { trigger: 'mega-evolution', item: 'galladite' },
+  'audino-mega': { trigger: 'mega-evolution', item: 'audinite' },
+  'diancie-mega': { trigger: 'mega-evolution', item: 'diancite' },
+}
+
+/** Triggers PokéAPI has no row for, which MEGA_EVOLUTIONS names. */
+const TRIGGERS_NOT_IN_POKEAPI: Record<string, Record<string, string>> = {
+  'mega-evolution': { ko: '메가진화', en: 'Mega Evolution' },
+  'primal-reversion': { ko: '원시회귀', en: 'Primal Reversion' },
+}
+
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
   'level-up': '레벨업',
@@ -283,6 +396,11 @@ type Evolution = {
   partySlug: string | null
   tradeSpecies: number | null
   tradeSlug: string | null
+  partyType: string | null
+  moveType: string | null
+  affection: number | null
+  rain: boolean
+  upsideDown: boolean
 }
 
 const methods = new Map<string, Evolution>()
@@ -309,6 +427,11 @@ const KNOWN_CONDITIONS = new Set([
   'near_special_rock',
   'party_species',
   'trade_species',
+  'party_type',
+  'known_move_type',
+  'min_affection',
+  'needs_overworld_rain',
+  'turn_upside_down',
   'condition_expression',
   'required_pokemon_form',
   // ownWay keeps only the one ending in the form asked for.
@@ -355,14 +478,19 @@ const GENDERS: Record<number, 'female' | 'male'> = { 1: 'female', 2: 'male' }
  * The detail for one form becoming another. PokéAPI lists a regional form's
  * way beside the rest, such as Alolan Rattata evolving only at night, and no
  * regional form is kept yet. A species whose every form is named, as Burmy's
- * cloaks are, lists a way per form, each from its form and to its own.
+ * cloaks are, lists a way per form, each from its form and to its own; with
+ * no form to come from, any way to its own will do.
  */
-function ownWay(details: EvolutionDetail[], from: string, to: string): EvolutionDetail | undefined {
+function ownWay(
+  details: EvolutionDetail[],
+  from: string | null,
+  to: string,
+): EvolutionDetail | undefined {
   return details.find(
     (d) =>
       !d.region &&
       (!d.evolved_pokemon_form || d.evolved_pokemon_form.name === to) &&
-      (!d.required_pokemon_form || d.required_pokemon_form.name === from),
+      (!d.required_pokemon_form || from === null || d.required_pokemon_form.name === from),
   )
 }
 
@@ -394,7 +522,7 @@ async function nameLocation(location: string) {
 
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to V ask; anything
+ * A method has a column for each condition Generations I to VI ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -407,6 +535,9 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     throw new Error(`an evolution condition species has no column for: ${JSON.stringify(detail)}`)
   }
   const trigger = detail.trigger.name
+  if (!triggers.has(trigger) && TRIGGERS_NOT_IN_POKEAPI[trigger]) {
+    triggers.set(trigger, TRIGGERS_NOT_IN_POKEAPI[trigger])
+  }
   if (!triggers.has(trigger)) {
     const ko = TRIGGER_KO_NAMES[trigger]
     if (!ko) throw new Error(`no Korean name for the trigger ${trigger}`)
@@ -433,6 +564,11 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   const partySpecies = detail.party_species ? idOf(detail.party_species) : null
   const tradeSlug = detail.trade_species?.name ?? null
   const tradeSpecies = detail.trade_species ? idOf(detail.trade_species) : null
+  const partyType = detail.party_type?.name ?? null
+  const moveType = detail.known_move_type?.name ?? null
+  const affection = detail.min_affection ?? null
+  const rain = detail.needs_overworld_rain === true
+  const upsideDown = detail.turn_upside_down === true
   const id = [
     trigger,
     level,
@@ -448,6 +584,11 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     location && `at-${location}`,
     partySlug && `with-${partySlug}`,
     tradeSlug && `for-${tradeSlug}`,
+    moveType && `knowing-${moveType}-move`,
+    affection && `affection-${affection}`,
+    partyType && `with-${partyType}-type`,
+    rain && 'in-rain',
+    upsideDown && 'upside-down',
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -470,6 +611,11 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       partySlug,
       tradeSpecies,
       tradeSlug,
+      partyType,
+      moveType,
+      affection,
+      rain,
+      upsideDown,
     })
   }
   return methods.get(id)!
@@ -600,6 +746,7 @@ async function main() {
       const pokemon = await get<Pokemon>(variety.pokemon.url)
       for (const form of await Promise.all(pokemon.forms.map((f) => get<Form>(f.url)))) {
         if (LEFT_OUT_FORMS.has(form.name)) continue
+        if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
         kept.push({ form, pokemon })
       }
@@ -623,7 +770,9 @@ async function main() {
   // A default form evolves from the default form before it. Another form
   // evolves from the form of the same name, as East Sea Gastrodon from East
   // Sea Shellos, and from nothing where there is none: Sunshine Cherrim is
-  // only Cherrim in the sun.
+  // only Cherrim in the sun. A form with none of its name before it that a
+  // way names for its own, as female Meowstic is a female Espurr's, evolves
+  // from the default form.
   const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
   const chainUrls = [...new Set(species.map((s) => s.evolution_chain.url))]
   for (const url of chainUrls) {
@@ -634,12 +783,22 @@ async function main() {
         const to = idOf(next.species)
         if (from <= LAST_DEX_NO && to <= LAST_DEX_NO && next.evolution_details.length > 0) {
           for (const target of formsOf.get(to)!) {
+            const named = next.evolution_details.some(
+              (d) => !d.region && d.evolved_pokemon_form?.name === target.form.name,
+            )
+            const fromDefault = ONLY_DEFAULT_EVOLVES.has(next.species.name)
+            if (fromDefault && target.form.id !== to) continue
             const source =
               target.form.id === to
                 ? defaultOf(from)
-                : formsOf.get(from)!.find((k) => k.form.form_name === target.form.form_name)
+                : (formsOf.get(from)!.find((k) => k.form.form_name === target.form.form_name) ??
+                  (named ? defaultOf(from) : undefined))
             if (!source) continue
-            const detail = ownWay(next.evolution_details, source.form.name, target.form.name)
+            const detail = ownWay(
+              next.evolution_details,
+              fromDefault ? null : source.form.name,
+              target.form.name,
+            )
             if (!detail)
               throw new Error(`no way of its own from ${source.form.name} to ${target.form.name}`)
             reached.set(target.form.id, { from: source.form.id, detail })
@@ -650,14 +809,32 @@ async function main() {
     }
     walk(chain)
   }
+  // Every Mega Evolution and Primal Reversion kept, from its default form.
+  for (const s of species) {
+    for (const { form } of formsOf.get(s.id)!) {
+      const mega = MEGA_EVOLUTIONS[form.name]
+      if (!mega && /-(mega|primal)(-|$)/.test(form.name))
+        throw new Error(`no Mega Evolution listed for ${form.name}`)
+      if (!mega) continue
+      const named = (name: string) => ({ name, url: '' })
+      reached.set(form.id, {
+        from: s.id,
+        detail: {
+          trigger: named(mega.trigger),
+          held_item: mega.item ? named(mega.item) : null,
+          known_move: mega.move ? named(mega.move) : null,
+        } as EvolutionDetail,
+      })
+    }
+  }
 
   const rows: Row[] = []
   for (const s of species) {
     const kept = formsOf.get(s.id)!
     for (const { form, pokemon } of kept) {
       const evolution = reached.get(form.id)
-      // Named only where there is more than one to tell apart, so Kyogre, whose
-      // Primal form is a later game's, has no name for its one.
+      // Named only where there is more than one to tell apart, so Greninja,
+      // whose Ash-Greninja is a later game's, has no name for its one.
       const formNames: Record<string, string> =
         kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
@@ -668,8 +845,12 @@ async function main() {
       const types = form.types.length > 0 ? form.types : pokemon.types
       // Of the species' default form only: no other form kept has a female of
       // its own. PokéAPI's front_female is no guide, as it gives Nidoran♀
-      // her one sprite there.
-      const femaleDiffers = s.has_gender_differences && form.id === s.id
+      // her one sprite there. Where a female is a form, as Meowstic's is, the
+      // default form is the male alone.
+      const femaleDiffers =
+        s.has_gender_differences &&
+        form.id === s.id &&
+        !kept.some((k) => k.form.form_name === 'female')
       rows.push({
         id: form.id,
         slug: form.name,
@@ -738,12 +919,21 @@ async function main() {
     description: Record<string, string>
   }[] = []
   for (const [dex, { apiId, versions, appended = [] }] of Object.entries(POKEDEXES)) {
-    const listed = await get<{
-      pokemon_entries: { entry_number: number; pokemon_species: { url: string } }[]
-    }>(`pokedex/${apiId}`)
-    const last = Math.max(...listed.pokemon_entries.map((e) => e.entry_number))
+    // A pokedex in sections numbers each on from the one before.
+    const listed: { entry_number: number; pokemon_species: { url: string } }[] = []
+    for (const id of [apiId].flat()) {
+      const section = await get<{
+        pokemon_entries: { entry_number: number; pokemon_species: { url: string } }[]
+      }>(`pokedex/${id}`)
+      const before = listed.length > 0 ? Math.max(...listed.map((e) => e.entry_number)) : 0
+      for (const e of section.pokemon_entries) {
+        if (appended.includes(idOf(e.pokemon_species))) continue
+        listed.push({ ...e, entry_number: before + e.entry_number })
+      }
+    }
+    const last = Math.max(...listed.map((e) => e.entry_number))
     for (const entry of [
-      ...listed.pokemon_entries,
+      ...listed,
       ...appended.map((id, i) => ({
         entry_number: last + 1 + i,
         pokemon_species: { url: `pokemon-species/${id}/` },
@@ -986,6 +1176,11 @@ async function main() {
         'location',
         'party_species_id',
         'trade_species_id',
+        'party_type',
+        'known_move_type',
+        'min_affection',
+        'needs_overworld_rain',
+        'turn_upside_down',
       ],
       ['id'],
       [...methods.values()]
@@ -995,7 +1190,8 @@ async function main() {
             `  (${sql(m.id)}, ${sql(m.trigger)}, ${sql(m.level)}, ${sql(m.item)},` +
             ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)},` +
             ` ${sql(m.beauty)}, ${sql(m.chance)}, ${sql(m.gender)}, ${sql(m.move)},` +
-            ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)})`,
+            ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)},` +
+            ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown})`,
         ),
     ),
     ...upsert(

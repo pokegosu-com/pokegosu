@@ -721,15 +721,20 @@ export type Database = {
           id: string
           item: string | null
           known_move: string | null
+          known_move_type: string | null
           level: number | null
           location: string | null
+          min_affection: number | null
           min_beauty: number | null
           min_happiness: number | null
+          needs_overworld_rain: boolean
           party_species_id: number | null
+          party_type: string | null
           relative_physical_stats: number | null
           time_of_day: string | null
           trade_species_id: number | null
           trigger: string
+          turn_upside_down: boolean
         }
         Insert: {
           chance?: number | null
@@ -738,15 +743,20 @@ export type Database = {
           id: string
           item?: string | null
           known_move?: string | null
+          known_move_type?: string | null
           level?: number | null
           location?: string | null
+          min_affection?: number | null
           min_beauty?: number | null
           min_happiness?: number | null
+          needs_overworld_rain?: boolean
           party_species_id?: number | null
+          party_type?: string | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trade_species_id?: number | null
           trigger: string
+          turn_upside_down?: boolean
         }
         Update: {
           chance?: number | null
@@ -755,15 +765,20 @@ export type Database = {
           id?: string
           item?: string | null
           known_move?: string | null
+          known_move_type?: string | null
           level?: number | null
           location?: string | null
+          min_affection?: number | null
           min_beauty?: number | null
           min_happiness?: number | null
+          needs_overworld_rain?: boolean
           party_species_id?: number | null
+          party_type?: string | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trade_species_id?: number | null
           trigger?: string
+          turn_upside_down?: boolean
         }
         Relationships: [
           {
@@ -788,6 +803,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'pokedex_evolution_methods_known_move_type_fkey'
+            columns: ['known_move_type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'pokedex_evolution_methods_location_fkey'
             columns: ['location']
             isOneToOne: false
@@ -799,6 +821,13 @@ export type Database = {
             columns: ['party_species_id']
             isOneToOne: false
             referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_party_type_fkey'
+            columns: ['party_type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
             referencedColumns: ['id']
           },
           {
@@ -1225,6 +1254,7 @@ export type Database = {
         Args: { companion_id: string; workplace_id: string }
         Returns: Json
       }
+      at_work: { Args: { companion_id: string }; Returns: boolean }
       box: { Args: never; Returns: Json }
       buy: { Args: { shop_item_id: string }; Returns: Json }
       claim: { Args: { companion_id: string; tokens: number }; Returns: Json }
@@ -1323,6 +1353,7 @@ export type Database = {
         Returns: boolean
       }
       reroll: { Args: { workplace_id: string }; Returns: Json }
+      retire_device: { Args: { api_key_hash: string }; Returns: Json }
       roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
       roll_task: { Args: { client_id: number }; Returns: string }
@@ -1358,6 +1389,7 @@ export type Database = {
         Args: { companion_id: string; item_id: string }
         Returns: Json
       }
+      whoami: { Args: { api_key_hash: string }; Returns: Json }
       work: { Args: never; Returns: Json }
     }
     Enums: {
