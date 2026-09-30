@@ -2,9 +2,10 @@
 //
 // These functions serve machines, which are not signed-in people, so they
 // connect with the secret key. They reach the database only through the
-// functions granted to service_role — start_enrollment, claim_enrollment and
-// ingest — and never through a table. The secret key would let them do far more; keeping
-// every call to one of those two is what keeps a mistake here small.
+// functions granted to service_role — start_enrollment, claim_enrollment,
+// ingest and whoami — and never through a table. The secret key would let
+// them do far more; keeping every call to one of those is what keeps a
+// mistake here small.
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 
@@ -66,7 +67,7 @@ export type Outcome = { outcome: string } & Record<string, unknown>
  * see, only something to log and turn into a 500.
  */
 export async function call(
-  fn: 'start_enrollment' | 'claim_enrollment' | 'ingest',
+  fn: 'start_enrollment' | 'claim_enrollment' | 'ingest' | 'whoami',
   args: Record<string, unknown>,
 ): Promise<Outcome> {
   const { data, error } = await admin().rpc(fn, args)

@@ -1,13 +1,15 @@
 // Package account is how a client in Go joins an account: finding the
-// deployment it was pointed at, and enrolling this machine with it.
+// deployment it was pointed at, enrolling this machine with it, and asking
+// afterwards which machine and whose it is.
 //
 // Enrolling belongs to the account rather than to any one service, because a
 // machine is enrolled once and every service speaks with the key that leaves
 // behind.
 //
-// Neither call carries a key. They are what happens before there is one: the
+// Enrolling carries no key. It is what happens before there is one: the
 // machine asks under a code it drew, a person approves it in the web, and the
 // machine comes back for the key with the claim token the server gave it.
+// Whoami is the one call made with the key that leaves behind.
 package auth
 
 import (
@@ -49,6 +51,5 @@ func RequestGone(err error) bool {
 // the request away, which means it never reached us and says nothing about
 // what it carried.
 func GatewayRefused(err error) bool {
-	return transport.StatusIs(err, http.StatusUnauthorized) &&
-		!transport.CodeIs(err, "unauthorized")
+	return transport.StatusIs(err, http.StatusUnauthorized) && !KeyRefused(err)
 }

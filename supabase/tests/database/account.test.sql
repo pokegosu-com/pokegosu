@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(39);
+select plan(42);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -63,7 +63,7 @@ select set_eq($$ select name from pg_temp.callable where authenticated $$,
   'a signed-in person can look at a request, approve it, read usage, and play');
 
 select set_eq($$ select name from pg_temp.callable where service_role and not authenticated $$,
-  array['start_enrollment', 'claim_enrollment', 'ingest'],
+  array['start_enrollment', 'claim_enrollment', 'ingest', 'whoami'],
   'the rest are for the Edge Functions alone');
 
 select is_empty(
@@ -302,6 +302,29 @@ select results_eq(
   $$ select to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
        from public.devices where id = '55555555-5555-5555-5555-555555555555' $$,
   'collecting says when the machine was first enrolled');
+
+
+-- ------------------------------------------------------------
+-- A machine asks who it is
+-- ------------------------------------------------------------
+update public.profiles set username = 'ash', display_name = 'Ash'
+ where id = '00000000-0000-0000-0000-00000000000a';
+
+select pg_temp.as_edge_function();
+select is(
+  public.whoami(pg_temp.h('key-first')),
+  '{"outcome": "found", "device_id": "55555555-5555-5555-5555-555555555555",
+    "device_name": "fresh", "display_name": "Ash"}'::jsonb,
+  'a machine learns its id, its name and whose it is from its key');
+
+select is(
+  public.whoami(pg_temp.h('key-nobody')),
+  '{"outcome": "unauthorized"}'::jsonb, 'a key nobody holds gets nothing');
+
+select is(
+  public.whoami(pg_temp.h('key-a')),
+  '{"outcome": "unauthorized"}'::jsonb, 'a retired machine reads the same as an unknown one');
+reset role;
 
 select * from finish();
 rollback;

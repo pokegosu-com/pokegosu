@@ -1,20 +1,21 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
+	authapi "github.com/pokegosu-com/pokegosu/libs/go/auth"
 )
 
-// Status says whether this machine is enrolled, and with what, from the
-// settings alone. It asks no server: there is nothing to ask that would not
-// cost a sync, and the settings are what every service goes by.
+// Status says which machine this is and whose, as the server has it: the
+// account's name lives there and can change, and asking is also how to learn
+// that the key still works.
 //
-// A machine that is not enrolled is an error, so a script can tell from the
-// exit status alone.
-func Status(w io.Writer) error {
+// Anything short of an answer is an error, so a script can tell from the exit
+// status alone whether this machine can sync.
+func Status(ctx context.Context, w io.Writer) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -23,14 +24,24 @@ func Status(w io.Writer) error {
 		return fmt.Errorf("this machine is not enrolled; run pokegosu auth login")
 	}
 
-	// The key is never printed: it is the one thing here worth stealing, and
-	// a status is the sort of output people paste into an issue.
-	fmt.Fprintf(w, "%q is enrolled with %s\n", cfg.DeviceName, cfg.URL)
-	if !cfg.EnrolledAt.IsZero() {
-		fmt.Fprintf(w, "enrolled at  %s\n", cfg.EnrolledAt.Local().Format(time.DateTime+" MST"))
+	id, err := authapi.New(cfg.APIURL).Whoami(ctx, cfg.APIKey)
+	switch {
+	case authapi.KeyRefused(err):
+		// Retired in the web, most likely. The id is spent with it, so the
+		// way back is new settings, as login's own advice says.
+		return fmt.Errorf("this machine's key no longer works; it may have been deleted in the web. "+
+			"delete %s and run pokegosu auth login to enrol it as a new machine", settingsPathOrDefault())
+	case authapi.GatewayRefused(err):
+		return fmt.Errorf("the server rejected the request before it reached pokegosu (%s)", err)
+	case err != nil:
+		return err
 	}
-	fmt.Fprintf(w, "machine id   %s\n", cfg.DeviceID)
-	fmt.Fprintf(w, "API          %s\n", cfg.APIURL)
-	fmt.Fprintf(w, "settings     %s\n", settingsPathOrDefault())
+
+	name := id.DisplayName
+	if name == "" {
+		name = "(no name yet)"
+	}
+	fmt.Fprintf(w, "machine id  %s\n", id.DeviceID)
+	fmt.Fprintf(w, "account     %s\n", name)
 	return nil
 }

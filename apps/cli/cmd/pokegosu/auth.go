@@ -49,15 +49,15 @@ a new machine, and the old one keeps the history it earned.`,
 func newStatusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "status",
-		Short: "Say whether this machine is enrolled, and with what",
-		Long: `Says whether this machine is enrolled: its name, the deployment it is
-enrolled with, and where its settings are. The key is never printed.
+		Short: "Say which machine this is, and whose",
+		Long: `Asks the server which machine this is and which account it belongs to,
+with the key this machine was enrolled with. The key is never printed.
 
-It reads the settings alone and asks no server. It fails when this machine is
-not enrolled, so a script can tell from the exit status.`,
+It fails when this machine is not enrolled, or when its key no longer works,
+so a script can tell from the exit status whether this machine can sync.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return auth.Status(cmd.OutOrStdout())
+			return auth.Status(cmd.Context(), cmd.OutOrStdout())
 		},
 	}
 }
