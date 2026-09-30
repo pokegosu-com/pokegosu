@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(106);
+select plan(110);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 329,
-  'a national egg holds the first form of every family up to Generation V');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 366,
+  'a national egg holds the first form of every family up to Generation VI');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -111,6 +111,15 @@ select is(
     where g.egg_kind = 'unova' and s.slug in ('victini', 'snivy', 'patrat', 'tirtouga', 'deino', 'zorua')),
   'victini:mythic snivy:very-rare patrat:common tirtouga:rare zorua:rare deino:very-rare',
   'Generation V''s starters and Deino are very rare, its fossils rare, and Victini mythic');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'kalos'), 226,
+  'a Kalos egg holds the first form of every family X and Y''s pokedex lists, those from before too');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'kalos' and s.slug in ('froakie', 'fletchling', 'tyrunt', 'goomy', 'xerneas-active')),
+  'froakie:very-rare fletchling:common tyrunt:rare goomy:very-rare xerneas-active:mythic',
+  'Generation VI''s starters and Goomy are very rare, its fossils rare, and Xerneas mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -122,7 +131,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 54), ('uncommon', 146), ('rare', 53), ('very-rare', 28), ('mythic', 48) $$,
+  $$ values ('common', 59), ('uncommon', 163), ('rare', 58), ('very-rare', 32), ('mythic', 54) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -166,6 +175,13 @@ select is_empty($$ select * from public.level_up_evolution(415, 'male') $$,
   'and a male one never evolves');
 select is(public.level_up_evolution(443, 'male'), row(444, 24::smallint)::record,
   'Gible becomes Gabite at Lv.24');
+select is(public.level_up_evolution(677, 'female'), row(10124, 25::smallint)::record,
+  'a female Espurr becomes a female Meowstic at Lv.25');
+select is_empty(
+  $$ select * from public.level_up_evolution(674, 'male')
+     union all select * from public.level_up_evolution(686, 'male')
+     union all select * from public.level_up_evolution(705, 'male') $$,
+  'Pancham, Inkay and Sliggoo wait, as they need a Dark type, the console upside down and rain');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),

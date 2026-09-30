@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(41);
+select plan(46);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -17,11 +17,13 @@ select is((select count(*)::int from public.pokedex_species where generation = 4
   'and every Generation IV species');
 select is((select count(*)::int from public.pokedex_species where generation = 5 and form_of is null), 156,
   'and every Generation V species');
+select is((select count(*)::int from public.pokedex_species where generation = 6 and form_of is null), 72,
+  'and every Generation VI species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 83,
-  'and every other form those games had, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 191,
+  'and every other form those games had, Mega Evolutions too, but Arceus''s ??? type');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 649, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 721, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -36,17 +38,25 @@ select is((select count(*)::int from public.pokedex_entries where dex = 'unova' 
   'and Black 2 and White 2''s 301, from Generation V and before');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
             where e.dex = 'unova' and s.slug = 'victini'), 0::smallint, 'Victini is Unova''s No.0');
+select is((select count(*)::int from public.pokedex_entries where dex = 'kalos' and is_default), 457,
+  'and X and Y''s 454, Central, Coastal and Mountain together, with the 3 mythicals they leave out after them');
+select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'kalos' and e.is_default and e.number in (1, 151, 304, 454, 457)),
+  'chespin:1 drifloon:151 diglett:304 mewtwo:454 volcanion:457',
+  'Coastal numbers on from Central, and Mountain from Coastal');
 select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova'])[s.generation])),
+                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos'])[s.generation])),
   0, 'every species is in its own generation''s regional pokedex');
 
 select isnt(
-  (select ko_description from public.pokedex_entries where dex = 'national' and number = 6),
-  (select ko_description from public.pokedex_entries where dex = 'kanto' and number = 6),
+  (select ko_description from public.pokedex_entries where dex = 'national' and number = 6 and is_default),
+  (select ko_description from public.pokedex_entries where dex = 'kanto' and number = 6 and is_default),
   'each pokedex writes its own entry');
 
 select is(
@@ -110,6 +120,19 @@ select is(
      from public.pokedex_species s where s.slug in ('escavalier', 'accelgor')),
   'escavalier:trade-for-shelmet accelgor:trade-for-karrablast',
   'a method keeps what Generation V adds: trading for a given species');
+select is(
+  (select string_agg(s.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s where s.slug in ('pangoro', 'malamar', 'sylveon', 'goodra')),
+  'pangoro:level-up-32-with-dark-type malamar:level-up-30-upside-down'
+    || ' sylveon:level-up-knowing-fairy-move-affection-2 goodra:level-up-50-in-rain',
+  'a method keeps what Generation VI adds: a type in the party, a move''s type, affection, rain and upside down');
+select is(
+  (select string_agg(s.slug || ':' || coalesce(f.slug, '-') || ':' || coalesce(s.evolution_method, '-'), ' ' order by s.id)
+     from public.pokedex_species s left join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('meowstic-male', 'meowstic-female', 'vivillon-meadow', 'vivillon-polar')),
+  'vivillon-meadow:spewpa-icy-snow:level-up-12 meowstic-male:espurr:level-up-25-male'
+    || ' vivillon-polar:-:- meowstic-female:espurr:level-up-25-female',
+  'a female Espurr becomes a female Meowstic, and Spewpa the default Vivillon alone');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)
