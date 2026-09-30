@@ -1389,6 +1389,7 @@ export type Database = {
         Args: { companion_id: string; item_id: string }
         Returns: Json
       }
+      whoami: { Args: { api_key_hash: string }; Returns: Json }
       work: { Args: never; Returns: Json }
     }
     Enums: {
