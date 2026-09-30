@@ -65,19 +65,20 @@ $$;
 -- rare where they are found, are rare, and so is Noibat, found only late and
 -- whose line ends strong. Goomy, whose line is a pseudo-legendary's, is very
 -- rare.
+-- Then by feel: Skiddo is common, and Honedge, Skrelp and Clauncher rare.
 -- ============================================================
 create temporary table new_rarity (slug text primary key, rarity text not null);
 insert into new_rarity (slug, rarity) values
   ('bunnelby', 'common'), ('fletchling', 'common'), ('scatterbug-icy-snow', 'common'),
-  ('litleo', 'common'), ('flabebe-red', 'common'),
+  ('litleo', 'common'), ('flabebe-red', 'common'), ('skiddo', 'common'),
 
-  ('skiddo', 'uncommon'), ('pancham', 'uncommon'), ('furfrou-natural', 'uncommon'),
-  ('espurr', 'uncommon'), ('honedge', 'uncommon'), ('spritzee', 'uncommon'), ('swirlix', 'uncommon'),
-  ('inkay', 'uncommon'), ('binacle', 'uncommon'), ('skrelp', 'uncommon'), ('clauncher', 'uncommon'),
+  ('pancham', 'uncommon'), ('furfrou-natural', 'uncommon'), ('espurr', 'uncommon'),
+  ('spritzee', 'uncommon'), ('swirlix', 'uncommon'), ('inkay', 'uncommon'), ('binacle', 'uncommon'),
   ('helioptile', 'uncommon'), ('dedenne', 'uncommon'), ('klefki', 'uncommon'), ('phantump', 'uncommon'),
   ('pumpkaboo-average', 'uncommon'), ('bergmite', 'uncommon'),
 
   ('tyrunt', 'rare'), ('amaura', 'rare'), ('hawlucha', 'rare'), ('carbink', 'rare'), ('noibat', 'rare'),
+  ('honedge', 'rare'), ('skrelp', 'rare'), ('clauncher', 'rare'),
 
   ('chespin', 'very-rare'), ('fennekin', 'very-rare'), ('froakie', 'very-rare'), ('goomy', 'very-rare'),
 
