@@ -48,13 +48,20 @@ const LAST_GENERATION = 6
  * makes Frillish's, Jellicent's and Pyroar's females forms, where a female
  * who looks different is her species' default form with sprites of her own,
  * as Pikachu's is; left out, they are. Female Meowstic, with moves of her
- * own, stays a form.
+ * own, stays a form. Cosplay Pikachu is only Omega Ruby's and Alpha
+ * Sapphire's, and never leaves them.
  */
 const LEFT_OUT_FORMS = new Set([
   'arceus-unknown',
   'frillish-female',
   'jellicent-female',
   'pyroar-female',
+  'pikachu-rock-star',
+  'pikachu-belle',
+  'pikachu-pop-star',
+  'pikachu-phd',
+  'pikachu-libre',
+  'pikachu-cosplay',
 ])
 
 /**
@@ -74,28 +81,13 @@ const ONLY_DEFAULT_EVOLVES = new Set(['vivillon'])
 /**
  * Forms Pokémon HOME never held, so it has no render of them; they take the
  * official artwork instead. Spiky-eared Pichu came to one event in Generation
- * IV and could never leave it, and Cosplay Pikachu could never leave Omega
- * Ruby and Alpha Sapphire.
+ * IV and could never leave it.
  */
-const NOT_IN_HOME = new Set([
-  'pichu-spiky-eared',
-  'pikachu-rock-star',
-  'pikachu-belle',
-  'pikachu-pop-star',
-  'pikachu-phd',
-  'pikachu-libre',
-  'pikachu-cosplay',
-])
+const NOT_IN_HOME = new Set(['pichu-spiky-eared'])
 
 /** PokéAPI names these forms in English only. */
 const FORM_KO_NAMES: Record<string, string> = {
   'pichu-spiky-eared': '삐쭉귀',
-  'pikachu-rock-star': '하드록',
-  'pikachu-belle': '마담',
-  'pikachu-pop-star': '아이돌',
-  'pikachu-phd': '닥터',
-  'pikachu-libre': '마스크드',
-  'pikachu-cosplay': '옷갈아입기',
   'arceus-normal': '노말타입',
   'arceus-fighting': '격투타입',
   'arceus-flying': '비행타입',

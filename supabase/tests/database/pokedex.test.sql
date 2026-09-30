@@ -20,7 +20,7 @@ select is((select count(*)::int from public.pokedex_species where generation = 5
 select is((select count(*)::int from public.pokedex_species where generation = 6 and form_of is null), 72,
   'and every Generation VI species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 191,
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 185,
   'and every other form those games had, Mega Evolutions too, but Arceus''s ??? type');
 
 select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 721, 'the national pokedex lists them');
