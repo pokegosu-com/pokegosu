@@ -104,6 +104,14 @@ function formName(form: { ko_form_name: string | null; en_form_name: string | nu
   return form.ko_form_name ?? form.en_form_name ?? '기본'
 }
 
+/**
+ * A form its own species becomes, as Charizard Mega Evolves: a stage in the
+ * family, not a look of the species.
+ */
+function isStage(form: { form_of: number | null; evolves_from_id: number | null }): boolean {
+  return form.form_of !== null && form.evolves_from_id === form.form_of
+}
+
 /** Every number the pokedex lists, each built as a file. */
 export async function generateStaticParams({ params }: { params: { dex: string } }) {
   const rows = await every((from, to) =>
@@ -181,7 +189,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const members = await db
     .from('pokedex_species')
     .select(
-      `id, slug, ko_name, en_name, front:sprites->>front, front_shiny:sprites->>front_shiny,
+      `id, slug, ko_name, en_name, ko_form_name, en_form_name, form_of, evolves_from_id,
+      front:sprites->>front, front_shiny:sprites->>front_shiny,
       method:pokedex_evolution_methods!evolution_method(
         level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
         min_affection, needs_overworld_rain, turn_upside_down,
@@ -215,9 +224,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   }
 
   // Every form, and where a female looks different, as Pikachu's tail does,
-  // the male and the female each. Each links to itself.
-  const manyForms = forms.data.length > 1
-  const looks = forms.data.flatMap(({ is_default, species: f }) => {
+  // the male and the female each. Each links to itself. A stage is in the
+  // family instead.
+  const lookForms = forms.data.filter(({ species: f }) => !isStage(f))
+  const manyForms = lookForms.length > 1
+  const looks = lookForms.flatMap(({ is_default, species: f }) => {
     const s = f.sprites as {
       front?: string
       front_female?: string
@@ -295,7 +306,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                   </p>
                   <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
                     {ko(p)}
-                    {manyForms && (
+                    {(manyForms || isStage(p)) && (
                       <span className="text-muted text-base font-normal tracking-normal">
                         {formName(p)}
                       </span>
@@ -408,7 +419,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                               shiny={f.front_shiny ?? undefined}
                             />
                           </span>
-                          {ko(f)}
+                          {isStage(f) ? formName(f) : ko(f)}
                           <span className="text-muted font-mono text-[11px]">
                             {dexNo(f.number)}
                           </span>

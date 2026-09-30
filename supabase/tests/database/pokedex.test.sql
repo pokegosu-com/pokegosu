@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(46);
+select plan(47);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -133,6 +133,14 @@ select is(
   'vivillon-meadow:spewpa-icy-snow:level-up-12 meowstic-male:espurr:level-up-25-male'
     || ' vivillon-polar:-:- meowstic-female:espurr:level-up-25-female',
   'a female Espurr becomes a female Meowstic, and Spewpa the default Vivillon alone');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('charizard-mega-x', 'kyogre-primal', 'rayquaza-mega')),
+  'charizard-mega-x:charizard:mega-evolution-holding-charizardite-x'
+    || ' kyogre-primal:kyogre:primal-reversion-holding-blue-orb'
+    || ' rayquaza-mega:rayquaza:mega-evolution-knowing-dragon-ascent',
+  'a Mega Evolution or Primal Reversion is a stage after its default form, on what it holds or knows');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)

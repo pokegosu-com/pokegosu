@@ -299,6 +299,70 @@ function prose(text: string): string {
     .trim()
 }
 
+/**
+ * Mega Evolution and Primal Reversion, as a stage after the form they come
+ * from rather than a look of it: what each holds, or for Rayquaza knows.
+ * PokéAPI's chains leave them out, so they are listed here.
+ */
+const MEGA_EVOLUTIONS: Record<string, { trigger: string; item?: string; move?: string }> = {
+  'venusaur-mega': { trigger: 'mega-evolution', item: 'venusaurite' },
+  'charizard-mega-x': { trigger: 'mega-evolution', item: 'charizardite-x' },
+  'charizard-mega-y': { trigger: 'mega-evolution', item: 'charizardite-y' },
+  'blastoise-mega': { trigger: 'mega-evolution', item: 'blastoisinite' },
+  'beedrill-mega': { trigger: 'mega-evolution', item: 'beedrillite' },
+  'pidgeot-mega': { trigger: 'mega-evolution', item: 'pidgeotite' },
+  'alakazam-mega': { trigger: 'mega-evolution', item: 'alakazite' },
+  'slowbro-mega': { trigger: 'mega-evolution', item: 'slowbronite' },
+  'gengar-mega': { trigger: 'mega-evolution', item: 'gengarite' },
+  'kangaskhan-mega': { trigger: 'mega-evolution', item: 'kangaskhanite' },
+  'pinsir-mega': { trigger: 'mega-evolution', item: 'pinsirite' },
+  'gyarados-mega': { trigger: 'mega-evolution', item: 'gyaradosite' },
+  'aerodactyl-mega': { trigger: 'mega-evolution', item: 'aerodactylite' },
+  'mewtwo-mega-x': { trigger: 'mega-evolution', item: 'mewtwonite-x' },
+  'mewtwo-mega-y': { trigger: 'mega-evolution', item: 'mewtwonite-y' },
+  'ampharos-mega': { trigger: 'mega-evolution', item: 'ampharosite' },
+  'steelix-mega': { trigger: 'mega-evolution', item: 'steelixite' },
+  'scizor-mega': { trigger: 'mega-evolution', item: 'scizorite' },
+  'heracross-mega': { trigger: 'mega-evolution', item: 'heracronite' },
+  'houndoom-mega': { trigger: 'mega-evolution', item: 'houndoominite' },
+  'tyranitar-mega': { trigger: 'mega-evolution', item: 'tyranitarite' },
+  'sceptile-mega': { trigger: 'mega-evolution', item: 'sceptilite' },
+  'blaziken-mega': { trigger: 'mega-evolution', item: 'blazikenite' },
+  'swampert-mega': { trigger: 'mega-evolution', item: 'swampertite' },
+  'gardevoir-mega': { trigger: 'mega-evolution', item: 'gardevoirite' },
+  'sableye-mega': { trigger: 'mega-evolution', item: 'sablenite' },
+  'mawile-mega': { trigger: 'mega-evolution', item: 'mawilite' },
+  'aggron-mega': { trigger: 'mega-evolution', item: 'aggronite' },
+  'medicham-mega': { trigger: 'mega-evolution', item: 'medichamite' },
+  'manectric-mega': { trigger: 'mega-evolution', item: 'manectite' },
+  'sharpedo-mega': { trigger: 'mega-evolution', item: 'sharpedonite' },
+  'camerupt-mega': { trigger: 'mega-evolution', item: 'cameruptite' },
+  'altaria-mega': { trigger: 'mega-evolution', item: 'altarianite' },
+  'banette-mega': { trigger: 'mega-evolution', item: 'banettite' },
+  'absol-mega': { trigger: 'mega-evolution', item: 'absolite' },
+  'glalie-mega': { trigger: 'mega-evolution', item: 'glalitite' },
+  'salamence-mega': { trigger: 'mega-evolution', item: 'salamencite' },
+  'metagross-mega': { trigger: 'mega-evolution', item: 'metagrossite' },
+  'latias-mega': { trigger: 'mega-evolution', item: 'latiasite' },
+  'latios-mega': { trigger: 'mega-evolution', item: 'latiosite' },
+  'kyogre-primal': { trigger: 'primal-reversion', item: 'blue-orb' },
+  'groudon-primal': { trigger: 'primal-reversion', item: 'red-orb' },
+  'rayquaza-mega': { trigger: 'mega-evolution', move: 'dragon-ascent' },
+  'lopunny-mega': { trigger: 'mega-evolution', item: 'lopunnite' },
+  'garchomp-mega': { trigger: 'mega-evolution', item: 'garchompite' },
+  'lucario-mega': { trigger: 'mega-evolution', item: 'lucarionite' },
+  'abomasnow-mega': { trigger: 'mega-evolution', item: 'abomasite' },
+  'gallade-mega': { trigger: 'mega-evolution', item: 'galladite' },
+  'audino-mega': { trigger: 'mega-evolution', item: 'audinite' },
+  'diancie-mega': { trigger: 'mega-evolution', item: 'diancite' },
+}
+
+/** Triggers PokéAPI has no row for, which MEGA_EVOLUTIONS names. */
+const TRIGGERS_NOT_IN_POKEAPI: Record<string, Record<string, string>> = {
+  'mega-evolution': { ko: '메가진화', en: 'Mega Evolution' },
+  'primal-reversion': { ko: '원시회귀', en: 'Primal Reversion' },
+}
+
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
   'level-up': '레벨업',
@@ -479,6 +543,9 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     throw new Error(`an evolution condition species has no column for: ${JSON.stringify(detail)}`)
   }
   const trigger = detail.trigger.name
+  if (!triggers.has(trigger) && TRIGGERS_NOT_IN_POKEAPI[trigger]) {
+    triggers.set(trigger, TRIGGERS_NOT_IN_POKEAPI[trigger])
+  }
   if (!triggers.has(trigger)) {
     const ko = TRIGGER_KO_NAMES[trigger]
     if (!ko) throw new Error(`no Korean name for the trigger ${trigger}`)
@@ -749,6 +816,24 @@ async function main() {
       }
     }
     walk(chain)
+  }
+  // Every Mega Evolution and Primal Reversion kept, from its default form.
+  for (const s of species) {
+    for (const { form } of formsOf.get(s.id)!) {
+      const mega = MEGA_EVOLUTIONS[form.name]
+      if (!mega && /-(mega|primal)(-|$)/.test(form.name))
+        throw new Error(`no Mega Evolution listed for ${form.name}`)
+      if (!mega) continue
+      const named = (name: string) => ({ name, url: '' })
+      reached.set(form.id, {
+        from: s.id,
+        detail: {
+          trigger: named(mega.trigger),
+          held_item: mega.item ? named(mega.item) : null,
+          known_move: mega.move ? named(mega.move) : null,
+        } as EvolutionDetail,
+      })
+    }
   }
 
   const rows: Row[] = []

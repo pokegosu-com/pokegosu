@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(110);
+select plan(111);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -182,6 +182,8 @@ select is_empty(
      union all select * from public.level_up_evolution(686, 'male')
      union all select * from public.level_up_evolution(705, 'male') $$,
   'Pancham, Inkay and Sliggoo wait, as they need a Dark type, the console upside down and rain');
+select is_empty($$ select * from public.level_up_evolution(6, 'male') $$,
+  'and Charizard never Mega Evolves');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
