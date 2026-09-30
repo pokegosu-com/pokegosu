@@ -14,8 +14,25 @@ func newAuthCmd() *cobra.Command {
 
 A machine is enrolled once, whatever services it goes on to use.`,
 	}
-	cmd.AddCommand(newLoginCmd(), newStatusCmd())
+	cmd.AddCommand(newLoginCmd(), newLogoutCmd(), newStatusCmd())
 	return cmd
+}
+
+func newLogoutCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "logout",
+		Short: "Retire this machine and delete its settings",
+		Long: `Retires this machine in your account, as deleting it in the web does, and
+deletes its settings. Its key stops working, and the usage it sent stays in
+the account.
+
+Retiring is final. Running pokegosu auth login afterwards enrols this machine
+as a new machine.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return auth.Logout(cmd.Context())
+		},
+	}
 }
 
 func newLoginCmd() *cobra.Command {

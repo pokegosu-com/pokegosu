@@ -3,8 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-
-	"github.com/pokegosu-com/pokegosu/libs/go/internal/transport"
 )
 
 // Identity is which machine a key belongs to, and whose.
@@ -45,10 +43,4 @@ func (c *Client) Whoami(ctx context.Context, apiKey string) (Identity, error) {
 		id.DisplayName = *found.DisplayName
 	}
 	return id, nil
-}
-
-// KeyRefused reports whether our own function turned down the machine's key,
-// which a machine somebody retired reads the same as one that never existed.
-func KeyRefused(err error) bool {
-	return transport.CodeIs(err, "unauthorized")
 }

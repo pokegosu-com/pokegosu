@@ -28,9 +28,9 @@ func Status(ctx context.Context, w io.Writer) error {
 	switch {
 	case authapi.KeyRefused(err):
 		// Retired in the web, most likely. The id is spent with it, so the
-		// way back is new settings, as login's own advice says.
-		return fmt.Errorf("this machine's key no longer works; it may have been deleted in the web. "+
-			"delete %s and run pokegosu auth login to enrol it as a new machine", settingsPathOrDefault())
+		// way back is new settings: logout clears them even for a dead key.
+		return fmt.Errorf("this machine's key no longer works; it may have been deleted in the web. " +
+			"run pokegosu auth logout, then pokegosu auth login to enrol it as a new machine")
 	case authapi.GatewayRefused(err):
 		return fmt.Errorf("the server rejected the request before it reached pokegosu (%s)", err)
 	case err != nil:

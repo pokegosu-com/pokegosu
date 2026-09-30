@@ -12,6 +12,7 @@ func TestTheTreeHasTheWordsPeopleAreToldToType(t *testing.T) {
 
 	cases := map[string][]string{
 		"auth login":  {"url", "device-name"},
+		"auth logout": nil,
 		"auth status": nil,
 		"coder scan":  {"since", "format", "path", "provider"},
 		"coder sync":  {"all", "quiet", "jsonl", "no-fail", "min-interval", "path", "provider"},
@@ -60,7 +61,7 @@ func TestCompletionScriptsAreThere(t *testing.T) {
 // Every command that does something takes no arguments, so a stray word is
 // a mistake to report rather than something to ignore.
 func TestCommandsRefuseStrayArguments(t *testing.T) {
-	for _, path := range []string{"auth login", "coder scan", "coder sync", "version"} {
+	for _, path := range []string{"auth login", "auth logout", "coder scan", "coder sync", "version"} {
 		root := newRoot()
 		root.SetArgs(append(strings.Fields(path), "stray"))
 		root.SetOut(new(strings.Builder))

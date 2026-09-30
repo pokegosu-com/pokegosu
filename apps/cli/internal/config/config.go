@@ -146,6 +146,19 @@ func Save(cfg *Config) (string, error) {
 	return path, nil
 }
 
+// Remove deletes the settings file and says where it was. A file that is
+// already gone is not an error: what the caller wanted is true either way.
+func Remove() (string, error) {
+	path, err := Path()
+	if err != nil {
+		return "", err
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("deleting %s: %w", path, err)
+	}
+	return path, nil
+}
+
 // NormalizeURL trims a trailing slash and insists on a scheme, so that a
 // pasted address does not turn into a confusing request failure later.
 func NormalizeURL(raw string) (string, error) {

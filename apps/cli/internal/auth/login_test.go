@@ -102,9 +102,9 @@ func TestSettingsRejectsAURLWithoutAScheme(t *testing.T) {
 	}
 }
 
-// login leaves an enrolled machine alone rather than minting a second key for
-// it, so what counts as enrolled has to be all three: without any one of them
-// a sync cannot run, and the machine is better off enrolling.
+// login leaves an enrolled machine alone, so what counts as enrolled has to be
+// all four: without any one of them a sync cannot run, and the machine is
+// better off enrolling.
 func TestEnrolledNeedsEverything(t *testing.T) {
 	full := config.Config{
 		URL:      "https://coder.example.com",

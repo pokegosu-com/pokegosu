@@ -1,6 +1,6 @@
 // Package account is how a client in Go joins an account: finding the
-// deployment it was pointed at, enrolling this machine with it, and asking
-// afterwards which machine and whose it is.
+// deployment it was pointed at, enrolling this machine with it, asking which
+// machine and whose it is, and retiring the machine when it is done.
 //
 // Enrolling belongs to the account rather than to any one service, because a
 // machine is enrolled once and every service speaks with the key that leaves
@@ -9,7 +9,8 @@
 // Enrolling carries no key. It is what happens before there is one: the
 // machine asks under a code it drew, a person approves it in the web, and the
 // machine comes back for the key with the claim token the server gave it.
-// Whoami is the one call made with the key that leaves behind.
+// Whoami and retiring are the calls here that carry the key, since the key
+// is what says which machine is asking.
 package auth
 
 import (

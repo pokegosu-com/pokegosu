@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(42);
+select plan(47);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -63,7 +63,7 @@ select set_eq($$ select name from pg_temp.callable where authenticated $$,
   'a signed-in person can look at a request, approve it, read usage, and play');
 
 select set_eq($$ select name from pg_temp.callable where service_role and not authenticated $$,
-  array['start_enrollment', 'claim_enrollment', 'ingest', 'whoami'],
+  array['start_enrollment', 'claim_enrollment', 'ingest', 'retire_device', 'whoami'],
   'the rest are for the Edge Functions alone');
 
 select is_empty(
@@ -325,6 +325,35 @@ select is(
   public.whoami(pg_temp.h('key-a')),
   '{"outcome": "unauthorized"}'::jsonb, 'a retired machine reads the same as an unknown one');
 reset role;
+
+
+-- ------------------------------------------------------------
+-- A machine retires itself
+-- ------------------------------------------------------------
+select pg_temp.as_edge_function();
+
+select is(
+  public.retire_device(pg_temp.h('key-first')),
+  '{"outcome": "retired", "device_name": "fresh"}'::jsonb,
+  'a machine can retire itself with its own key');
+
+select is(
+  public.retire_device(pg_temp.h('key-first')),
+  '{"outcome": "unauthorized"}'::jsonb, 'and its key works for nothing afterwards, retiring included');
+
+select is(
+  public.ingest(pg_temp.h('key-first'), '[]'::jsonb),
+  '{"outcome": "unauthorized"}'::jsonb, 'a retired machine cannot send usage');
+
+select is(
+  public.retire_device(pg_temp.h('key-nobody')),
+  '{"outcome": "unauthorized"}'::jsonb, 'a key nobody holds retires nothing');
+
+reset role;
+select results_eq(
+  $$ select revoked_at is not null from public.devices where id = '55555555-5555-5555-5555-555555555555' $$,
+  $$ values (true) $$,
+  'the machine stays, retired, with the history it earned');
 
 select * from finish();
 rollback;
