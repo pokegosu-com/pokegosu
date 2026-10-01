@@ -30,6 +30,8 @@ type Method = {
   min_affection: number | null
   needs_overworld_rain: boolean
   turn_upside_down: boolean
+  region: Named | null
+  version: Named | null
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -37,6 +39,8 @@ const PHYSICAL_STATS: Record<number, string> = {
   0: '공격 = 방어',
   [-1]: '공격 < 방어',
 }
+
+const TIMES_OF_DAY: Record<string, string> = { day: '낮', night: '밤', dusk: '저녁' }
 
 /** A name with 와 or 과, as its last syllable ends in a vowel or not. */
 function withAnd(name: string): string {
@@ -50,7 +54,8 @@ function withAnd(name: string): string {
  * "금속코트 지닌 채 통신교환", "Lv.7 · 성격값 50%", "Lv.20 · ♀",
  * "구르기 배운 채 레벨업", "천관산에서 레벨업", "레벨업 · 동료 총어",
  * "쪼마리와 통신교환", "딱정곤과 통신교환", "Lv.32 · 동료 악타입",
- * "페어리타입 기술 배운 채 레벨업 · 절친도", "Lv.50 · 비", "Lv.30 · 기기를 거꾸로".
+ * "페어리타입 기술 배운 채 레벨업 · 절친도", "Lv.50 · 비", "Lv.30 · 기기를 거꾸로",
+ * "Lv.25 · 저녁", "천둥의돌 사용 · 알로라에서", "Lv.53 · 썬에서".
  */
 function takes(method: Method): string {
   const parts: string[] = []
@@ -72,13 +77,15 @@ function takes(method: Method): string {
   if (method.party_type) parts.push(`동료 ${ko(method.party_type)}타입`)
   if (method.needs_overworld_rain) parts.push('비')
   if (method.turn_upside_down) parts.push('기기를 거꾸로')
-  if (method.time_of_day) parts.push(method.time_of_day === 'day' ? '낮' : '밤')
+  if (method.time_of_day) parts.push(TIMES_OF_DAY[method.time_of_day])
   if (method.relative_physical_stats !== null)
     parts.push(PHYSICAL_STATS[method.relative_physical_stats])
   if (method.min_beauty) parts.push('아름다움')
   // Which half is fixed for each Pokémon, by its personality value.
   if (method.chance) parts.push(`성격값 ${method.chance}%`)
   if (method.gender) parts.push(method.gender === 'female' ? '♀' : '♂')
+  if (method.region) parts.push(`${ko(method.region)}에서`)
+  if (method.version) parts.push(`${ko(method.version)}에서`)
   return parts.join(' · ') || ko(method.trigger)
 }
 
@@ -202,7 +209,9 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         party:pokedex_species!party_species_id(ko_name, en_name),
         trade_species:pokedex_species!trade_species_id(ko_name, en_name),
         party_type:pokedex_types!party_type(ko_name, en_name),
-        known_move_type:pokedex_types!known_move_type(ko_name, en_name)
+        known_move_type:pokedex_types!known_move_type(ko_name, en_name),
+        region:pokedex_regions(ko_name, en_name),
+        version:pokedex_versions(ko_name, en_name)
       )`,
     )
     .in('id', familyIds)
@@ -420,6 +429,10 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                             />
                           </span>
                           {isStage(f) ? formName(f) : ko(f)}
+                          {/* Raichu and Alolan Raichu are both Pichu's family. */}
+                          {f.form_of !== null && !isStage(f) && (
+                            <span className="text-muted text-[11px]">{formName(f)}</span>
+                          )}
                           <span className="text-muted font-mono text-[11px]">
                             {dexNo(f.number)}
                           </span>

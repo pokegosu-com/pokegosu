@@ -35,12 +35,12 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to VI: national dex numbers 1 to 721, in every form those
- * games had. A form a later game added, such as Alolan Raichu or Ash-Greninja,
- * waits for its generation.
+ * Generations I to VII: national dex numbers 1 to 809, in every form those
+ * games had. A form a later game added, such as Galarian Meowth or Gigantamax
+ * Pikachu, waits for its generation.
  */
-const LAST_DEX_NO = 721
-const LAST_GENERATION = 6
+const LAST_DEX_NO = 809
+const LAST_GENERATION = 7
 
 /**
  * Forms left out though their generation is in. Arceus's ??? type has no
@@ -49,7 +49,12 @@ const LAST_GENERATION = 6
  * who looks different is her species' default form with sprites of her own,
  * as Pikachu's is; left out, they are. Female Meowstic, with moves of her
  * own, stays a form. Cosplay Pikachu is only Omega Ruby's and Alpha
- * Sapphire's, and never leaves them.
+ * Sapphire's, and never leaves them; so are Totem Pokémon only Sun and Moon's
+ * and Ultra Sun and Ultra Moon's, and Partner Pikachu and Eevee only Let's
+ * Go's. Battle Bond Greninja and Power Construct Zygarde are Greninja and
+ * Zygarde with another ability, and look the same; Ash-Greninja and Complete
+ * Zygarde, which they become, stay. Minior's shell is the same whatever its
+ * core, so one Meteor Form stands for the seven, beside the seven cores.
  */
 const LEFT_OUT_FORMS = new Set([
   'arceus-unknown',
@@ -62,14 +67,38 @@ const LEFT_OUT_FORMS = new Set([
   'pikachu-phd',
   'pikachu-libre',
   'pikachu-cosplay',
+  'pikachu-starter',
+  'eevee-starter',
+  'raticate-totem-alola',
+  'marowak-totem',
+  'gumshoos-totem',
+  'vikavolt-totem',
+  'ribombee-totem',
+  'araquanid-totem',
+  'lurantis-totem',
+  'salazzle-totem',
+  'togedemaru-totem',
+  'mimikyu-totem-disguised',
+  'mimikyu-totem-busted',
+  'kommo-o-totem',
+  'greninja-battle-bond',
+  'zygarde-10-power-construct',
+  'zygarde-50-power-construct',
+  'minior-orange-meteor',
+  'minior-yellow-meteor',
+  'minior-green-meteor',
+  'minior-blue-meteor',
+  'minior-indigo-meteor',
+  'minior-violet-meteor',
 ])
 
 /**
  * Species whose forms are all left out but the default. PokéAPI gives
  * Scatterbug and Spewpa each of Vivillon's patterns, which no game shows
- * until one becomes a Vivillon; the pattern is where it evolves.
+ * until one becomes a Vivillon; the pattern is where it evolves. It gives
+ * Mothim Burmy's cloaks, though a Mothim looks the same from any.
  */
-const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa'])
+const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa', 'mothim'])
 
 /**
  * Species whose default form alone comes from the form before, as Mothim
@@ -84,6 +113,21 @@ const ONLY_DEFAULT_EVOLVES = new Set(['vivillon'])
  * IV and could never leave it.
  */
 const NOT_IN_HOME = new Set(['pichu-spiky-eared'])
+
+/**
+ * Forms no game lets be shiny, so Pokémon HOME has no shiny render of them:
+ * their shiny is their plain look. Pikachu in a cap came to events only,
+ * never shiny.
+ */
+const NEVER_SHINY = new Set([
+  'pikachu-original-cap',
+  'pikachu-hoenn-cap',
+  'pikachu-sinnoh-cap',
+  'pikachu-unova-cap',
+  'pikachu-kalos-cap',
+  'pikachu-alola-cap',
+  'pikachu-partner-cap',
+])
 
 /** PokéAPI names these forms in English only. */
 const FORM_KO_NAMES: Record<string, string> = {
@@ -106,6 +150,7 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-dragon': '드래곤타입',
   'arceus-dark': '악타입',
   'arceus-fairy': '페어리타입',
+  'rockruff-own-tempo': '마이페이스',
 }
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
@@ -176,11 +221,21 @@ const POKEDEXES: Record<
     versions: ['x', 'y', 'omega-ruby', 'alpha-sapphire'],
     appended: [719, 720, 721],
   },
+  // Ultra Sun and Ultra Moon's, not Sun and Moon's, which leaves out the
+  // five Ultra Sun and Ultra Moon added. It lists every Generation VII
+  // species but Meltan and Melmetal, which came to Let's Go and Pokémon GO
+  // and no Alolan game, and come after it.
+  alola: {
+    apiId: 21,
+    names: { ko: '알로라도감', en: 'Alola Pokédex' },
+    versions: ['ultra-sun', 'ultra-moon', 'sun', 'moon'],
+    appended: [808, 809],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20260930140001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261001130001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -347,13 +402,36 @@ const MEGA_EVOLUTIONS: Record<string, { trigger: string; item?: string; move?: s
   'gallade-mega': { trigger: 'mega-evolution', item: 'galladite' },
   'audino-mega': { trigger: 'mega-evolution', item: 'audinite' },
   'diancie-mega': { trigger: 'mega-evolution', item: 'diancite' },
+  // From Dusk Mane or Dawn Wings Necrozma in the games, but a stage comes
+  // after one form, and those two are looks of Necrozma's: it comes after
+  // Necrozma, as the Megas do.
+  'necrozma-ultra': { trigger: 'ultra-burst', item: 'ultranecrozium-z' },
 }
 
 /** Triggers PokéAPI has no row for, which MEGA_EVOLUTIONS names. */
 const TRIGGERS_NOT_IN_POKEAPI: Record<string, Record<string, string>> = {
   'mega-evolution': { ko: '메가진화', en: 'Mega Evolution' },
   'primal-reversion': { ko: '원시회귀', en: 'Primal Reversion' },
+  'ultra-burst': { ko: '울트라버스트', en: 'Ultra Burst' },
 }
+
+/**
+ * Items PokéAPI names nothing, and whose bag sprite is filed under another
+ * name: Ultranecrozium Z's is its held one.
+ */
+const ITEMS_NOT_IN_POKEAPI: Record<string, { names: Record<string, string>; sprite: string }> = {
+  'ultranecrozium-z': {
+    names: { ko: '울트라네크로Z', en: 'Ultranecrozium Z' },
+    sprite: 'ultranecrozium-z--held',
+  },
+}
+
+/**
+ * The game a form is reached in, where PokéAPI does not say: a Cosmoem
+ * becomes Solgaleo in Sun and Ultra Sun, and Lunala in Moon and Ultra Moon,
+ * and PokéAPI gives each the same level and nothing else.
+ */
+const VERSION_ONLY: Record<string, string> = { solgaleo: 'sun', lunala: 'moon' }
 
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
@@ -361,6 +439,7 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   'use-item': '도구 사용',
   trade: '통신교환',
   shed: '탈피',
+  'meltan-candies': 'Pokémon GO에서 멜탄의 사탕 400개',
 }
 
 /**
@@ -371,12 +450,19 @@ const LOCATION_KO_NAMES: Record<string, string> = {
   'mt-coronet': '천관산',
   'eterna-forest': '영원의숲',
   'sinnoh-route-217': '217번도로',
+  'vast-poni-canyon': '포니대협곡',
+  'mount-lanakila': '라나키라마운틴',
 }
 
 const triggers = new Map<string, Record<string, string>>()
 const items = new Map<string, Record<string, string>>()
 const moves = new Map<string, Record<string, string>>()
 const locations = new Map<string, Record<string, string>>()
+const regions = new Map<string, Record<string, string>>()
+const versions = new Map<string, Record<string, string>>()
+
+/** The regions whose generation is in, filled before the chains are read. */
+const keptRegions = new Set<string>()
 
 type Evolution = {
   id: string
@@ -401,6 +487,8 @@ type Evolution = {
   affection: number | null
   rain: boolean
   upsideDown: boolean
+  region: string | null
+  version: string | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -432,6 +520,10 @@ const KNOWN_CONDITIONS = new Set([
   'min_affection',
   'needs_overworld_rain',
   'turn_upside_down',
+  // Only a kept region's, which ownWay sees to.
+  'region',
+  // Not PokéAPI's: VERSION_ONLY's.
+  'version',
   'condition_expression',
   'required_pokemon_form',
   // ownWay keeps only the one ending in the form asked for.
@@ -474,28 +566,39 @@ function chanceOf(detail: EvolutionDetail): number | null {
 /** PokéAPI's genders, as a method names them. */
 const GENDERS: Record<number, 'female' | 'male'> = { 1: 'female', 2: 'male' }
 
+/** Whether a detail is in a game that is kept: a later region's is not. */
+function inKeptRegion(detail: EvolutionDetail): boolean {
+  return !detail.region || keptRegions.has(detail.region.name)
+}
+
 /**
  * The detail for one form becoming another. PokéAPI lists a regional form's
- * way beside the rest, such as Alolan Rattata evolving only at night, and no
- * regional form is kept yet. A species whose every form is named, as Burmy's
- * cloaks are, lists a way per form, each from its form and to its own; with
- * no form to come from, any way to its own will do.
+ * way beside the rest, such as Alolan Rattata evolving only at night, or
+ * Pikachu becoming Alolan Raichu only in Alola; a way that names the form it
+ * ends in comes first, so Raichu's own way does not stand for Alolan
+ * Raichu's. A species whose every form is named, as Burmy's cloaks are,
+ * lists a way per form, each from its form and to its own; with no form to
+ * come from, any way to its own will do.
  */
 function ownWay(
   details: EvolutionDetail[],
   from: string | null,
   to: string,
 ): EvolutionDetail | undefined {
-  return details.find(
-    (d) =>
-      !d.region &&
-      (!d.evolved_pokemon_form || d.evolved_pokemon_form.name === to) &&
-      (!d.required_pokemon_form || from === null || d.required_pokemon_form.name === from),
+  const fromOk = (d: EvolutionDetail) =>
+    !d.required_pokemon_form || from === null || d.required_pokemon_form.name === from
+  return (
+    details.find((d) => inKeptRegion(d) && d.evolved_pokemon_form?.name === to && fromOk(d)) ??
+    details.find((d) => !d.region && !d.evolved_pokemon_form && fromOk(d))
   )
 }
 
 async function nameItem(item: string) {
   if (items.has(item)) return
+  if (ITEMS_NOT_IN_POKEAPI[item]) {
+    items.set(item, ITEMS_NOT_IN_POKEAPI[item].names)
+    return
+  }
   const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item}`)
   items.set(
     item,
@@ -520,9 +623,27 @@ async function nameLocation(location: string) {
   locations.set(location, { ...localise(fetched.names, (n) => n.name), ko })
 }
 
+async function nameRegion(region: string) {
+  if (regions.has(region)) return
+  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`region/${region}`)
+  regions.set(
+    region,
+    localise(fetched.names, (n) => n.name),
+  )
+}
+
+async function nameVersion(version: string) {
+  if (versions.has(version)) return
+  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`version/${version}`)
+  versions.set(
+    version,
+    localise(fetched.names, (n) => n.name),
+  )
+}
+
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to VI ask; anything
+ * A method has a column for each condition Generations I to VII ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -569,6 +690,10 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   const affection = detail.min_affection ?? null
   const rain = detail.needs_overworld_rain === true
   const upsideDown = detail.turn_upside_down === true
+  const region = detail.region?.name ?? null
+  if (region) await nameRegion(region)
+  const version = (detail.version as string | undefined) ?? null
+  if (version) await nameVersion(version)
   const id = [
     trigger,
     level,
@@ -589,6 +714,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     partyType && `with-${partyType}-type`,
     rain && 'in-rain',
     upsideDown && 'upside-down',
+    region && `in-${region}`,
+    version && `in-${version}`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -616,6 +743,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       affection,
       rain,
       upsideDown,
+      region,
+      version,
     })
   }
   return methods.get(id)!
@@ -772,8 +901,14 @@ async function main() {
   // Sea Shellos, and from nothing where there is none: Sunshine Cherrim is
   // only Cherrim in the sun. A form with none of its name before it that a
   // way names for its own, as female Meowstic is a female Espurr's, evolves
-  // from the default form.
+  // from the form that way asks for, or else from the default form.
   const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
+  const { results: allRegions } = await get<{ results: Named[] }>('region?limit=100')
+  for (const region of allRegions) {
+    // PokéAPI gives Hisui no generation; it is Legends: Arceus's, a later one.
+    const { main_generation } = await get<{ main_generation: Named | null }>(region.url)
+    if (main_generation && idOf(main_generation) <= LAST_GENERATION) keptRegions.add(region.name)
+  }
   const chainUrls = [...new Set(species.map((s) => s.evolution_chain.url))]
   for (const url of chainUrls) {
     const { chain } = await get<{ chain: ChainLink }>(url)
@@ -783,16 +918,22 @@ async function main() {
         const to = idOf(next.species)
         if (from <= LAST_DEX_NO && to <= LAST_DEX_NO && next.evolution_details.length > 0) {
           for (const target of formsOf.get(to)!) {
-            const named = next.evolution_details.some(
-              (d) => !d.region && d.evolved_pokemon_form?.name === target.form.name,
+            const named = next.evolution_details.find(
+              (d) => inKeptRegion(d) && d.evolved_pokemon_form?.name === target.form.name,
             )
+            // Dusk Lycanroc's way asks for Own Tempo Rockruff.
+            const namedSource =
+              named &&
+              (formsOf.get(from)!.find((k) => k.form.name === named.required_pokemon_form?.name) ??
+                defaultOf(from))
             const fromDefault = ONLY_DEFAULT_EVOLVES.has(next.species.name)
             if (fromDefault && target.form.id !== to) continue
             const source =
               target.form.id === to
                 ? defaultOf(from)
                 : (formsOf.get(from)!.find((k) => k.form.form_name === target.form.form_name) ??
-                  (named ? defaultOf(from) : undefined))
+                  namedSource ??
+                  undefined)
             if (!source) continue
             const detail = ownWay(
               next.evolution_details,
@@ -801,7 +942,11 @@ async function main() {
             )
             if (!detail)
               throw new Error(`no way of its own from ${source.form.name} to ${target.form.name}`)
-            reached.set(target.form.id, { from: source.form.id, detail })
+            const version = VERSION_ONLY[target.form.name]
+            reached.set(target.form.id, {
+              from: source.form.id,
+              detail: version ? { ...detail, version } : detail,
+            })
           }
         }
         walk(next)
@@ -809,11 +954,12 @@ async function main() {
     }
     walk(chain)
   }
-  // Every Mega Evolution and Primal Reversion kept, from its default form.
+  // Every Mega Evolution, Primal Reversion and Ultra Burst kept, from its
+  // default form.
   for (const s of species) {
     for (const { form } of formsOf.get(s.id)!) {
       const mega = MEGA_EVOLUTIONS[form.name]
-      if (!mega && /-(mega|primal)(-|$)/.test(form.name))
+      if (!mega && /-(mega|primal|ultra)(-|$)/.test(form.name))
         throw new Error(`no Mega Evolution listed for ${form.name}`)
       if (!mega) continue
       const named = (name: string) => ({ name, url: '' })
@@ -1014,20 +1160,21 @@ async function main() {
   add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
   // Every item an evolution names, in the bag's 30px pixel style.
   for (const id of [...items.keys()].sort())
-    add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${id}.png`)
+    add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${ITEMS_NOT_IN_POKEAPI[id]?.sprite ?? id}.png`)
   const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
     const n = row.id
     const k = row.spriteKey
+    const shiny = NEVER_SHINY.has(row.slug) ? '' : 'shiny/'
     add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
-    add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/shiny/${k}.png`)
+    add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/${shiny}${k}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
       add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
     }
     const large = NOT_IN_HOME.has(row.slug) ? `${SPRITES_BASE}/other/official-artwork` : home
     add(`sprites/pokemon/artwork/${n}.png`, `${large}/${k}.png`)
-    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${large}/shiny/${k}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${large}/${shiny}${k}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/artwork/female/${n}.png`, `${large}/female/${k}.png`)
       add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${large}/shiny/female/${k}.png`)
@@ -1159,6 +1306,24 @@ async function main() {
     ),
     ...upsert(
       written,
+      'pokedex_regions',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...regions]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
+    ...upsert(
+      written,
+      'pokedex_versions',
+      ['id', 'ko_name', 'en_name'],
+      ['id'],
+      [...versions]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+    ),
+    ...upsert(
+      written,
       'pokedex_evolution_methods',
       [
         'id',
@@ -1181,6 +1346,8 @@ async function main() {
         'min_affection',
         'needs_overworld_rain',
         'turn_upside_down',
+        'region',
+        'version',
       ],
       ['id'],
       [...methods.values()]
@@ -1191,7 +1358,8 @@ async function main() {
             ` ${sql(m.heldItem)}, ${sql(m.happiness)}, ${sql(m.timeOfDay)}, ${sql(m.physicalStats)},` +
             ` ${sql(m.beauty)}, ${sql(m.chance)}, ${sql(m.gender)}, ${sql(m.move)},` +
             ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)},` +
-            ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown})`,
+            ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown},` +
+            ` ${sql(m.region)}, ${sql(m.version)})`,
         ),
     ),
     ...upsert(

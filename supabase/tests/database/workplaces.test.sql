@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(76);
+select plan(79);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -294,6 +294,34 @@ select is(public.use_item((select she from kirlia), 'dawn-stone'), '{"outcome": 
   'and does nothing to a female Kirlia');
 select is(public.use_item((select he from kirlia), 'dawn-stone'), '{"outcome": "evolved", "from": 281, "to": 475}'::jsonb,
   'but makes a male one Gallade');
+
+
+
+-- ------------------------------------------------------------
+-- The Thunder Stone, which makes Alolan Raichu only in Alola
+-- ------------------------------------------------------------
+reset role;
+insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny, hatched_at, level, gender)
+values ('00000000-0000-0000-0000-00000000000a', 25, 'alola', false, now(), 30, 'male'),
+       ('00000000-0000-0000-0000-00000000000a', 25, 'kanto', false, now(), 30, 'male');
+insert into public.coder_bag (user_id, item_id, quantity)
+values ('00000000-0000-0000-0000-00000000000a', 'thunder-stone', 2);
+create temporary table pikachu as
+select (select id from public.coder_companions where species_id = 25 and egg_kind = 'alola') as alolan,
+       (select id from public.coder_companions where species_id = 25 and egg_kind = 'kanto') as kantonian;
+grant select on pikachu to authenticated;
+
+select pg_temp.as_person();
+select is(
+  (select jsonb_agg(e ->> 'species_id') from jsonb_array_elements(pg_temp.boxed((select alolan from pikachu)) -> 'item_evolutions') e),
+  jsonb_build_array((select id from public.pokedex_species where slug = 'raichu-alola')::text),
+  'the box says a Pikachu from an Alola egg takes the Thunder Stone to Alolan Raichu alone');
+select is(public.use_item((select alolan from pikachu), 'thunder-stone') ->> 'to',
+  (select id from public.pokedex_species where slug = 'raichu-alola')::text,
+  'and it becomes Alolan Raichu');
+select is(public.use_item((select kantonian from pikachu), 'thunder-stone'),
+  '{"outcome": "evolved", "from": 25, "to": 26}'::jsonb,
+  'but one from any other egg becomes Raichu');
 
 reset role;
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
