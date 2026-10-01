@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { PokemonTile } from '@pokegosu/ui/pokemon'
 
-import { exactTokens } from '@/lib/format'
+import { compactTokens } from '@/lib/format'
 import {
   MARKS,
   eggSpriteUrl,
@@ -332,7 +332,7 @@ export function BoxView() {
                 <PokemonTile
                   href={`/box/${item.id}`}
                   name="알"
-                  caption={`${exactTokens(item.e.tokens)} / ${exactTokens(item.e.tokens_needed)}`}
+                  caption={`${compactTokens(item.e.tokens)} / ${compactTokens(item.e.tokens_needed)}`}
                   sprite={eggSpriteUrl}
                   partner={item.id === box.main_companion_id}
                   task={hasTask(item, box.bag)}
