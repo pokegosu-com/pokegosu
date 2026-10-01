@@ -5,7 +5,8 @@
 -- Generation VII's families. An Alola egg holds what Ultra Sun and Ultra
 -- Moon's pokedex lists, with Meltan after it: its 210 families,
 -- Generation VII's 55 and 155 from before, each of which already has a
--- rarity.
+-- rarity. No official source gives Meltan a generation; numbered after
+-- Zeraora, it is taken as Generation VII's, and so Alola's.
 --
 -- An Alolan form is a species as Alola has it, so an egg hatches it as its
 -- region does: an Alola egg hatches Alolan Rattata in place of Rattata, an

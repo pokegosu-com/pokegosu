@@ -223,8 +223,10 @@ const POKEDEXES: Record<
   },
   // Ultra Sun and Ultra Moon's, not Sun and Moon's, which leaves out the
   // five Ultra Sun and Ultra Moon added. It lists every Generation VII
-  // species but Meltan and Melmetal, which came to Let's Go and Pokémon GO
-  // and no Alolan game, and come after it.
+  // species but Meltan and Melmetal, which come after it. They came to Let's
+  // Go and Pokémon GO, not an Alolan game, and no official source, Pokémon
+  // HOME included, gives them a generation; numbered after Zeraora, they are
+  // taken as Generation VII's, and Alola's.
   alola: {
     apiId: 21,
     names: { ko: '알로라도감', en: 'Alola Pokédex' },
