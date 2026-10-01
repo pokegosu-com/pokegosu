@@ -21,7 +21,9 @@ const DIR = fileURLToPath(new URL('../public/drawn/items/', import.meta.url))
 type Colour = string
 /** Highlight, light, mid and dark. */
 type Palette = readonly [Colour, Colour, Colour, Colour]
+/** A shape paints a colour, clears what is under it with CLEAR, or leaves it with null. */
 type Shape = (x: number, y: number) => Colour | null
+const CLEAR = 'clear'
 type Vector = [number, number, number]
 
 const LIGHT: Vector = (() => {
@@ -73,12 +75,18 @@ function tube(
   }
 }
 
-/** The pixels, painted, then outlined: every empty pixel beside a painted one. */
+/**
+ * The pixels, painted, then outlined: every empty pixel beside a painted one,
+ * inside a hole as well as round the edge.
+ */
 function draw(shapes: Shape[]): (Colour | null)[][] {
   const painted = Array.from({ length: SIZE }, (_, y) =>
     Array.from({ length: SIZE }, (_, x) => {
       let colour: Colour | null = null
-      for (const shape of shapes) colour = shape(x + 0.5, y + 0.5) ?? colour
+      for (const shape of shapes) {
+        const painted = shape(x + 0.5, y + 0.5)
+        colour = painted === CLEAR ? null : (painted ?? colour)
+      }
       return colour
     }),
   )
@@ -198,12 +206,11 @@ function meltanCandy(): Shape[] {
 /**
  * The Shelmet Shell: the shell Shelmet leaves when it becomes Accelgor, from
  * the side as Shelmet is seen, the coil behind and the spotted brim over the
- * dark it looked out of, now empty.
+ * opening it looked out of, now empty.
  */
 function shelmetShell(): Shape[] {
   const ivory: Palette = ['#ffffff', '#efe8d6', '#cfc5a9', '#9d9277']
   const spot: Palette = ['#4f7fd0', '#2a5cb4', '#1f4590', '#163266']
-  const inside = '#1c2340'
   const ellipse = (x: number, y: number, cx: number, cy: number, rx: number, ry: number, a = 0) => {
     const dx = x - cx
     const dy = y - cy
@@ -223,8 +230,8 @@ function shelmetShell(): Shape[] {
       if (Math.abs(r - 0.66) < 0.09 || Math.abs(r - 0.33) < 0.09) return ivory[3]
       return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]) + 0.25)
     },
-    // The dark it looks out of.
-    (x, y) => (ellipse(x, y, 11.2, 16.4, 6.4, 4.4).d <= 1 ? inside : null),
+    // The opening it looked out of, empty, so what is behind shows through.
+    (x, y) => (ellipse(x, y, 11.2, 16.4, 6.4, 4.4).d <= 1 ? CLEAR : null),
     // The lower lip.
     (x, y) => {
       const e = ellipse(x, y, 13, 21.2, 6.8, 2.6, 0.12)
