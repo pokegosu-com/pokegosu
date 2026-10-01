@@ -21,7 +21,8 @@
 --     type: Piloswine, knowing Ancient Power, by a Rock one.
 --   - Another Pokémon in the party is one in the box.
 --   - Attack against Defense, and Wurmple's personality, are a draw at the
---     time, weighted towards the forms the person has fewer of.
+--     time, weighted as an egg is: a form the person has none of, nor
+--     anything it became, is unowned_line_weight times as likely.
 --   - Cosmoem, which becomes Solgaleo in Sun and Lunala in Moon, becomes
 --     Solgaleo by day and Lunala by night.
 --   - Inkay's console turned upside down is the screen's: the server cannot
@@ -204,8 +205,8 @@ as $$
                     and (in_box.type is null or in_box.type in (s.type1, s.type2)));
 $$;
 
--- How many of a person's Pokémon are a form or have evolved from it: what a
--- draw weighs against.
+-- How many of a person's Pokémon are a form or have evolved from it: whether
+-- a draw counts it as a line they have.
 create function public.owned_line(owner uuid, species_id integer)
 returns integer
 language sql
@@ -365,9 +366,9 @@ $$;
 
 -- ============================================================
 -- evolve — the first way it may take now, in the person's time zone. A
--- draw weighs each form it may become against how many of it, or of what
--- it became, the person has: one more of a form halves its chance against
--- one they have none of. Nincada leaves a Shedinja behind.
+-- draw weighs each form it may become as roll_egg() weighs a species: one
+-- the person has none of, nor anything it became, is unowned_line_weight
+-- times as likely. Nincada leaves a Shedinja behind.
 --
 --   {"companion_id": "...", "time_zone": "Asia/Seoul"}
 --
@@ -403,11 +404,24 @@ begin
 
   next_form := way.id;
   if way.drawn then
-    -- One draw by weight: the least of -ln(u) / weight over the ways.
-    select w.id into next_form
-      from public.level_up_ways(pokemon, hour) w
-     where w.ready and w.drawn
-     order by -ln(1 - random()) * (1 + public.owned_line(pokemon.user_id, w.id))
+    with weighted as (
+      select w.id,
+             case when public.owned_line(pokemon.user_id, w.id) = 0 then g.unowned_line_weight else 1 end as weight
+        from public.level_up_ways(pokemon, hour) w
+       cross join public.coder_settings g
+       where w.ready and w.drawn
+    ),
+    running as (
+      select id, sum(weight) over (order by id) as upto, sum(weight) over () as total
+        from weighted
+    ),
+    pick as (
+      select random() * max(total) as point from running
+    )
+    select r.id into next_form
+      from running r, pick
+     where r.upto > pick.point
+     order by r.id
      limit 1;
   end if;
 

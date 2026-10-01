@@ -147,7 +147,7 @@ select pg_temp.pokemon('tyrogue', 20) as tyrogue, pg_temp.pokemon('beautifly', 1
 
 select is(public.owned_line('00000000-0000-0000-0000-00000000000a',
                             (select id from public.pokedex_species where slug = 'silcoon')), 1,
-  'a Beautifly counts as a Silcoon had, for a draw to weigh');
+  'a Beautifly counts as a Silcoon line had, for a draw to weigh');
 
 select is(pg_temp.boxed((select tyrogue from draws)) -> 'evolves_to',
   '{"species_id": null, "ko_name": null, "en_name": null, "level": 20, "upside_down": false}'::jsonb,
