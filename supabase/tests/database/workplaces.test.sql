@@ -301,14 +301,15 @@ select is(public.use_item((select he from kirlia), 'dawn-stone'), '{"outcome": "
 -- The Thunder Stone, which makes Alolan Raichu only in Alola
 -- ------------------------------------------------------------
 reset role;
-insert into public.coder_companions (user_id, species_id, egg_kind, is_shiny, hatched_at, level, gender)
-values ('00000000-0000-0000-0000-00000000000a', 25, 'alola', false, now(), 30, 'male'),
-       ('00000000-0000-0000-0000-00000000000a', 25, 'kanto', false, now(), 30, 'male');
+-- By id: the Kanto egg bought above may hold a Pikachu too.
+insert into public.coder_companions (id, user_id, species_id, egg_kind, is_shiny, hatched_at, level, gender)
+values ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-00000000000a', 25, 'alola', false, now(), 30, 'male'),
+       ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-00000000000a', 25, 'kanto', false, now(), 30, 'male');
 insert into public.coder_bag (user_id, item_id, quantity)
 values ('00000000-0000-0000-0000-00000000000a', 'thunder-stone', 2);
 create temporary table pikachu as
-select (select id from public.coder_companions where species_id = 25 and egg_kind = 'alola') as alolan,
-       (select id from public.coder_companions where species_id = 25 and egg_kind = 'kanto') as kantonian;
+select '00000000-0000-0000-0000-0000000000a1'::uuid as alolan,
+       '00000000-0000-0000-0000-0000000000a2'::uuid as kantonian;
 grant select on pikachu to authenticated;
 
 select pg_temp.as_person();
