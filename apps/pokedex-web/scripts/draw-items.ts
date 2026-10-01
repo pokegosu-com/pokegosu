@@ -196,60 +196,53 @@ function meltanCandy(): Shape[] {
 }
 
 /**
- * The Shelmet Shell: the shell Shelmet leaves when it becomes Accelgor, seen
- * from above. A coil shows on either side of its round back, and its brim
- * spreads forward with the blue spots on it, over the dark it looked out of.
+ * The Shelmet Shell: the shell Shelmet leaves when it becomes Accelgor, from
+ * the side as Shelmet is seen, the coil behind and the spotted brim over the
+ * dark it looked out of, now empty.
  */
 function shelmetShell(): Shape[] {
   const ivory: Palette = ['#ffffff', '#efe8d6', '#cfc5a9', '#9d9277']
   const spot: Palette = ['#4f7fd0', '#2a5cb4', '#1f4590', '#163266']
   const inside = '#1c2340'
-  const ellipse = (x: number, y: number, cx: number, cy: number, rx: number, ry: number) => {
-    const u = (x - cx) / rx
-    const v = (y - cy) / ry
+  const ellipse = (x: number, y: number, cx: number, cy: number, rx: number, ry: number, a = 0) => {
+    const dx = x - cx
+    const dy = y - cy
+    const u = (dx * Math.cos(a) + dy * Math.sin(a)) / rx
+    const v = (-dx * Math.sin(a) + dy * Math.cos(a)) / ry
     return { u, v, d: u * u + v * v }
   }
+  const ball = (palette: Palette, e: { u: number; v: number; d: number }) =>
+    tone(palette, lit([e.u, e.v, Math.sqrt(Math.max(0, 1 - e.d))]))
   return [
-    // The lower lip, and the dark between it and the brim.
+    // The coil, a ball with its turn and its eye darker.
     (x, y) => {
-      const e = ellipse(x, y, 15, 22.2, 7.2, 4)
+      const e = ellipse(x, y, 19.4, 12.6, 7.6, 7.6)
       if (e.d > 1) return null
-      return e.v > 0.45 ? tone(ivory, lit([e.u, 0.5, 0.7])) : inside
+      // Lit a little more than a ball, so its turns show on its dark side.
+      const r = Math.sqrt(e.d)
+      if (Math.abs(r - 0.66) < 0.09 || Math.abs(r - 0.33) < 0.09) return ivory[3]
+      return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]) + 0.25)
     },
-    // The round back.
+    // The dark it looks out of.
+    (x, y) => (ellipse(x, y, 11.2, 16.4, 6.4, 4.4).d <= 1 ? inside : null),
+    // The lower lip.
     (x, y) => {
-      const e = ellipse(x, y, 15, 10.6, 7.8, 7)
-      if (e.d > 1) return null
-      return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]))
+      const e = ellipse(x, y, 13, 21.2, 6.8, 2.6, 0.12)
+      return e.d <= 1 ? ball(ivory, e) : null
     },
-    // A coil on either side: a ball with its turn and its eye darker.
+    // The brim, tilted up at the front.
     (x, y) => {
-      for (const cx of [7.6, 22.4]) {
-        const e = ellipse(x, y, cx, 10.6, 3.4, 3.4)
-        if (e.d > 1) continue
-        const r = Math.sqrt(e.d)
-        if (Math.abs(r - 0.62) < 0.16 || r < 0.2) return ivory[3]
-        return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]))
-      }
-      return null
-    },
-    // The brim, spreading forward, nearly flat, with a line where it leaves
-    // the back.
-    (x, y) => {
-      const e = ellipse(x, y, 15, 17.6, 10.6, 5.6)
-      if (e.d > 1 || y < 14.6) return null
-      if (y < 15.6) return ivory[3]
-      return tone(ivory, lit([e.u * 0.6, 0.1 + e.v * 0.3, 0.85]))
+      const e = ellipse(x, y, 11.6, 11.2, 8.4, 3.2, -0.22)
+      return e.d <= 1 ? ball(ivory, e) : null
     },
     // Its spots.
     (x, y) => {
-      for (const [cx, cy, rx, ry] of [
-        [15, 18.6, 2.8, 1.8],
-        [9, 18.2, 2.2, 1.6],
-        [21, 18.2, 2.2, 1.6],
+      for (const [cx, cy] of [
+        [9.4, 10.8],
+        [14.4, 9.6],
       ]) {
-        const e = ellipse(x, y, cx, cy, rx, ry)
-        if (e.d <= 1) return tone(spot, lit([e.u * 0.6, e.v * 0.6, 0.8]))
+        const e = ellipse(x, y, cx, cy, 1.9, 1.1, -0.22)
+        if (e.d <= 1) return tone(spot, lit([e.u * 0.5, -0.4, 0.8]))
       }
       return null
     },
