@@ -126,7 +126,13 @@ export function ShopView() {
       {failure && (
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
-      <ActionToasts game={game} />
+      <ActionToasts
+        game={game}
+        bought={(id) => {
+          const s = shop.items?.find((i) => i.id === id)
+          return s?.item ? ko(s.item) : s?.egg ? ko(s.egg) : undefined
+        }}
+      />
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">진화의 돌</h2>
