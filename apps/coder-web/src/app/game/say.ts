@@ -6,9 +6,11 @@ import type { Last, Outcome } from './use-game'
 /**
  * The final consonant a word ends on when read aloud, as its index among
  * Hangul's 28 finals (0 for none, 8 for ㄹ), or null where it can't be told.
- * A number is read the Sino-Korean way: 60 is 육십, 2 is 이.
+ * A number is read the Sino-Korean way: 60 is 육십, 2 is 이. A sign at the
+ * end is not read: 니드런♀ is read as 니드런.
  */
-function finalOf(word: string): number | null {
+function finalOf(name: string): number | null {
+  const word = name.replace(/[^\p{L}\p{N}]+$/u, '')
   const zeros = /[1-9]0+$/.test(word)
   if (zeros) return 1 // 십, 백, 천, 만
   const digit = /\d$/.test(word) ? Number(word.at(-1)) : null

@@ -78,7 +78,7 @@ function Ware({
       <span className="text-muted text-xs">{note}</span>
       <span className="mt-auto font-mono text-sm tabular-nums">{points(price)}</span>
       <button type="button" className={quiet} disabled={disabled} onClick={onBuy}>
-        사기
+        구매
       </button>
     </li>
   )
