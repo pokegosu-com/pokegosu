@@ -29,15 +29,15 @@ export type Last = { action: Action; outcome: Outcome; before: Box | null }
  * The person's box, the game's experience curve, and the buttons that change
  * them.
  *
- * Opening the game is what invests tokens: the first load claims into the main
- * companion everything that fits, in one go. Watching it fill is the
- * screen's doing, counting up along the curve. Starting and hatching claim
- * the same way, since each leaves room the tokens waiting can fill. Everything
- * after that is a
- * button, and every button reloads the box, since what one changes can change
- * what others offer.
+ * Only the dashboard invests tokens, so that is where the partner is seen
+ * climbing; with `claims`, the first load claims into the main companion
+ * everything that fits, in one go. Watching it fill is the screen's doing,
+ * counting up along the curve. Starting and hatching there claim the same
+ * way, since each leaves room the tokens waiting can fill. Everything after
+ * that is a button, and every button reloads the box, since what one changes
+ * can change what others offer.
  */
-export function useGame() {
+export function useGame({ claims = false }: { claims?: boolean } = {}) {
   const [box, setBox] = useState<Box | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -76,7 +76,13 @@ export function useGame() {
       // opening the game would have claimed; claim them now rather than on
       // the next visit. The line said stays the start's or the hatch's.
       const tokens = loaded ? claimable(loaded) : 0
-      if (!error && (fn === 'start_game' || fn === 'hatch') && loaded?.started && tokens > 0) {
+      if (
+        claims &&
+        !error &&
+        (fn === 'start_game' || fn === 'hatch') &&
+        loaded?.started &&
+        tokens > 0
+      ) {
         const claimed = await createClient().rpc('claim', {
           companion_id: loaded.main_companion_id,
           tokens,
@@ -87,7 +93,7 @@ export function useGame() {
       setBusy(false)
       return error ? null : (data as Outcome)
     },
-    [load],
+    [load, claims],
   )
 
   useEffect(() => {
@@ -115,7 +121,7 @@ export function useGame() {
         setCurve(next)
       }
 
-      if (!opened.started || claimedOnOpen.current) return
+      if (!claims || !opened.started || claimedOnOpen.current) return
       claimedOnOpen.current = true
       const tokens = claimable(opened)
       if (tokens <= 0) return
@@ -126,7 +132,7 @@ export function useGame() {
     return () => {
       cancelled = true
     }
-  }, [act])
+  }, [act, claims])
 
   return { box, curve, failure, busy, last, act }
 }
