@@ -58,7 +58,13 @@ export type Pokemon = {
   next_level_tokens: number | null
   /** What Lv.100 takes; experience past it has nowhere to go. */
   max_tokens: number
-  evolves_to: ({ species_id: number; level: number } & Named) | null
+  /**
+   * The first way it may evolve now, or else later. A draw, as Tyrogue's, names
+   * no form; one that asks for the screen upside down, as Inkay's, is never
+   * can_evolve, and the screen offers it only turned over.
+   */
+  evolves_to:
+    ({ species_id: number | null; level: number | null; upside_down: boolean } & Named) | null
   can_evolve: boolean
   /** What it becomes with which item: Eevee has three. */
   item_evolutions: ({ species_id: number; item: Item } & Named)[]
@@ -71,6 +77,19 @@ export type Pokemon = {
   hatched_at: string
   is_main: boolean
   markings: number
+}
+
+/**
+ * The person's time zone, which the game's times of day are in: Umbreon
+ * evolves at their night, not the server's.
+ */
+export function timeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
+/** "리자몽(으)로 진화", or "진화" for a draw, whose form it does not know. */
+export function evolveLabel(to: NonNullable<Pokemon['evolves_to']>): string {
+  return to.species_id === null ? '진화' : `${ko(to)}(으)로 진화`
 }
 
 /** This app is in Korean; English stands in for a text missing in it. */

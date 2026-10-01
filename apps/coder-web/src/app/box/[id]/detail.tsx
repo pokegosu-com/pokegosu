@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 import { Artwork } from '@pokegosu/ui/artwork'
@@ -12,6 +12,7 @@ import { exactTokens } from '@/lib/format'
 import {
   eggHint,
   eggSpriteUrl,
+  evolveLabel,
   ko,
   levelAt,
   spriteUrl,
@@ -155,13 +156,25 @@ function PokemonDetail({
   // One out on a request is left alone until it is back: the server refuses
   // every button here for it.
   const working = p.workplace_id !== null
+  const { upsideDown, holdToFlip } = useUpsideDown(p.evolves_to?.upside_down ?? false)
+  // Inkay evolves with the console turned over, which here is its own
+  // render: the button is there only while it is upside down.
+  const evolveNow =
+    p.evolves_to &&
+    (p.can_evolve ||
+      (upsideDown && p.evolves_to.upside_down && at.level >= (p.evolves_to.level ?? 0)))
 
   return (
     <>
       {/* The partner's own bar is climbing here, so its level waits for it. */}
       {p.is_main && <ActionToasts game={game} level={at.level} />}
       <header className="flex items-center gap-8">
-        <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
+        <span
+          {...holdToFlip}
+          className={`motion-safe:transition-transform motion-safe:duration-500 ${upsideDown ? 'rotate-180' : ''}`}
+        >
+          <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
+        </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           {p.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
           <p className="flex items-baseline gap-2">
@@ -197,14 +210,14 @@ function PokemonDetail({
             ) : (
               !climbing && (
                 <>
-                  {p.can_evolve && p.evolves_to && (
+                  {evolveNow && p.evolves_to && (
                     <button
                       type="button"
                       className={primary}
                       disabled={busy}
                       onClick={() => act({ fn: 'evolve', companion_id: p.id })}
                     >
-                      {ko(p.evolves_to)}(으)로 진화
+                      {evolveLabel(p.evolves_to)}
                     </button>
                   )}
                   {stones.map((e) => (
@@ -282,6 +295,50 @@ function PokemonDetail({
       </a>
     </>
   )
+}
+
+/** How long the render must be held to turn over, and how long it stays so. */
+const HOLD_MS = 600
+const UPSIDE_DOWN_MS = 5000
+
+/**
+ * Holding a Pokémon that evolves upside down turns its render over for a
+ * while. Nothing says so: it is the games' console turned over, found by
+ * trying. Any other Pokémon only hops when pressed.
+ */
+function useUpsideDown(flippable: boolean) {
+  const [upsideDown, setUpsideDown] = useState(false)
+  const hold = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const back = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (hold.current) clearTimeout(hold.current)
+      if (back.current) clearTimeout(back.current)
+    },
+    [],
+  )
+  const release = () => {
+    if (hold.current) clearTimeout(hold.current)
+    hold.current = null
+  }
+  const holdToFlip = flippable
+    ? {
+        onPointerDown: () => {
+          release()
+          hold.current = setTimeout(() => {
+            setUpsideDown(true)
+            if (back.current) clearTimeout(back.current)
+            back.current = setTimeout(() => setUpsideDown(false), UPSIDE_DOWN_MS)
+          }, HOLD_MS)
+        },
+        onPointerUp: release,
+        onPointerLeave: release,
+        onPointerCancel: release,
+        // A long press on a phone would otherwise open the image's menu.
+        onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
+      }
+    : {}
+  return { upsideDown: flippable && upsideDown, holdToFlip }
 }
 
 /** This Pokémon's own look in the Pokédex: its form, a female's look, and shiny or not. */

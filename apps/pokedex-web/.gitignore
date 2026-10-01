@@ -1,2 +1,4 @@
 # Fetched by scripts/fetch-sprites.ts from the commit sprites.json pins.
 public/sprites/
+# Drawn by scripts/draw-items.ts.
+public/drawn/

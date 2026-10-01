@@ -28,6 +28,14 @@ tasks:
     outputs:
       - 'public/sprites/**/*'
 
+  # The few sprites PokeAPI/sprites lacks, drawn rather than fetched.
+  drawn:
+    command: 'node scripts/draw-items.ts'
+    inputs:
+      - 'scripts/draw-items.ts'
+    outputs:
+      - 'public/drawn/**/*'
+
   # Reads PokéAPI, rewrites sprites.json and writes the species migration the
   # script names, a new one each time what is included widens. Run by hand;
   # never by CI.
@@ -39,9 +47,9 @@ tasks:
   # every migration applied, which `supabase:verify` leaves running; locally,
   # where verify never runs, it is the developer's own.
   build:
-    deps: ['sprites', 'supabase:verify']
+    deps: ['sprites', 'drawn', 'supabase:verify']
 
   # vinext dev is Vite underneath and ignores PORT, so it is passed.
   dev:
     args: ['--port', '3003']
-    deps: ['sprites']
+    deps: ['sprites', 'drawn']

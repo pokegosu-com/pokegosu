@@ -114,7 +114,7 @@ export function ShopView() {
   }
 
   const held = (id: string) => box.bag.find((b) => b.id === id)?.quantity ?? 0
-  const stones = shop.items.filter((s) => s.item)
+  const tools = shop.items.filter((s) => s.item)
   const eggs = shop.items.filter((s) => s.egg)
 
   return (
@@ -135,9 +135,9 @@ export function ShopView() {
       />
 
       <section className="space-y-3">
-        <h2 className="text-muted text-sm font-medium">진화의 돌</h2>
+        <h2 className="text-muted text-sm font-medium">진화 도구</h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {stones.map((s) => (
+          {tools.map((s) => (
             <Ware
               key={s.id}
               sprite={itemSpriteUrl(s.item!)}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 
-import { claimable, type Box, type Curve } from '@/lib/game'
+import { claimable, timeZone, type Box, type Curve } from '@/lib/game'
 
 type Action =
   | { fn: 'start_game' }
@@ -50,7 +50,7 @@ export function useGame({ claims = false }: { claims?: boolean } = {}) {
   const claimedOnOpen = useRef(false)
 
   const load = useCallback(async () => {
-    const { data, error } = await createClient().rpc('box')
+    const { data, error } = await createClient().rpc('box', { time_zone: timeZone() })
     if (error) {
       setFailure(error.message)
       return null
@@ -64,7 +64,9 @@ export function useGame({ claims = false }: { claims?: boolean } = {}) {
     async (action: Action) => {
       setBusy(true)
       const before = current.current
-      const { fn, ...args } = action
+      const { fn, ...rest } = action
+      // Evolving hangs on the time of day where the person is.
+      const args = fn === 'evolve' || fn === 'use_item' ? { ...rest, time_zone: timeZone() } : rest
       const { data, error } = await createClient().rpc(fn, args as never)
       if (error) {
         setFailure(error.message)
@@ -99,7 +101,7 @@ export function useGame({ claims = false }: { claims?: boolean } = {}) {
   useEffect(() => {
     let cancelled = false
     async function open() {
-      const { data, error } = await createClient().rpc('box')
+      const { data, error } = await createClient().rpc('box', { time_zone: timeZone() })
       if (cancelled) return
       if (error) {
         setFailure(error.message)
