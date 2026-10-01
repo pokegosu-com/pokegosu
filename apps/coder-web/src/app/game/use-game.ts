@@ -64,7 +64,13 @@ export function useGame({ claims = false }: { claims?: boolean } = {}) {
       // opening the game would have claimed; claim them now rather than on
       // the next visit. The line said stays the start's or the hatch's.
       const tokens = loaded ? claimable(loaded) : 0
-      if (claims && !error && (fn === 'start_game' || fn === 'hatch') && loaded?.started && tokens > 0) {
+      if (
+        claims &&
+        !error &&
+        (fn === 'start_game' || fn === 'hatch') &&
+        loaded?.started &&
+        tokens > 0
+      ) {
         const claimed = await createClient().rpc('claim', {
           companion_id: loaded.main_companion_id,
           tokens,
