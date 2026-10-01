@@ -315,7 +315,7 @@ export function BoxView() {
       </div>
 
       {shown.length > 0 ? (
-        <ol className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">
           {shown.map((item) => (
             <li key={item.id} className="grid">
               {item.kind === 'pokemon' ? (
