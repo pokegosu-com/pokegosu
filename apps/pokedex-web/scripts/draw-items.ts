@@ -170,61 +170,70 @@ function linkingCord(): Shape[] {
 }
 
 /**
- * Meltan Candy: Pokémon GO's candy, tilted, in Meltan's silver with the gold
- * of the nut it carries as its band.
+ * Meltan Candy: a ball in Meltan's silver, with the gold of the nut it
+ * carries as a band running round it at a slant.
  */
 function meltanCandy(): Shape[] {
   const nut: Palette = ['#fff6b0', '#f4d24c', '#cfa52a', '#94721a']
+  // The band is where the ball's surface is near the plane square to this.
+  const axis: Vector = (() => {
+    const v: Vector = [0.62, -0.78, 0.2]
+    const m = Math.hypot(...v)
+    return v.map((x) => x / m) as Vector
+  })()
   return [
     (x, y) => {
-      const a = -Math.PI / 6
-      const ra = 10.5
-      const rb = 7.2
-      const dx = x - 15
-      const dy = y - 15.5
-      const u = (dx * Math.cos(a) + dy * Math.sin(a)) / ra
-      const v = (-dx * Math.sin(a) + dy * Math.cos(a)) / rb
-      const d = u * u + v * v
+      const r = 8.6
+      const nx = (x - 15) / r
+      const ny = (y - 15) / r
+      const d = nx * nx + ny * ny
       if (d > 1) return null
-      // The surface's normal, from the ellipse's axes back to the screen's.
-      const nu = (u / ra) * 10
-      const nv = (v / rb) * 10
-      const nx = nu * Math.cos(a) - nv * Math.sin(a)
-      const ny = nu * Math.sin(a) + nv * Math.cos(a)
-      const z = Math.sqrt(1 - d)
-      const m = Math.hypot(nx, ny, z)
-      const band = Math.abs(u - 0.18 + 0.32 * v * v) < 0.2
-      return tone(band ? nut : silver, lit([nx / m, ny / m, z / m]))
+      const normal: Vector = [nx, ny, Math.sqrt(1 - d)]
+      const band = Math.abs(normal[0] * axis[0] + normal[1] * axis[1] + normal[2] * axis[2]) < 0.2
+      return tone(band ? nut : silver, lit(normal))
     },
   ]
 }
 
 /**
- * The Shelmet Shell: the helmet Shelmet leaves when it becomes Accelgor, a
- * dome with a darker skirt, and the hole it looked out of at the front.
+ * The Shelmet Shell: the helmet Shelmet leaves when it becomes Accelgor,
+ * drawn as a knight's: a round crown over a barrel, a ridge down its middle,
+ * a slit to see out of and holes to breathe through.
  */
 function shelmetShell(): Shape[] {
-  const shell: Palette = ['#ffffff', '#e4e7ee', '#b7bdcb', '#838a9c']
-  const skirt: Palette = ['#d5dae3', '#a3aaba', '#7d8597', '#5b6274']
+  const steel: Palette = ['#ffffff', '#e4e7ee', '#b7bdcb', '#838a9c']
+  const dark = '#2b2630'
+  const cx = 15
+  const top = 13
+  const r = 8.4
+  const bottom = 24
   return [
     (x, y) => {
-      const r = 10.4
-      const dx = x - 15
-      const dy = y - 14.5
-      const d = Math.hypot(dx, dy)
-      if (d > r || dy > 7.2) return null
-      const z = Math.sqrt(Math.max(0, 1 - (d / r) ** 2))
-      if (dy > 5.4) return tone(skirt, lit([dx / r, 0.2, z]))
-      return tone(shell, lit([dx / r, dy / r, z]))
+      const dx = x - cx
+      if (y < top) {
+        const d = Math.hypot(dx, y - top)
+        if (d > r) return null
+        return tone(steel, lit([dx / r, (y - top) / r, Math.sqrt(Math.max(0, 1 - (d / r) ** 2))]))
+      }
+      if (y > bottom || Math.abs(dx) > r) return null
+      // The barrel is lit as a cylinder, darker at its foot.
+      const nx = dx / r
+      return tone(steel, lit([nx, 0.15, Math.sqrt(1 - nx * nx)]) - (y > bottom - 1.5 ? 0.3 : 0))
     },
-    // Dark inside, with its far rim catching the light.
+    // The ridge, which catches the light down its length.
     (x, y) => {
-      const dx = (x - 15) / 4.6
-      const dy = (y - 15.2) / 4.2
-      const d = dx * dx + dy * dy
-      if (d > 1) return null
-      if (d > 0.62 && dx > 0.1 && dy > -0.2) return '#6a5862'
-      return d < 0.5 ? '#24181f' : '#4a3a44'
+      if (Math.abs(x - cx) > 0.9 || y < top - r + 1.5 || y > bottom - 1) return null
+      return y < top - 3 ? steel[0] : steel[1]
+    },
+    (x, y) => {
+      // The slit, either side of the ridge.
+      if (y > 14 && y < 16.2 && Math.abs(x - cx) > 1 && Math.abs(x - cx) < 6.8) return dark
+      // The breathing holes, two rows of two on either side.
+      for (const hx of [-5, -3, 3, 5]) {
+        for (const hy of [19, 21])
+          if (Math.floor(x) === Math.floor(cx + hx) && Math.floor(y) === Math.floor(hy)) return dark
+      }
+      return null
     },
   ]
 }
