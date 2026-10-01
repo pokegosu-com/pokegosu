@@ -75,9 +75,10 @@ export function UsageView() {
   const weekday = (i: number) => WEEKDAYS[(dates[i].getDay() + 6) % 7]
   const day = picked ?? TODAY
 
-  // The month's agents, so one that used nothing in these seven days keeps its colour.
-  const colors = providerColors(month.providers)
-  const order = month.providers.map((p) => p.provider)
+  // The charts draw only the seven days, so their agents are the ones to list.
+  // The month's would miss an agent used before the 1st, as on the 1st itself.
+  const colors = providerColors(recent.providers)
+  const order = recent.providers.map((p) => p.provider)
   const days = daysOf(recent, first)
   const busiestDay = Math.max(1, ...days.map(sum))
   const busiestDevice = Math.max(1, ...recent.devices.map((d) => d.tokens))
@@ -86,7 +87,7 @@ export function UsageView() {
     <>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">사용량</h1>
-        <Legend providers={month.providers} colors={colors} />
+        <Legend providers={recent.providers} colors={colors} />
       </div>
 
       <section className="grid gap-4 sm:grid-cols-3">
