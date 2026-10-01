@@ -196,42 +196,60 @@ function meltanCandy(): Shape[] {
 }
 
 /**
- * The Shelmet Shell: the helmet Shelmet leaves when it becomes Accelgor,
- * drawn as a knight's: a round crown over a barrel, a ridge down its middle,
- * a slit to see out of and holes to breathe through.
+ * The Shelmet Shell: the shell Shelmet leaves when it becomes Accelgor, seen
+ * from above. A coil shows on either side of its round back, and its brim
+ * spreads forward with the blue spots on it, over the dark it looked out of.
  */
 function shelmetShell(): Shape[] {
-  const steel: Palette = ['#ffffff', '#e4e7ee', '#b7bdcb', '#838a9c']
-  const dark = '#2b2630'
-  const cx = 15
-  const top = 13
-  const r = 8.4
-  const bottom = 24
+  const ivory: Palette = ['#ffffff', '#efe8d6', '#cfc5a9', '#9d9277']
+  const spot: Palette = ['#4f7fd0', '#2a5cb4', '#1f4590', '#163266']
+  const inside = '#1c2340'
+  const ellipse = (x: number, y: number, cx: number, cy: number, rx: number, ry: number) => {
+    const u = (x - cx) / rx
+    const v = (y - cy) / ry
+    return { u, v, d: u * u + v * v }
+  }
   return [
+    // The lower lip, and the dark between it and the brim.
     (x, y) => {
-      const dx = x - cx
-      if (y < top) {
-        const d = Math.hypot(dx, y - top)
-        if (d > r) return null
-        return tone(steel, lit([dx / r, (y - top) / r, Math.sqrt(Math.max(0, 1 - (d / r) ** 2))]))
+      const e = ellipse(x, y, 15, 22.2, 7.2, 4)
+      if (e.d > 1) return null
+      return e.v > 0.45 ? tone(ivory, lit([e.u, 0.5, 0.7])) : inside
+    },
+    // The round back.
+    (x, y) => {
+      const e = ellipse(x, y, 15, 10.6, 7.8, 7)
+      if (e.d > 1) return null
+      return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]))
+    },
+    // A coil on either side: a ball with its turn and its eye darker.
+    (x, y) => {
+      for (const cx of [7.6, 22.4]) {
+        const e = ellipse(x, y, cx, 10.6, 3.4, 3.4)
+        if (e.d > 1) continue
+        const r = Math.sqrt(e.d)
+        if (Math.abs(r - 0.62) < 0.16 || r < 0.2) return ivory[3]
+        return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]))
       }
-      if (y > bottom || Math.abs(dx) > r) return null
-      // The barrel is lit as a cylinder, darker at its foot.
-      const nx = dx / r
-      return tone(steel, lit([nx, 0.15, Math.sqrt(1 - nx * nx)]) - (y > bottom - 1.5 ? 0.3 : 0))
+      return null
     },
-    // The ridge, which catches the light down its length.
+    // The brim, spreading forward, nearly flat, with a line where it leaves
+    // the back.
     (x, y) => {
-      if (Math.abs(x - cx) > 0.9 || y < top - r + 1.5 || y > bottom - 1) return null
-      return y < top - 3 ? steel[0] : steel[1]
+      const e = ellipse(x, y, 15, 17.6, 10.6, 5.6)
+      if (e.d > 1 || y < 14.6) return null
+      if (y < 15.6) return ivory[3]
+      return tone(ivory, lit([e.u * 0.6, 0.1 + e.v * 0.3, 0.85]))
     },
+    // Its spots.
     (x, y) => {
-      // The slit, either side of the ridge.
-      if (y > 14 && y < 16.2 && Math.abs(x - cx) > 1 && Math.abs(x - cx) < 6.8) return dark
-      // The breathing holes, two rows of two on either side.
-      for (const hx of [-5, -3, 3, 5]) {
-        for (const hy of [19, 21])
-          if (Math.floor(x) === Math.floor(cx + hx) && Math.floor(y) === Math.floor(hy)) return dark
+      for (const [cx, cy, rx, ry] of [
+        [15, 18.6, 2.8, 1.8],
+        [9, 18.2, 2.2, 1.6],
+        [21, 18.2, 2.2, 1.6],
+      ]) {
+        const e = ellipse(x, y, cx, cy, rx, ry)
+        if (e.d <= 1) return tone(spot, lit([e.u * 0.6, e.v * 0.6, 0.8]))
       }
       return null
     },
