@@ -30,10 +30,6 @@ export function startOfDay(at: Date): Date {
   return new Date(at.getFullYear(), at.getMonth(), at.getDate())
 }
 
-export function startOfMonth(at: Date): Date {
-  return new Date(at.getFullYear(), at.getMonth(), 1)
-}
-
 export function localDate(at: Date): string {
   return `${at.getFullYear()}-${at.getMonth() + 1}-${at.getDate()}`
 }
