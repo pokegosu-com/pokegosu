@@ -92,10 +92,11 @@ create policy "anyone signed in can read which stone a place is" on public.coder
 
 
 -- ============================================================
--- The Shelmet Shell is the game's own, so no pokedex names it: no sprite.
+-- The Shelmet Shell is the game's own, so no pokedex names it, and its
+-- sprite is PokeGosu's own drawing, beside the Linking Cord's.
 -- ============================================================
 insert into public.pokedex_items (id, ko_name, en_name, sprite) values
-  ('shelmet-shell', '쪼마리의껍질', 'Shelmet Shell', null);
+  ('shelmet-shell', '쪼마리의껍질', 'Shelmet Shell', '/drawn/items/shelmet-shell.png');
 
 
 -- ============================================================

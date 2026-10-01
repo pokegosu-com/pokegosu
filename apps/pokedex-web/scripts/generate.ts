@@ -444,8 +444,11 @@ const VERSION_ONLY: Record<string, string> = { solgaleo: 'sun', lunala: 'moon' }
  */
 const GAME_ITEMS = ['linking-cord', 'prism-scale', 'damp-rock', 'meltan-candy']
 
-/** Items PokeAPI/sprites has no bag sprite for, at the pinned commit. */
-const ITEMS_WITHOUT_SPRITES = new Set(['linking-cord', 'meltan-candy'])
+/**
+ * Items PokeAPI/sprites has no bag sprite for, even on master: PokeGosu draws
+ * its own, in the same 30px style, with scripts/draw-items.ts.
+ */
+const DRAWN_ITEMS = new Set(['linking-cord', 'meltan-candy'])
 
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
@@ -1180,7 +1183,7 @@ async function main() {
   add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
   // Every item an evolution names, in the bag's 30px pixel style.
   for (const id of [...items.keys()].sort())
-    if (!ITEMS_WITHOUT_SPRITES.has(id))
+    if (!DRAWN_ITEMS.has(id))
       add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${ITEMS_NOT_IN_POKEAPI[id]?.sprite ?? id}.png`)
   const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
@@ -1304,7 +1307,7 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(
           ([id, names]) =>
-            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(ITEMS_WITHOUT_SPRITES.has(id) ? null : `/sprites/items/${id}.png`)})`,
+            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(`/${DRAWN_ITEMS.has(id) ? 'drawn' : 'sprites'}/items/${id}.png`)})`,
         ),
     ),
     ...upsert(

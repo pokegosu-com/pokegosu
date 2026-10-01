@@ -11,8 +11,8 @@
 
 insert into public.pokedex_items (id, ko_name, en_name, sprite) values
   ('damp-rock', '축축한바위', 'Damp Rock', '/sprites/items/damp-rock.png'),
-  ('linking-cord', '연결의끈', 'Linking Cord', null),
-  ('meltan-candy', '멜탄의사탕', 'Meltan Candy', null),
+  ('linking-cord', '연결의끈', 'Linking Cord', '/drawn/items/linking-cord.png'),
+  ('meltan-candy', '멜탄의사탕', 'Meltan Candy', '/drawn/items/meltan-candy.png'),
   ('prism-scale', '고운비늘', 'Prism Scale', '/sprites/items/prism-scale.png')
 on conflict (id) do update set
   ko_name = excluded.ko_name,

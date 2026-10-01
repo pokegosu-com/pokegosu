@@ -7,3 +7,8 @@
 /sprites/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
   Access-Control-Allow-Origin: *
+
+# PokeGosu's own drawings, which scripts/draw-items.ts draws the same each run.
+/drawn/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Access-Control-Allow-Origin: *
