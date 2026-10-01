@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * A number that climbs to its target rather than jumping there, so a claim is
+ * A number that climbs to its target rather than jumping there, so an egg is
  * watched filling up. It only ever climbs: a lower target, such as a companion
  * shown for the first time, is shown at once.
  *
@@ -29,7 +29,7 @@ export function useCountUp(target: number, duration: (from: number, to: number) 
     let frame = 0
     const step = (now: number) => {
       const t = Math.min(1, (now - began) / ms)
-      // Eases out, so the last level before the target is the slowest to fill.
+      // Eases out, so it slows as it reaches the target.
       const value = start + (target - start) * (1 - (1 - t) ** 3)
       from.current = value
       setShown(t < 1 ? value : target)

@@ -22,6 +22,7 @@ import { HOUR, floorHour, lastDayOf, loadUsage, providerColors, sum, type Usage 
 
 import { HourChart, Legend } from './charts'
 import { useCountUp } from './game/count-up'
+import { useLevelFill } from './game/level-fill'
 import { UseItemLabel } from './game/item-label'
 import { ActionToasts } from './game/action-toasts'
 import { Gender } from './game/gender'
@@ -33,9 +34,6 @@ type Game = ReturnType<typeof useGame>
 // either holds the same height.
 const primary =
   'bg-accent text-surface rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50'
-
-/** A level's worth of climbing takes this long, however many tokens it is. */
-const MS_PER_LEVEL = 350
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
@@ -120,14 +118,14 @@ function PokemonPartner({
   game: Game
 }) {
   const p = box.pokemon.find((c) => c.id === box.main_companion_id)!
-  // The claim lands all at once; the partner climbs to it a level at a time,
-  // along the same curve the server used.
-  const { shown, climbing } = useCountUp(p.tokens, (from, to) => {
-    const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
-    const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
-    return Math.min(8000, Math.max(600, (b - a + 1) * MS_PER_LEVEL))
-  })
-  const at = levelAt(curve, p.growth_rate, shown) ?? {
+  // The claim lands all at once; the partner climbs to it along the same
+  // curve the server used.
+  const {
+    shown,
+    at: reached,
+    climbing,
+  } = useLevelFill(p.tokens, (tokens) => levelAt(curve, p.growth_rate, tokens))
+  const at = reached ?? {
     level: p.level,
     from: p.level_tokens,
     to: p.next_level_tokens,

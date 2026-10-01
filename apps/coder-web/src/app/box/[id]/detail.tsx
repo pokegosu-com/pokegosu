@@ -23,6 +23,7 @@ import {
 } from '@/lib/game'
 
 import { useCountUp } from '../../game/count-up'
+import { useLevelFill } from '../../game/level-fill'
 import { UseItemLabel } from '../../game/item-label'
 import { ActionToasts } from '../../game/action-toasts'
 import { Gender } from '../../game/gender'
@@ -38,8 +39,6 @@ type History = {
   hatched_at: string | null
   main_periods: { started_at: string; ended_at: string | null }[]
 }
-
-const MS_PER_LEVEL = 350
 
 // The clear border makes a primary button as tall as a quiet one, so a row of
 // either holds the same height.
@@ -141,12 +140,12 @@ function PokemonDetail({
 }) {
   const { act, busy, box } = game
   const stones = usableItems(p, box?.started ? box.bag : [])
-  const { shown, climbing } = useCountUp(p.tokens, (from, to) => {
-    const a = levelAt(curve, p.growth_rate, from)?.level ?? 1
-    const b = levelAt(curve, p.growth_rate, to)?.level ?? 1
-    return Math.min(8000, Math.max(600, (b - a + 1) * MS_PER_LEVEL))
-  })
-  const at = levelAt(curve, p.growth_rate, shown) ?? {
+  const {
+    shown,
+    at: reached,
+    climbing,
+  } = useLevelFill(p.tokens, (tokens) => levelAt(curve, p.growth_rate, tokens))
+  const at = reached ?? {
     level: p.level,
     from: p.level_tokens,
     to: p.next_level_tokens,
