@@ -10,11 +10,11 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 import { Toast } from '@pokegosu/ui/toast'
 
 import { env } from '@/env'
-import { points } from '@/lib/format'
+import { exactTokens, points } from '@/lib/format'
+import { josa } from '@/lib/josa'
 import { aptitudeLine, ko, spriteUrl, type Named, type Work, type Workplace } from '@/lib/game'
 
-import type { Outcome } from '../game/use-game'
-import { useWork, type WorkAction } from '../game/use-work'
+import { useWork, type WorkAction, type WorkLast } from '../game/use-work'
 
 type Started = Extract<Work, { started: true }>
 type Act = (a: WorkAction) => void
@@ -41,18 +41,25 @@ function useHoursSinceSync() {
   return hours
 }
 
-function say(action: WorkAction, o: Outcome): string | null {
+function say({ action, outcome: o, before }: WorkLast): string | null {
+  const started = before?.started ? before : null
+  const pokemon = (id: string | undefined) => {
+    const found = started?.pokemon.find((p) => p.id === id)
+    return found ? ko(found) : '포켓몬'
+  }
   switch (`${action.fn}:${o.outcome}`) {
-    case 'settle:settled':
-      return `의뢰를 마쳤다! ${points(Number(o.points))} 를 받았다!`
+    case 'settle:settled': {
+      const place = started?.workplaces.find(
+        (w) => 'workplace_id' in action && w.id === action.workplace_id,
+      )
+      return `${josa(pokemon(place?.worker?.companion_id), '이')} 의뢰를 마치고 ${exactTokens(Number(o.points))} 포인트를 받았다!`
+    }
     case 'settle_trainer:settled':
-      return Number(o.bonus) > 0
-        ? `${points(Number(o.points))} 와 보너스 ${points(Number(o.bonus))} 를 받았다!`
-        : `${points(Number(o.points))} 를 받았다!`
+      return `${josa(started?.trainer.name ?? '트레이너', '이')} ${exactTokens(Number(o.points) + Number(o.bonus))} 포인트를 받았다!`
     case 'reroll:rerolled':
       return '의뢰를 거절했다.'
     case 'assign:assigned':
-      return '의뢰를 하러 떠났다.'
+      return `${josa(pokemon(action.fn === 'assign' ? action.companion_id : undefined), '이')} 의뢰를 하러 떠났다.`
     default:
       return null
   }
@@ -481,7 +488,7 @@ function RequestNotice({
 export function RequestsView() {
   const { work, failure, busy, last, act } = useWork()
   const sinceSync = useHoursSinceSync()
-  const message = last ? say(last.action, last.outcome) : null
+  const message = last ? say(last) : null
 
   if (!work) {
     return failure ? (

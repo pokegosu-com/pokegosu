@@ -19,6 +19,13 @@ type Action =
 export type Outcome = { outcome: string } & Record<string, unknown>
 
 /**
+ * The last action, what it answered, and the box as it was before it, for
+ * what the action took away: the species a Pokémon evolved from is gone from
+ * the box after.
+ */
+export type Last = { action: Action; outcome: Outcome; before: Box | null }
+
+/**
  * The person's box, the game's experience curve, and the buttons that change
  * them.
  *
@@ -34,7 +41,11 @@ export function useGame() {
   const [box, setBox] = useState<Box | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [last, setLast] = useState<{ action: Action; outcome: Outcome } | null>(null)
+  const [last, setLast] = useState<Last | null>(null)
+  const current = useRef<Box | null>(null)
+  useEffect(() => {
+    current.current = box
+  })
   const [curve, setCurve] = useState<Curve>(new Map())
   const claimedOnOpen = useRef(false)
 
@@ -52,12 +63,13 @@ export function useGame() {
   const act = useCallback(
     async (action: Action) => {
       setBusy(true)
+      const before = current.current
       const { fn, ...args } = action
       const { data, error } = await createClient().rpc(fn, args as never)
       if (error) {
         setFailure(error.message)
       } else {
-        setLast({ action, outcome: data as Outcome })
+        setLast({ action, outcome: data as Outcome, before })
       }
       const loaded = await load()
       // Starting and hatching leave tokens the partner can now take, which
