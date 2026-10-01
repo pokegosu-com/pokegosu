@@ -10,7 +10,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(79);
+select plan(80);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -209,6 +209,10 @@ select is(public.settle(pg_temp.workplace(1)), '{"outcome": "settled", "points":
 select is((public.work() ->> 'points')::int, 160, 'into the points');
 select is(public.work() -> 'workplaces' -> 0 -> 'worker', 'null'::jsonb, 'and the workplace becomes a new one');
 select is(pg_temp.boxed((select machop from mon)) -> 'workplace_id', 'null'::jsonb, 'with its worker back');
+reset role;
+select is((select string_agg(companion_id || ':' || client_id, ' ') from public.coder_requests_done),
+  (select machop from mon) || ':19', 'which keeps the request as one it did, for Rattata');
+select pg_temp.as_person();
 
 select public.assign(pg_temp.workplace(3), (select rattata from mon));
 select is(public.reroll(pg_temp.workplace(3)), '{"outcome": "occupied"}'::jsonb, 'but not with someone at it');

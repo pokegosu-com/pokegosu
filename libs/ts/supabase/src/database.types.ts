@@ -334,6 +334,36 @@ export type Database = {
           },
         ]
       }
+      coder_location_items: {
+        Row: {
+          item_id: string
+          location: string
+        }
+        Insert: {
+          item_id: string
+          location: string
+        }
+        Update: {
+          item_id?: string
+          location?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_location_items_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_location_items_location_fkey'
+            columns: ['location']
+            isOneToOne: true
+            referencedRelation: 'pokedex_locations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_main_periods: {
         Row: {
           companion_id: string
@@ -419,6 +449,45 @@ export type Database = {
           },
         ]
       }
+      coder_requests_done: {
+        Row: {
+          client_id: number
+          companion_id: string
+          done_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          client_id: number
+          companion_id: string
+          done_at?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          client_id?: number
+          companion_id?: string
+          done_at?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_requests_done_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_requests_done_companion_id_user_id_fkey'
+            columns: ['companion_id', 'user_id']
+            isOneToOne: false
+            referencedRelation: 'coder_companions'
+            referencedColumns: ['id', 'user_id']
+          },
+        ]
+      }
       coder_ribbons: {
         Row: {
           en_description: string | null
@@ -447,6 +516,9 @@ export type Database = {
         Row: {
           bonus_every_hours: number
           bonus_points: number
+          friendship_needed: number
+          friendship_per_level: number
+          friendship_per_partner_hour: number
           id: boolean
           min_work_level: number
           points_per_hour: number
@@ -459,6 +531,9 @@ export type Database = {
         Insert: {
           bonus_every_hours: number
           bonus_points: number
+          friendship_needed: number
+          friendship_per_level: number
+          friendship_per_partner_hour: number
           id?: boolean
           min_work_level: number
           points_per_hour: number
@@ -471,6 +546,9 @@ export type Database = {
         Update: {
           bonus_every_hours?: number
           bonus_points?: number
+          friendship_needed?: number
+          friendship_per_level?: number
+          friendship_per_partner_hour?: number
           id?: boolean
           min_work_level?: number
           points_per_hour?: number
@@ -1014,18 +1092,29 @@ export type Database = {
           en_name: string | null
           id: string
           ko_name: string | null
+          type: string | null
         }
         Insert: {
           en_name?: string | null
           id: string
           ko_name?: string | null
+          type?: string | null
         }
         Update: {
           en_name?: string | null
           id?: string
           ko_name?: string | null
+          type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'pokedex_moves_type_fkey'
+            columns: ['type']
+            isOneToOne: false
+            referencedRelation: 'pokedex_types'
+            referencedColumns: ['id']
+          },
+        ]
       }
       pokedex_regions: {
         Row: {
@@ -1340,8 +1429,12 @@ export type Database = {
         Args: { companion_id: string; workplace_id: string }
         Returns: Json
       }
+      at_time_of_day: {
+        Args: { hour: number; time_of_day: string }
+        Returns: boolean
+      }
       at_work: { Args: { companion_id: string }; Returns: boolean }
-      box: { Args: never; Returns: Json }
+      box: { Args: { time_zone?: string }; Returns: Json }
       buy: { Args: { shop_item_id: string }; Returns: Json }
       claim: { Args: { companion_id: string; tokens: number }; Returns: Json }
       claim_enrollment: {
@@ -1349,6 +1442,10 @@ export type Database = {
         Returns: Json
       }
       companion_history: { Args: { companion_id: string }; Returns: Json }
+      did_request: {
+        Args: { companion_id: string; type: string }
+        Returns: boolean
+      }
       draw_gender: { Args: { species_id: number }; Returns: string }
       eligible_ribbons: {
         Args: {
@@ -1356,23 +1453,51 @@ export type Database = {
         }
         Returns: string[]
       }
-      evolve: { Args: { companion_id: string }; Returns: Json }
+      evolve: {
+        Args: { companion_id: string; time_zone?: string }
+        Returns: Json
+      }
+      friendly: {
+        Args: {
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
+        Returns: boolean
+      }
       hatch: { Args: { companion_id: string }; Returns: Json }
+      in_box: {
+        Args: {
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+          species_id: number
+          type: string
+        }
+        Returns: boolean
+      }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
-      item_evolutions: {
-        Args: { egg_kind: string; from_id: number; gender: string }
+      item_ways: {
+        Args: {
+          hour: number
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
         Returns: {
           id: number
           item: string
         }[]
       }
-      level_up_evolution: {
-        Args: { from_id: number; gender: string }
+      level_up_ways: {
+        Args: {
+          hour: number
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
         Returns: {
+          drawn: boolean
           id: number
           min_level: number
+          priority: number
+          ready: boolean
+          upside_down: boolean
         }[]
       }
+      local_hour: { Args: { time_zone: string }; Returns: number }
       lock_companion: {
         Args: { companion_id: string; owner: string }
         Returns: {
@@ -1425,6 +1550,10 @@ export type Database = {
       }
       normalize_code: { Args: { typed: string }; Returns: string }
       open_workplaces: { Args: { owner: string }; Returns: undefined }
+      owned_line: {
+        Args: { owner: string; species_id: number }
+        Returns: number
+      }
       pending_enrollment: { Args: { code: string }; Returns: Json }
       point_balance: { Args: { owner: string }; Returns: number }
       pokedex_first_form: { Args: { species_id: number }; Returns: number }
@@ -1450,6 +1579,12 @@ export type Database = {
       }
       settle: { Args: { workplace_id: string }; Returns: Json }
       settle_trainer: { Args: never; Returns: Json }
+      shed: {
+        Args: {
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
+        Returns: string
+      }
       shift_pay: {
         Args: {
           level: number
@@ -1472,7 +1607,7 @@ export type Database = {
       start_game: { Args: never; Returns: Json }
       usage: { Args: { range_end: string; range_start: string }; Returns: Json }
       use_item: {
-        Args: { companion_id: string; item_id: string }
+        Args: { companion_id: string; item_id: string; time_zone?: string }
         Returns: Json
       }
       whoami: { Args: { api_key_hash: string }; Returns: Json }

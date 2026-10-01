@@ -15,6 +15,7 @@ import {
   levelAt,
   spriteUrl,
   usableItems,
+  evolveLabel,
   type Box,
   type Curve,
 } from '@/lib/game'
@@ -179,7 +180,7 @@ function PokemonPartner({
               disabled={game.busy}
               onClick={() => game.act({ fn: 'evolve', companion_id: p.id })}
             >
-              {ko(p.evolves_to)}(으)로 진화
+              {evolveLabel(p.evolves_to)}
             </button>
           )}
           {p.can_receive_egg && (

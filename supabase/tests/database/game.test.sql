@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(118);
+select plan(119);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -155,52 +155,49 @@ select is(
     where s.category = 'baby'),
   'rare',
   'every baby is rare, whatever it grows into');
-select is(public.level_up_evolution(148, 'male'), row(149, 55::smallint)::record,
-  'Dragonair becomes Dragonite at Lv.55');
-select is(public.level_up_evolution(79, 'male'), row(80, 37::smallint)::record,
-  'Slowpoke becomes Slowbro at Lv.37, and the trade to Slowking is left to wait');
-select is_empty($$ select * from public.level_up_evolution(236, 'male') $$,
-  'Tyrogue''s Lv.20 asks for Attack against Defense too, so it waits');
-select is_empty($$ select * from public.level_up_evolution(172, 'male') $$,
-  'and so does Pichu, on friendship');
-select is_empty($$ select * from public.level_up_evolution(265, 'male') $$,
-  'Wurmple''s Lv.7 hangs on its personality, so it waits rather than always becoming Silcoon');
-select is(public.level_up_evolution(290, 'male'), row(291, 20::smallint)::record,
-  'Nincada becomes Ninjask at Lv.20, and Shedinja is left to wait');
-select is(public.level_up_evolution(412, 'female'), row(413, 20::smallint)::record,
-  'a female Burmy becomes Wormadam at Lv.20');
+-- A Pokémon of a species, gender and level from an egg, in nobody's box, and
+-- the form it would take at an hour.
+create function pg_temp.mon(slug text, gender text, lvl integer, egg_kind text default 'national')
+returns public.coder_companions language sql as $$
+  select jsonb_populate_record(null::public.coder_companions, jsonb_build_object(
+    'species_id', (select id from public.pokedex_species where pokedex_species.slug = mon.slug),
+    'gender', gender, 'level', lvl, 'egg_kind', egg_kind, 'hatched_at', now()));
+$$;
+create function pg_temp.next(c public.coder_companions, hour integer default 12) returns text language sql as $$
+  select s.slug from public.level_up_ways(c, hour::smallint) w join public.pokedex_species s on s.id = w.id
+   where w.ready order by w.priority limit 1;
+$$;
+
+select is(pg_temp.next(pg_temp.mon('dragonair', 'male', 55)), 'dragonite', 'Dragonair becomes Dragonite at Lv.55');
+select is(pg_temp.next(pg_temp.mon('dragonair', 'male', 54)), null, 'and not before');
+select is(pg_temp.next(pg_temp.mon('slowpoke', 'male', 37)), 'slowbro',
+  'Slowpoke becomes Slowbro at Lv.37, and Slowking with a King''s Rock');
+select is(pg_temp.next(pg_temp.mon('pichu', 'male', 40)), 'pikachu', 'Pichu is friendly enough at Lv.40 alone');
+select is(pg_temp.next(pg_temp.mon('pichu', 'male', 39)), null, 'and not at Lv.39 without time as the partner');
+select is(pg_temp.next(pg_temp.mon('nincada', 'male', 20)), 'ninjask', 'Nincada becomes Ninjask at Lv.20');
+select is(pg_temp.next(pg_temp.mon('burmy-plant', 'female', 20)), 'wormadam-plant', 'a female Burmy becomes Wormadam at Lv.20');
+select is(pg_temp.next(pg_temp.mon('burmy-sandy', 'female', 20)), 'wormadam-sandy', 'in her own cloak');
+select is(pg_temp.next(pg_temp.mon('burmy-trash', 'male', 20)), 'mothim-plant', 'and a male one Mothim, whatever his cloak');
+select is(pg_temp.next(pg_temp.mon('combee', 'female', 21)), 'vespiquen', 'a female Combee becomes Vespiquen at Lv.21');
+select is(pg_temp.next(pg_temp.mon('combee', 'male', 100)), null, 'and a male one never evolves');
+select is(pg_temp.next(pg_temp.mon('espurr', 'female', 25)), 'meowstic-female', 'a female Espurr becomes a female Meowstic at Lv.25');
+select is(pg_temp.next(pg_temp.mon('charizard', 'male', 100)), null, 'Charizard never Mega Evolves');
+select is(pg_temp.next(pg_temp.mon('geodude-alola', 'male', 25)), 'graveler-alola', 'Alolan Geodude becomes Alolan Graveler at Lv.25');
 select is(
-  (select row(p.slug, e.min_level)::text
-     from public.level_up_evolution((select id from public.pokedex_species where slug = 'burmy-sandy'), 'female') e
-     join public.pokedex_species p on p.id = e.id),
-  '(wormadam-sandy,20)',
-  'in her own cloak');
-select is(public.level_up_evolution((select id from public.pokedex_species where slug = 'burmy-trash'), 'male'),
-  row(414, 20::smallint)::record,
-  'and a male one Mothim, whatever his cloak');
-select is(public.level_up_evolution(415, 'female'), row(416, 21::smallint)::record,
-  'a female Combee becomes Vespiquen at Lv.21');
-select is_empty($$ select * from public.level_up_evolution(415, 'male') $$,
-  'and a male one never evolves');
-select is(public.level_up_evolution(443, 'male'), row(444, 24::smallint)::record,
-  'Gible becomes Gabite at Lv.24');
-select is(public.level_up_evolution(677, 'female'), row(10124, 25::smallint)::record,
-  'a female Espurr becomes a female Meowstic at Lv.25');
-select is_empty(
-  $$ select * from public.level_up_evolution(674, 'male')
-     union all select * from public.level_up_evolution(686, 'male')
-     union all select * from public.level_up_evolution(705, 'male') $$,
-  'Pancham, Inkay and Sliggoo wait, as they need a Dark type, the console upside down and rain');
-select is_empty($$ select * from public.level_up_evolution(6, 'male') $$,
-  'and Charizard never Mega Evolves');
-select is(public.level_up_evolution((select id from public.pokedex_species where slug = 'geodude-alola'), 'male'),
-  row((select id from public.pokedex_species where slug = 'graveler-alola'), 25::smallint)::record,
-  'Alolan Geodude becomes Alolan Graveler at Lv.25');
-select is_empty(
-  $$ select * from public.level_up_evolution(790, null)
-     union all select * from public.level_up_evolution(744, 'male')
-     union all select * from public.level_up_evolution((select id from public.pokedex_species where slug = 'rattata-alola'), 'male') $$,
-  'Cosmoem, Rockruff and Alolan Rattata wait, as they need a game, a time of day and the night');
+  pg_temp.next(pg_temp.mon('cosmoem', null, 53), 12) || ' ' || pg_temp.next(pg_temp.mon('cosmoem', null, 53), 0),
+  'solgaleo lunala', 'Cosmoem becomes Solgaleo by day and Lunala by night');
+select is(
+  pg_temp.next(pg_temp.mon('rockruff', 'male', 25), 6) || ' ' || pg_temp.next(pg_temp.mon('rockruff', 'male', 25), 17)
+    || ' ' || pg_temp.next(pg_temp.mon('rockruff', 'male', 25), 18),
+  'lycanroc-midday lycanroc-dusk lycanroc-midnight',
+  'any Rockruff becomes Midday Lycanroc from 6:00, Dusk at 17:00, and Midnight from 18:00');
+select is(
+  pg_temp.next(pg_temp.mon('rattata-alola', 'male', 20), 5) || ' ' || coalesce(pg_temp.next(pg_temp.mon('rattata-alola', 'male', 20), 6), '-'),
+  'raticate-alola -', 'Alolan Rattata evolves only at night');
+select is(
+  pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'alola'), 0) || ' ' || pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'alola'), 12)
+    || ' ' || pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'kanto'), 0),
+  'marowak-alola marowak marowak', 'an Alola egg''s Cubone becomes Alolan Marowak at night, and any other Marowak');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -321,7 +318,7 @@ select is(public.evolve(pg_temp.main()), '{"outcome": "evolved", "from": 4, "to"
   'it evolves when asked, not before');
 select is(public.evolve(pg_temp.main()), '{"outcome": "not_ready"}'::jsonb, 'Charmeleon waits for Lv.36');
 select is(public.box() -> 'pokemon' -> 0 -> 'evolves_to',
-  '{"species_id": 6, "ko_name": "리자몽", "en_name": "Charizard", "level": 36}'::jsonb,
+  '{"species_id": 6, "ko_name": "리자몽", "en_name": "Charizard", "level": 36, "upside_down": false}'::jsonb,
   'and the box says what comes next');
 
 

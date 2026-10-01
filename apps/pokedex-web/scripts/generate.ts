@@ -237,7 +237,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261001130001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261001140001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -435,6 +435,18 @@ const ITEMS_NOT_IN_POKEAPI: Record<string, { names: Record<string, string>; spri
  */
 const VERSION_ONLY: Record<string, string> = { solgaleo: 'sun', lunala: 'moon' }
 
+/**
+ * Items no evolution here names, which the Coder game evolves with in place of
+ * what it cannot ask for: a Linking Cord in place of a trade, as the games
+ * since Legends: Arceus have it, a Prism Scale in place of Feebas's beauty, a
+ * Damp Rock in place of Sliggoo's rain, and Meltan Candy in place of the
+ * 400 Pokémon GO asks.
+ */
+const GAME_ITEMS = ['linking-cord', 'prism-scale', 'damp-rock', 'meltan-candy']
+
+/** Items PokeAPI/sprites has no bag sprite for, at the pinned commit. */
+const ITEMS_WITHOUT_SPRITES = new Set(['linking-cord', 'meltan-candy'])
+
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
   'level-up': '레벨업',
@@ -459,6 +471,7 @@ const LOCATION_KO_NAMES: Record<string, string> = {
 const triggers = new Map<string, Record<string, string>>()
 const items = new Map<string, Record<string, string>>()
 const moves = new Map<string, Record<string, string>>()
+const moveTypes = new Map<string, string>()
 const locations = new Map<string, Record<string, string>>()
 const regions = new Map<string, Record<string, string>>()
 const versions = new Map<string, Record<string, string>>()
@@ -610,7 +623,10 @@ async function nameItem(item: string) {
 
 async function nameMove(move: string) {
   if (moves.has(move)) return
-  const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`move/${move}`)
+  const fetched = await get<{ names: ({ name: string } & Localised)[]; type: Named }>(
+    `move/${move}`,
+  )
+  moveTypes.set(move, fetched.type.name)
   moves.set(
     move,
     localise(fetched.names, (n) => n.name),
@@ -1138,6 +1154,8 @@ async function main() {
     )
   }
 
+  for (const item of GAME_ITEMS) await nameItem(item)
+
   // The commit is pinned, so a hash the manifest already has for a source is
   // still that file's, and a run fetches only what is new.
   const known = new Map<string, string>()
@@ -1162,7 +1180,8 @@ async function main() {
   add('sprites/egg.png', `${SPRITES_BASE}/egg.png`)
   // Every item an evolution names, in the bag's 30px pixel style.
   for (const id of [...items.keys()].sort())
-    add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${ITEMS_NOT_IN_POKEAPI[id]?.sprite ?? id}.png`)
+    if (!ITEMS_WITHOUT_SPRITES.has(id))
+      add(`sprites/items/${id}.png`, `${ITEMS_BASE}/${ITEMS_NOT_IN_POKEAPI[id]?.sprite ?? id}.png`)
   const home = `${SPRITES_BASE}/other/home`
   for (const row of rows) {
     const n = row.id
@@ -1285,17 +1304,20 @@ async function main() {
         .sort(([a], [b]) => a.localeCompare(b))
         .map(
           ([id, names]) =>
-            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(`/sprites/items/${id}.png`)})`,
+            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(ITEMS_WITHOUT_SPRITES.has(id) ? null : `/sprites/items/${id}.png`)})`,
         ),
     ),
     ...upsert(
       written,
       'pokedex_moves',
-      ['id', 'ko_name', 'en_name'],
+      ['id', 'ko_name', 'en_name', 'type'],
       ['id'],
       [...moves]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([id, names]) => `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)})`),
+        .map(
+          ([id, names]) =>
+            `  (${sql(id)}, ${sql(names.ko)}, ${sql(names.en)}, ${sql(moveTypes.get(id)!)})`,
+        ),
     ),
     ...upsert(
       written,

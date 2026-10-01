@@ -14,6 +14,11 @@ function speciesName(box: Box | null, speciesId: unknown): string {
   return found ? ko(found) : '포켓몬'
 }
 
+function itemName(box: Box | null, itemId: unknown): string {
+  const found = box?.started ? box.bag.find((b) => b.id === itemId) : undefined
+  return found ? ko(found) : '도구'
+}
+
 /**
  * One line for what the last button did, in the games' voice where they have
  * one. `bought` names what a shop item is, which the box does not know.
@@ -36,8 +41,13 @@ export function say(
     case 'hatch:hatched':
       return `${o.is_shiny ? '✨ ' : ''}알에서 ${josa(speciesName(box, o.species_id), '이')} 태어났다!`
     case 'evolve:evolved':
-    case 'use_item:evolved':
-      return `${josa(nameOf(before, id), '이')} ${josa(nameOf(box, id), '으로')} 진화했다.`
+    case 'use_item:evolved': {
+      const evolved = `${josa(nameOf(before, id), '이')} ${josa(nameOf(box, id), '으로')} 진화했다.`
+      // Nincada's shell is left in the box, and Shelmet's in the bag.
+      if (o.shed) return `${evolved} 박스에 ${josa(nameOf(box, o.shed), '이')} 생겼다!`
+      if (o.received) return `${evolved} ${josa(itemName(box, o.received), '을')} 받았다!`
+      return evolved
+    }
     case 'receive_egg:received':
       return '알을 받았다!'
     case 'receive_ribbon:received': {

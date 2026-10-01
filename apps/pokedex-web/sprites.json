@@ -88,6 +88,11 @@
       "sha256": "78445bac6c148e7f214d6cb29f0ce554568a1e707ae98d18b4b072a87081b065"
     },
     {
+      "path": "sprites/items/damp-rock.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/damp-rock.png",
+      "sha256": "0a59a4ab1f2b68e769e226b8a259218b26cd2d608282b7bb81c6c359b99e05c3"
+    },
+    {
       "path": "sprites/items/dawn-stone.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/dawn-stone.png",
       "sha256": "7d234d687853296a6a4a185a9c27cc637d9da917c70df02770c815f455e6f211"
@@ -271,6 +276,11 @@
       "path": "sprites/items/pinsirite.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/pinsirite.png",
       "sha256": "31536834ac77dde6ff3b02023c68523f1320beba49f396dcfdafafd7a5dbe684"
+    },
+    {
+      "path": "sprites/items/prism-scale.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/prism-scale.png",
+      "sha256": "30a888f336fadfa8de6c2428d2da32e274c66307e3d7828957e422af67c5327f"
     },
     {
       "path": "sprites/items/protector.png",
