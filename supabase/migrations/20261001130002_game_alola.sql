@@ -67,9 +67,11 @@ create policy "anyone signed in can read which forms a region's egg hatches as" 
 -- version is uncommon, a one-off or a low chance is rare, the starters and
 -- the pseudo-legendaries are very rare, and the legendaries, mythicals and
 -- Ultra Beasts are mythic.
--- Type: Null, a gift, is rare, and so are Mimikyu, Drampa, Turtonator,
--- Komala and Dhelmise, each a low chance where it is found. Jangmo-o, whose
--- line is a pseudo-legendary's, is very rare. Meltan, mythical, is mythic.
+-- Mimikyu, Drampa, Turtonator, Komala and Dhelmise, each a low chance where
+-- it is found, are rare, and so is Minior, found only atop one mountain.
+-- Jangmo-o, whose line is a pseudo-legendary's, is very rare. Type: Null, a
+-- one-off gift made to fight the Ultra Beasts, is mythic beside them, and
+-- Meltan, mythical, is mythic.
 -- ============================================================
 create temporary table new_rarity (slug text primary key, rarity text not null);
 insert into new_rarity (slug, rarity) values
@@ -80,15 +82,15 @@ insert into new_rarity (slug, rarity) values
   ('wishiwashi-solo', 'uncommon'), ('mareanie', 'uncommon'), ('dewpider', 'uncommon'),
   ('fomantis', 'uncommon'), ('morelull', 'uncommon'), ('salandit', 'uncommon'), ('stufful', 'uncommon'),
   ('comfey', 'uncommon'), ('oranguru', 'uncommon'), ('passimian', 'uncommon'), ('wimpod', 'uncommon'),
-  ('sandygast', 'uncommon'), ('pyukumuku', 'uncommon'), ('minior-red-meteor', 'uncommon'),
+  ('sandygast', 'uncommon'), ('pyukumuku', 'uncommon'),
   ('togedemaru', 'uncommon'), ('bruxish', 'uncommon'),
 
-  ('type-null', 'rare'), ('mimikyu-disguised', 'rare'), ('drampa', 'rare'), ('turtonator', 'rare'),
+  ('minior-red-meteor', 'rare'), ('mimikyu-disguised', 'rare'), ('drampa', 'rare'), ('turtonator', 'rare'),
   ('komala', 'rare'), ('dhelmise', 'rare'),
 
   ('rowlet', 'very-rare'), ('litten', 'very-rare'), ('popplio', 'very-rare'), ('jangmo-o', 'very-rare'),
 
-  ('tapu-koko', 'mythic'), ('tapu-lele', 'mythic'), ('tapu-bulu', 'mythic'), ('tapu-fini', 'mythic'),
+  ('type-null', 'mythic'), ('tapu-koko', 'mythic'), ('tapu-lele', 'mythic'), ('tapu-bulu', 'mythic'), ('tapu-fini', 'mythic'),
   ('cosmog', 'mythic'), ('nihilego', 'mythic'), ('buzzwole', 'mythic'), ('pheromosa', 'mythic'),
   ('xurkitree', 'mythic'), ('celesteela', 'mythic'), ('kartana', 'mythic'), ('guzzlord', 'mythic'),
   ('necrozma', 'mythic'), ('magearna', 'mythic'), ('marshadow', 'mythic'), ('poipole', 'mythic'),

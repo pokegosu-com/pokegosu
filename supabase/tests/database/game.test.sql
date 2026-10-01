@@ -126,9 +126,9 @@ select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
      from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
      join public.coder_species_rarities sr on sr.species_id = g.species_id
-    where g.egg_kind = 'alola' and s.slug in ('rowlet', 'pikipek', 'type-null', 'jangmo-o', 'nihilego', 'meltan')),
-  'rowlet:very-rare pikipek:common type-null:rare jangmo-o:very-rare nihilego:mythic meltan:mythic',
-  'Generation VII''s starters and Jangmo-o are very rare, Type: Null rare, and the Ultra Beasts and Meltan mythic');
+    where g.egg_kind = 'alola' and s.slug in ('rowlet', 'pikipek', 'type-null', 'minior-red-meteor', 'jangmo-o', 'nihilego', 'meltan')),
+  'rowlet:very-rare pikipek:common type-null:mythic minior-red-meteor:rare jangmo-o:very-rare nihilego:mythic meltan:mythic',
+  'Generation VII''s starters and Jangmo-o are very rare, Minior rare, and Type: Null, the Ultra Beasts and Meltan mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -140,7 +140,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 66), ('uncommon', 179), ('rare', 66), ('very-rare', 36), ('mythic', 74) $$,
+  $$ values ('common', 66), ('uncommon', 178), ('rare', 66), ('very-rare', 36), ('mythic', 75) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
