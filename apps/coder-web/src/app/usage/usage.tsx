@@ -9,7 +9,6 @@ import {
   loadUsage,
   providerColors,
   startOfDay,
-  startOfMonth,
   sum,
   type Usage,
 } from '@/lib/usage'
@@ -22,19 +21,23 @@ const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일']
 const DAYS = 7
 const TODAY = DAYS - 1
 
-function firstDay(now: Date): Date {
+/** Today and the 29 days before it, for the longer total. */
+const LONG_DAYS = 30
+
+/** 00:00 of the first of the `count` days that end today. */
+function firstDay(now: Date, count = DAYS): Date {
   const day = startOfDay(now)
-  day.setDate(day.getDate() - TODAY)
+  day.setDate(day.getDate() - (count - 1))
   return day
 }
 
 /**
- * This month and the last seven days, by hour, day, machine and coding agent.
- * The month is one call for its total; the seven days are another for
- * everything else, since the month's hours are more than the charts need.
+ * The last 30 days and the last seven, by hour, day, machine and coding agent.
+ * The 30 days are one call for their total; the seven days are another for
+ * everything else, since the 30 days' hours are more than the charts need.
  */
 export function UsageView() {
-  const [loaded, setLoaded] = useState<{ recent: Usage; month: Usage; now: Date } | null>(null)
+  const [loaded, setLoaded] = useState<{ recent: Usage; long: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
 
@@ -43,11 +46,11 @@ export function UsageView() {
     async function load() {
       const now = new Date()
       try {
-        const [recent, month] = await Promise.all([
+        const [recent, long] = await Promise.all([
           loadUsage(firstDay(now), now),
-          loadUsage(startOfMonth(now), now),
+          loadUsage(firstDay(now, LONG_DAYS), now),
         ])
-        if (!cancelled) setLoaded({ recent, month, now })
+        if (!cancelled) setLoaded({ recent, long, now })
       } catch (error) {
         if (!cancelled) setFailure((error as Error).message)
       }
@@ -65,7 +68,7 @@ export function UsageView() {
   }
   if (!loaded) return <p className="text-muted text-sm">불러오는 중…</p>
 
-  const { recent, month, now } = loaded
+  const { recent, long, now } = loaded
   const first = firstDay(now)
   const dates = Array.from({ length: DAYS }, (_, i) => {
     const d = new Date(first)
@@ -76,7 +79,7 @@ export function UsageView() {
   const day = picked ?? TODAY
 
   // The charts draw only the seven days, so their agents are the ones to list.
-  // The month's would miss an agent used before the 1st, as on the 1st itself.
+  // The 30 days' would list agents the charts have nothing to draw for.
   const colors = providerColors(recent.providers)
   const order = recent.providers.map((p) => p.provider)
   const days = daysOf(recent, first)
@@ -93,7 +96,7 @@ export function UsageView() {
       <section className="grid gap-4 sm:grid-cols-3">
         <Figure label="오늘" tokens={sum(days[TODAY])} />
         <Figure label="최근 7일" tokens={BigInt(recent.total)} />
-        <Figure label="이번 달" tokens={BigInt(month.total)} />
+        <Figure label="최근 30일" tokens={BigInt(long.total)} />
       </section>
 
       <section className="flex flex-col gap-4">
