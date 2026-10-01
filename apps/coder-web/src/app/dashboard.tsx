@@ -332,10 +332,11 @@ function LastDay({ usage, now }: { usage: Usage; now: Date }) {
 /**
  * The partner first, and the last 24 hours of usage beneath it, so the chart
  * is never nearly empty just after midnight. Opening this page claims the
- * tokens earned since the last visit, so the partner is seen climbing.
+ * tokens earned since the last visit, so the partner is seen climbing; no
+ * other page does.
  */
 export function Dashboard() {
-  const game = useGame()
+  const game = useGame({ claims: true })
   const { box, curve, busy, act } = game
   const [recent, setRecent] = useState<{ usage: Usage; now: Date } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
