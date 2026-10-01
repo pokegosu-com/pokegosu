@@ -241,6 +241,36 @@ export type Database = {
         }
         Relationships: []
       }
+      coder_egg_regional_forms: {
+        Row: {
+          egg_kind: string
+          species_id: number
+        }
+        Insert: {
+          egg_kind: string
+          species_id: number
+        }
+        Update: {
+          egg_kind?: string
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_egg_regional_forms_egg_kind_fkey'
+            columns: ['egg_kind']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_egg_regional_forms_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: true
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_egg_species: {
         Row: {
           egg_kind: string
@@ -730,11 +760,13 @@ export type Database = {
           needs_overworld_rain: boolean
           party_species_id: number | null
           party_type: string | null
+          region: string | null
           relative_physical_stats: number | null
           time_of_day: string | null
           trade_species_id: number | null
           trigger: string
           turn_upside_down: boolean
+          version: string | null
         }
         Insert: {
           chance?: number | null
@@ -752,11 +784,13 @@ export type Database = {
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
+          region?: string | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trade_species_id?: number | null
           trigger: string
           turn_upside_down?: boolean
+          version?: string | null
         }
         Update: {
           chance?: number | null
@@ -774,11 +808,13 @@ export type Database = {
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
+          region?: string | null
           relative_physical_stats?: number | null
           time_of_day?: string | null
           trade_species_id?: number | null
           trigger?: string
           turn_upside_down?: boolean
+          version?: string | null
         }
         Relationships: [
           {
@@ -831,6 +867,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'pokedex_evolution_methods_region_fkey'
+            columns: ['region']
+            isOneToOne: false
+            referencedRelation: 'pokedex_regions'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'pokedex_evolution_methods_trade_species_id_fkey'
             columns: ['trade_species_id']
             isOneToOne: false
@@ -842,6 +885,13 @@ export type Database = {
             columns: ['trigger']
             isOneToOne: false
             referencedRelation: 'pokedex_evolution_triggers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_version_fkey'
+            columns: ['version']
+            isOneToOne: false
+            referencedRelation: 'pokedex_versions'
             referencedColumns: ['id']
           },
         ]
@@ -960,6 +1010,24 @@ export type Database = {
         Relationships: []
       }
       pokedex_moves: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
+      pokedex_regions: {
         Row: {
           en_name: string | null
           id: string
@@ -1164,6 +1232,24 @@ export type Database = {
         }
         Relationships: []
       }
+      pokedex_versions: {
+        Row: {
+          en_name: string | null
+          id: string
+          ko_name: string | null
+        }
+        Insert: {
+          en_name?: string | null
+          id: string
+          ko_name?: string | null
+        }
+        Update: {
+          en_name?: string | null
+          id?: string
+          ko_name?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           display_name: string | null
@@ -1274,7 +1360,7 @@ export type Database = {
       hatch: { Args: { companion_id: string }; Returns: Json }
       ingest: { Args: { api_key_hash: string; rollups: Json }; Returns: Json }
       item_evolutions: {
-        Args: { from_id: number; gender: string }
+        Args: { egg_kind: string; from_id: number; gender: string }
         Returns: {
           id: number
           item: string

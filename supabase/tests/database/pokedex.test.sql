@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(47);
+select plan(54);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -19,11 +19,21 @@ select is((select count(*)::int from public.pokedex_species where generation = 5
   'and every Generation V species');
 select is((select count(*)::int from public.pokedex_species where generation = 6 and form_of is null), 72,
   'and every Generation VI species');
+select is((select count(*)::int from public.pokedex_species where generation = 7 and form_of is null), 88,
+  'and every Generation VII species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 185,
-  'and every other form those games had, Mega Evolutions too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 249,
+  'and every other form those games had, Mega Evolutions and Alolan forms too, but Arceus''s ??? type');
+select is_empty(
+  $$ select slug from public.pokedex_species
+      where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
+         or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay') $$,
+  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak or one game''s form');
+select is(
+  (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
+  7, 'Pikachu''s caps are in, as they came to more than one game');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 721, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 809, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -46,12 +56,20 @@ select is(
     where e.dex = 'kalos' and e.is_default and e.number in (1, 151, 304, 454, 457)),
   'chespin:1 drifloon:151 diglett:304 mewtwo:454 volcanion:457',
   'Coastal numbers on from Central, and Mountain from Coastal');
+select is((select count(*)::int from public.pokedex_entries where dex = 'alola' and is_default), 405,
+  'and Ultra Sun and Ultra Moon''s 403, with Meltan and Melmetal after them');
+select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'alola' and e.is_default and e.number in (1, 403, 404, 405)),
+  'rowlet:1 zeraora:403 meltan:404 melmetal:405',
+  'Meltan and Melmetal come after Zeraora');
 select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos'])[s.generation])),
+                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola'])[s.generation])),
   0, 'every species is in its own generation''s regional pokedex');
 
 select isnt(
@@ -141,6 +159,23 @@ select is(
     || ' kyogre-primal:kyogre:primal-reversion-holding-blue-orb'
     || ' rayquaza-mega:rayquaza:mega-evolution-knowing-dragon-ascent',
   'a Mega Evolution or Primal Reversion is a stage after its default form, on what it holds or knows');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('solgaleo', 'lunala', 'melmetal', 'lycanroc-dusk', 'necrozma-ultra')),
+  'solgaleo:cosmoem:level-up-53-in-sun lunala:cosmoem:level-up-53-in-moon melmetal:meltan:meltan-candies'
+    || ' lycanroc-dusk:rockruff-own-tempo:level-up-25-dusk'
+    || ' necrozma-ultra:necrozma:ultra-burst-holding-ultranecrozium-z',
+  'a method keeps what Generation VII adds: a game, dusk, Pokémon GO, and Ultra Burst as a stage');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('raichu', 'raichu-alola', 'raticate-alola', 'marowak-alola', 'sandslash-alola')),
+  'raichu:pikachu:use-item-thunder-stone raticate-alola:rattata-alola:level-up-20-night'
+    || ' raichu-alola:pikachu:use-item-thunder-stone-in-alola'
+    || ' sandslash-alola:sandshrew-alola:use-item-ice-stone'
+    || ' marowak-alola:cubone:level-up-28-night-in-alola',
+  'an Alolan form comes from its own, or only in Alola from the default');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)

@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(111);
+select plan(118);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 366,
-  'a national egg holds the first form of every family up to Generation VI');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 421,
+  'a national egg holds the first form of every family up to Generation VII');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -120,6 +120,15 @@ select is(
     where g.egg_kind = 'kalos' and s.slug in ('froakie', 'fletchling', 'tyrunt', 'goomy', 'xerneas-active')),
   'froakie:very-rare fletchling:common tyrunt:rare goomy:very-rare xerneas-active:mythic',
   'Generation VI''s starters and Goomy are very rare, its fossils rare, and Xerneas mythic');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'alola'), 210,
+  'an Alola egg holds the first form of every family Ultra Sun and Ultra Moon''s pokedex lists, and Meltan');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'alola' and s.slug in ('rowlet', 'pikipek', 'type-null', 'minior-red-meteor', 'jangmo-o', 'nihilego', 'meltan')),
+  'rowlet:very-rare pikipek:common type-null:mythic minior-red-meteor:rare jangmo-o:very-rare nihilego:mythic meltan:mythic',
+  'Generation VII''s starters and Jangmo-o are very rare, Minior rare, and Type: Null, the Ultra Beasts and Meltan mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -131,7 +140,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 60), ('uncommon', 160), ('rare', 60), ('very-rare', 32), ('mythic', 54) $$,
+  $$ values ('common', 66), ('uncommon', 178), ('rare', 66), ('very-rare', 36), ('mythic', 75) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -184,6 +193,14 @@ select is_empty(
   'Pancham, Inkay and Sliggoo wait, as they need a Dark type, the console upside down and rain');
 select is_empty($$ select * from public.level_up_evolution(6, 'male') $$,
   'and Charizard never Mega Evolves');
+select is(public.level_up_evolution((select id from public.pokedex_species where slug = 'geodude-alola'), 'male'),
+  row((select id from public.pokedex_species where slug = 'graveler-alola'), 25::smallint)::record,
+  'Alolan Geodude becomes Alolan Graveler at Lv.25');
+select is_empty(
+  $$ select * from public.level_up_evolution(790, null)
+     union all select * from public.level_up_evolution(744, 'male')
+     union all select * from public.level_up_evolution((select id from public.pokedex_species where slug = 'rattata-alola'), 'male') $$,
+  'Cosmoem, Rockruff and Alolan Rattata wait, as they need a game, a time of day and the night');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -505,6 +522,29 @@ select is(
   (select string_agg(distinct pg_temp.roll_sinnoh_and_let_go(), ' ') from generate_series(1, 20)),
   'spiritomb',
   'a form counts as its family, whatever form the family is in');
+
+-- With Rattata alone in them, an Alola egg hatches only Alolan Rattata, a
+-- Kanto egg only Rattata, and a national egg either.
+reset role;
+update public.coder_settings set unowned_line_weight = 1;
+delete from public.coder_egg_species where egg_kind in ('alola', 'kanto', 'national') and species_id <> 19;
+create function pg_temp.rattata_from(egg_kind text) returns text language plpgsql as $$
+declare
+  egg uuid := public.roll_egg('00000000-0000-0000-0000-00000000000d', egg_kind);
+  species integer;
+begin
+  delete from public.coder_companions c where c.id = egg returning c.species_id into species;
+  return (select slug from public.pokedex_species where id = species);
+end;
+$$;
+select setseed(0.75);
+select is((select string_agg(distinct pg_temp.rattata_from('alola'), ' ') from generate_series(1, 20)),
+  'rattata-alola', 'an Alola egg hatches an Alolan form in place of its default');
+select is((select string_agg(distinct pg_temp.rattata_from('kanto'), ' ') from generate_series(1, 20)),
+  'rattata', 'another region''s egg never hatches it');
+select is((select string_agg(distinct slug, ' ' order by slug)
+             from (select pg_temp.rattata_from('national') as slug from generate_series(1, 40)) rolled),
+  'rattata rattata-alola', 'and a national egg hatches either');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');
