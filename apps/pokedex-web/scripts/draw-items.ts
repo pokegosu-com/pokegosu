@@ -380,16 +380,40 @@ function strawberrySweet(): Shape[] {
 }
 
 /**
- * A scroll of the Master Dojo's towers, rolled on its rod and tied round the
- * middle in its tower's colour.
+ * A scroll of the Master Dojo's towers, as a spell scroll is drawn: a sheet
+ * of parchment open between its two rolls, written on, and sealed at the
+ * foot in its tower's colour.
  */
-function scroll(binding: Palette): Shape[] {
+function scroll(seal: Palette): Shape[] {
   const paper: Palette = ['#fffaf0', '#efe3c6', '#cdbb93', '#9a875f']
   const rod: Palette = ['#d9b38a', '#a87a4f', '#7a522e', '#4f3318']
+  // The writing: short strokes, three lines of it.
+  const lines: [number, number, number][] = [
+    [10, 20, 10.5],
+    [10, 18, 12.5],
+    [10, 19, 14.5],
+  ]
   return [
-    tube(rod, 4.4, 21, 25.6, 9, 1.6),
-    tube(paper, 6.4, 19.9, 23.6, 10.1, 4.4),
-    tube(binding, 14, 15.5, 16, 14.4, 4.7),
+    // The sheet, lit from the left, its right edge in shade.
+    (x, y) =>
+      x > 8 && x < 22 && y > 6 && y < 24
+        ? x > 20.5
+          ? paper[2]
+          : x < 9.5
+            ? paper[0]
+            : paper[1]
+        : null,
+    (x, y) =>
+      lines.some(([a, b, ly]) => x > a && x < b && Math.abs(y - ly) < 0.5) ? paper[3] : null,
+    // The rolls across the top and the foot, their rod's ends out at the sides.
+    tube(rod, 5, 6, 25, 6, 1.3),
+    tube(paper, 7, 6, 23, 6, 2.2),
+    tube(rod, 5, 24, 25, 24, 1.3),
+    tube(paper, 7, 24, 23, 24, 2.2),
+    // The seal, hanging over the foot.
+    tube(seal, 13.8, 20, 13.2, 23.4, 0.8),
+    tube(seal, 16.2, 20, 16.8, 23.4, 0.8),
+    ball(seal, 15, 18.6, 2.4, 2.4),
   ]
 }
 
