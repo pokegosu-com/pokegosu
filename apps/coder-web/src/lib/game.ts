@@ -60,11 +60,18 @@ export type Pokemon = {
   max_tokens: number
   /**
    * The first way it may evolve now, or else later. A draw, as Tyrogue's, names
-   * no form; one that asks for the screen upside down, as Inkay's, is never
-   * can_evolve, and the screen offers it only turned over.
+   * no form; one that asks for the screen upside down, as Inkay's, or for a
+   * spin, as Milcery's, is never can_evolve, and the screen offers it only
+   * turned over or spun.
    */
   evolves_to:
-    ({ species_id: number | null; level: number | null; upside_down: boolean } & Named) | null
+    | ({
+        species_id: number | null
+        level: number | null
+        upside_down: boolean
+        spin: boolean
+      } & Named)
+    | null
   can_evolve: boolean
   /** What it becomes with which item: Eevee has three. */
   item_evolutions: ({ species_id: number; item: Item } & Named)[]

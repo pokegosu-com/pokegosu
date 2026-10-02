@@ -1,6 +1,7 @@
 // Draws the bag sprites PokeAPI/sprites has none for into public/drawn: the
-// Linking Cord and Meltan Candy, which the Coder game sells, and the Shelmet
-// Shell, which is the game's own. The files are not committed: this script is
+// Linking Cord and Meltan Candy, which the Coder game sells, the Shelmet
+// Shell, which is the game's own, and the items Generation VIII evolves
+// with, which PokeAPI/sprites stops short of. The files are not committed: this script is
 // what they are, and the same run draws the same bytes.
 //
 // Each is drawn as the bag sprites are, 30px with a #313131 outline and four
@@ -256,10 +257,176 @@ function shelmetShell(): Shape[] {
   ]
 }
 
+/** A ball, squashed or stretched, lit as a ball is. */
+function ball(palette: Palette, cx: number, cy: number, rx: number, ry: number): Shape {
+  return (x, y) => {
+    const u = (x - cx) / rx
+    const v = (y - cy) / ry
+    const d = u * u + v * v
+    return d > 1 ? null : tone(palette, lit([u, v, Math.sqrt(1 - d)]))
+  }
+}
+
+const leafGreen: Palette = ['#c8f08a', '#7fc44a', '#4e9a2c', '#2f6a18']
+
+/**
+ * An apple, as Applin lives in: round, dimpled at the top, with a stem and a
+ * leaf. The Tart and Sweet Apples differ in their skins.
+ */
+function apple(skin: Palette): Shape[] {
+  const stem: Palette = ['#c99a6a', '#9b6b3f', '#6f4823', '#4a2e14']
+  return [
+    // Two lobes make the dimple.
+    ball(skin, 12.6, 17, 8, 8.4),
+    ball(skin, 17.4, 17, 8, 8.4),
+    tube(stem, 15, 9.6, 15.8, 5.2, 1),
+    (x, y) => {
+      const a = 0.5
+      const dx = x - 19.6
+      const dy = y - 6.6
+      const u = (dx * Math.cos(a) + dy * Math.sin(a)) / 3.6
+      const v = (-dx * Math.sin(a) + dy * Math.cos(a)) / 1.8
+      const d = u * u + v * v
+      return d > 1 ? null : tone(leafGreen, lit([u * 0.5, v, Math.sqrt(1 - d)]))
+    },
+  ]
+}
+
+/**
+ * The Cracked Pot Sinistea comes from: a teapot in its lavender, spout to the
+ * left and handle to the right, cracked down its side.
+ */
+function crackedPot(): Shape[] {
+  const china: Palette = ['#ffffff', '#e2d6f2', '#b9a6d6', '#7f6aa3']
+  const crack: [number, number][] = [
+    [17.5, 12.5],
+    [19, 15.5],
+    [17.6, 18],
+    [19.4, 21.5],
+  ]
+  return [
+    // The handle, a loop out of the right of the body.
+    (x, y) => {
+      const u = (x - 22.4) / 4.2
+      const v = (y - 17) / 4.4
+      const r = Math.hypot(u, v)
+      return Math.abs(r - 1) < 0.28 && x > 22.4 ? tone(china, lit([u, v, 0.6])) : null
+    },
+    tube(china, 9, 17.6, 4, 12.6, 1.5),
+    ball(china, 15, 17.4, 8, 6.6),
+    ball(china, 15, 10.8, 4.8, 1.6),
+    ball(china, 15, 8.6, 1.5, 1.5),
+    (x, y) =>
+      crack.some(
+        ([ax, ay], i) => i < crack.length - 1 && toSegment(x, y, ax, ay, ...crack[i + 1]).d < 0.55,
+      )
+        ? OUTLINE
+        : null,
+  ]
+}
+
+/**
+ * Galarica twigs, bent into a Cuff for Galarian Slowpoke's arm or a Wreath for
+ * its head: a ring seen at a slant, banded with the twigs' bark, the Wreath
+ * wider and set with buds.
+ */
+function galaricaRing(wreath: boolean): Shape[] {
+  const twig: Palette = ['#d9f2ef', '#86c9c2', '#4f9690', '#2c605c']
+  const bud: Palette = ['#f6e7ff', '#cba3e6', '#9a6fbf', '#664a85']
+  const rx = wreath ? 11.2 : 8.4
+  const ry = wreath ? 6.4 : 5.6
+  const width = wreath ? 1.7 : 2.3
+  const ring: Shape = (x, y) => {
+    const dx = (x - 15) / rx
+    const dy = (y - 15.5) / ry
+    const r = Math.hypot(dx, dy)
+    const off = (r - 1) * Math.min(rx, ry)
+    if (Math.abs(off) > width) return null
+    if (Math.abs(Math.sin(Math.atan2(dy, dx) * (wreath ? 9 : 7))) < 0.18) return twig[3]
+    const nr = off / width
+    return tone(twig, lit([(dx / (r || 1)) * nr, (dy / (r || 1)) * nr, Math.sqrt(1 - nr * nr)]))
+  }
+  if (!wreath) return [ring]
+  return [
+    ring,
+    ball(bud, 6.2, 11.4, 2.4, 2.4),
+    ball(bud, 15, 8.6, 2.4, 2.4),
+    ball(bud, 23.8, 11.4, 2.4, 2.4),
+  ]
+}
+
+/**
+ * A Strawberry Sweet, as Milcery is given to hold: a strawberry of sugar,
+ * seeded, under its green cap.
+ */
+function strawberrySweet(): Shape[] {
+  const berry: Palette = ['#ffd2dc', '#f2607d', '#c93556', '#8a1d36']
+  return [
+    (x, y) => {
+      // Widest near the top, coming to a point at the bottom.
+      const v = (y - 9) / 15
+      if (v < 0 || v > 1) return null
+      const half = 8.4 * Math.sqrt(1 - v) * (1 - 0.25 * v)
+      const u = (x - 15) / half
+      if (Math.abs(u) > 1) return null
+      if ((Math.floor(x) * 2 + Math.floor(y) * 3) % 7 === 0 && Math.abs(u) < 0.75 && v > 0.15)
+        return '#ffe9a0'
+      return tone(berry, lit([u, v - 0.4, Math.sqrt(1 - u * u)]))
+    },
+    ball(leafGreen, 11, 9, 3.4, 1.8),
+    ball(leafGreen, 19, 9, 3.4, 1.8),
+    ball(leafGreen, 15, 8, 2.4, 2.2),
+  ]
+}
+
+/**
+ * A scroll of the Master Dojo's towers, as a spell scroll is drawn: a sheet
+ * of paper in its tower's colour, open between its two rolls and written on
+ * from the top roll to the bottom one.
+ */
+function scroll(paper: Palette): Shape[] {
+  const rod: Palette = ['#d9b38a', '#a87a4f', '#7a522e', '#4f3318']
+  // The writing, line by line, the last a short one.
+  const lines: [number, number, number][] = [
+    [10, 20, 10.5],
+    [10, 18, 12.5],
+    [10, 19, 14.5],
+    [10, 20, 16.5],
+    [10, 18, 18.5],
+    [10, 15, 20.5],
+  ]
+  return [
+    // The sheet, lit from the left, its right edge in shade.
+    (x, y) =>
+      x > 8 && x < 22 && y > 6 && y < 24
+        ? x > 20.5
+          ? paper[2]
+          : x < 9.5
+            ? paper[0]
+            : paper[1]
+        : null,
+    (x, y) =>
+      lines.some(([a, b, ly]) => x > a && x < b && Math.abs(y - ly) < 0.5) ? paper[3] : null,
+    // The rolls across the top and the foot, their rod's ends out at the sides.
+    tube(rod, 5, 6, 25, 6, 1.3),
+    tube(paper, 7, 6, 23, 6, 2.2),
+    tube(rod, 5, 24, 25, 24, 1.3),
+    tube(paper, 7, 24, 23, 24, 2.2),
+  ]
+}
+
 const ITEMS: Record<string, Shape[]> = {
   'linking-cord': linkingCord(),
   'meltan-candy': meltanCandy(),
   'shelmet-shell': shelmetShell(),
+  'tart-apple': apple(['#fbffc2', '#c7e65a', '#93b92e', '#5c7a18']),
+  'sweet-apple': apple(['#ffd8cc', '#f26a52', '#c93c32', '#8a1f1c']),
+  'cracked-pot': crackedPot(),
+  'galarica-cuff': galaricaRing(false),
+  'galarica-wreath': galaricaRing(true),
+  'strawberry-sweet': strawberrySweet(),
+  'scroll-of-darkness': scroll(['#f4f4f6', '#c9c9d0', '#9a9aa6', '#62626e']),
+  'scroll-of-waters': scroll(['#f2fbff', '#bfe6fb', '#8cc6e8', '#5592bd']),
 }
 
 await mkdir(DIR, { recursive: true })
