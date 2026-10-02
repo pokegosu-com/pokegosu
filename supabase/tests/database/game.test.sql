@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(130);
+select plan(133);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -450,6 +450,20 @@ select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "alre
   'once per Pokémon');
 select is(public.receive_ribbon(pg_temp.main(), 'nope'), '{"outcome": "unknown_ribbon"}'::jsonb,
   'a ribbon that does not exist says so');
+
+reset role;
+insert into public.coder_requests_done (user_id, companion_id, client_id)
+select '00000000-0000-0000-0000-00000000000a', pg_temp.main(), 19 from generate_series(1, 9);
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select is(public.receive_ribbon(pg_temp.main(), 'helper'), '{"outcome": "not_ready"}'::jsonb,
+  'nine requests are not enough for the Helper Ribbon');
+
+reset role;
+insert into public.coder_requests_done (user_id, companion_id, client_id)
+values ('00000000-0000-0000-0000-00000000000a', pg_temp.main(), 19);
+select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
+select is(public.box() -> 'pokemon' -> 0 -> 'ribbons_waiting' -> 0 ->> 'id', 'helper', 'the tenth earns it');
+select is(public.receive_ribbon(pg_temp.main(), 'helper'), '{"outcome": "received"}'::jsonb, 'and it is handed over');
 
 
 -- ------------------------------------------------------------
