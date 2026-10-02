@@ -381,11 +381,10 @@ function strawberrySweet(): Shape[] {
 
 /**
  * A scroll of the Master Dojo's towers, as a spell scroll is drawn: a sheet
- * of parchment open between its two rolls, written on, and sealed at the
- * foot in its tower's colour.
+ * of paper open between its two rolls, written on, and sealed at the foot,
+ * paper and seal in its tower's colours.
  */
-function scroll(seal: Palette): Shape[] {
-  const paper: Palette = ['#fffaf0', '#efe3c6', '#cdbb93', '#9a875f']
+function scroll(paper: Palette, seal: Palette): Shape[] {
   const rod: Palette = ['#d9b38a', '#a87a4f', '#7a522e', '#4f3318']
   // The writing: short strokes, three lines of it.
   const lines: [number, number, number][] = [
@@ -427,8 +426,14 @@ const ITEMS: Record<string, Shape[]> = {
   'galarica-cuff': galaricaRing(false),
   'galarica-wreath': galaricaRing(true),
   'strawberry-sweet': strawberrySweet(),
-  'scroll-of-darkness': scroll(['#7a7a86', '#45454f', '#2a2a32', '#16161c']),
-  'scroll-of-waters': scroll(['#bfe6ff', '#4fa8f0', '#2a74c4', '#184c8a']),
+  'scroll-of-darkness': scroll(
+    ['#f4f4f6', '#c9c9d0', '#9a9aa6', '#62626e'],
+    ['#7a7a86', '#45454f', '#2a2a32', '#16161c'],
+  ),
+  'scroll-of-waters': scroll(
+    ['#f2fbff', '#bfe6fb', '#8cc6e8', '#5592bd'],
+    ['#bfe6ff', '#4fa8f0', '#2a74c4', '#184c8a'],
+  ),
 }
 
 await mkdir(DIR, { recursive: true })
