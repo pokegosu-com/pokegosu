@@ -392,7 +392,8 @@ function scroll(paper: Palette): Shape[] {
     [10, 18, 12.5],
     [10, 19, 14.5],
     [10, 20, 16.5],
-    [10, 16, 18.5],
+    [10, 18, 18.5],
+    [10, 15, 20.5],
   ]
   return [
     // The sheet, lit from the left, its right edge in shade.
