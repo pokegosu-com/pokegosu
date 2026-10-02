@@ -834,7 +834,9 @@ export type Database = {
           location: string | null
           min_affection: number | null
           min_beauty: number | null
+          min_damage_taken: number | null
           min_happiness: number | null
+          natures: string[] | null
           needs_overworld_rain: boolean
           party_species_id: number | null
           party_type: string | null
@@ -858,7 +860,9 @@ export type Database = {
           location?: string | null
           min_affection?: number | null
           min_beauty?: number | null
+          min_damage_taken?: number | null
           min_happiness?: number | null
+          natures?: string[] | null
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
@@ -882,7 +886,9 @@ export type Database = {
           location?: string | null
           min_affection?: number | null
           min_beauty?: number | null
+          min_damage_taken?: number | null
           min_happiness?: number | null
+          natures?: string[] | null
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
@@ -1494,6 +1500,7 @@ export type Database = {
           min_level: number
           priority: number
           ready: boolean
+          spin: boolean
           upside_down: boolean
         }[]
       }

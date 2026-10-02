@@ -1,5 +1,6 @@
 -- The ways to evolve beyond a level or a stone: friendship, requests, the
--- box, draws, items in place of trades and places, and Shedinja.
+-- box, draws, items in place of trades and places, Shedinja, and
+-- Generation VIII's.
 --
 -- now() stands still inside a test's transaction, and the hour it falls in is
 -- not known, so a case that hangs on the time of day asks the ways at an
@@ -12,7 +13,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(37);
+select plan(45);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -150,7 +151,7 @@ select is(public.owned_line('00000000-0000-0000-0000-00000000000a',
   'a Beautifly counts as a Silcoon line had, for a draw to weigh');
 
 select is(pg_temp.boxed((select tyrogue from draws)) -> 'evolves_to',
-  '{"species_id": null, "ko_name": null, "en_name": null, "level": 20, "upside_down": false}'::jsonb,
+  '{"species_id": null, "ko_name": null, "en_name": null, "level": 20, "upside_down": false, "spin": false}'::jsonb,
   'the box says Tyrogue may evolve, not into what');
 select ok((public.evolve((select tyrogue from draws)) ->> 'to')::int in (106, 107, 237),
   'and it becomes one of the three');
@@ -222,6 +223,41 @@ select is(pg_temp.boxed((select inkay from hollow)) ->> 'can_evolve', 'false',
 select is(pg_temp.boxed((select inkay from hollow)) -> 'evolves_to' ->> 'upside_down', 'true',
   'but said to need the screen upside down');
 select is(public.evolve((select inkay from hollow)) ->> 'to', '687', 'and evolves when asked');
+
+
+
+-- ------------------------------------------------------------
+-- Generation VIII
+-- ------------------------------------------------------------
+create temporary table galar as
+select pg_temp.pokemon('toxel', 30) as toxel, pg_temp.pokemon('milcery', 1, 'female') as milcery,
+       pg_temp.pokemon('yamask-galar', 50) as yamask, pg_temp.pokemon('farfetchd-galar', 1) as farfetchd,
+       pg_temp.pokemon('kubfu', 1) as kubfu, pg_temp.pokemon('applin', 1) as applin,
+       pg_temp.pokemon('sinistea-phony', 1, null) as sinistea, pg_temp.pokemon('slowpoke-galar', 1) as slowpoke;
+
+select is(pg_temp.boxed((select toxel from galar)) -> 'evolves_to' ->> 'species_id', null,
+  'Toxel''s nature is a draw, so the box names no form');
+select ok((public.evolve((select toxel from galar)) ->> 'to')::int in (849, 10343),
+  'and it becomes Amped or Low Key Toxtricity');
+
+select is(pg_temp.boxed((select milcery from galar)) -> 'evolves_to' ->> 'spin', 'true',
+  'Milcery asks for a spin, by day or night, with no sweet');
+select is(pg_temp.boxed((select milcery from galar)) ->> 'can_evolve', 'false',
+  'which the screen offers, not the box');
+select is(public.evolve((select milcery from galar)) ->> 'to', '869', 'and becomes Alcremie when asked');
+
+select is(pg_temp.next((select yamask from galar)), null, 'Galarian Yamask needs a Ground request');
+select pg_temp.done((select yamask from galar), 'sandshrew');
+select is(pg_temp.next((select yamask from galar)), 'runerigus', 'after which it becomes Runerigus');
+
+select is(
+  pg_temp.items((select farfetchd from galar)) || ' ' || pg_temp.items((select kubfu from galar)) || ' '
+    || pg_temp.items((select applin from galar)) || ' ' || pg_temp.items((select sinistea from galar)) || ' '
+    || pg_temp.items((select slowpoke from galar)),
+  'stick:sirfetchd scroll-of-darkness:urshifu-single-strike scroll-of-waters:urshifu-rapid-strike'
+    || ' sweet-apple:appletun tart-apple:flapple cracked-pot:polteageist-phony'
+    || ' galarica-cuff:slowbro-galar galarica-wreath:slowking-galar',
+  'a Leek in place of three critical hits, scrolls in place of towers, and Galar''s own items');
 
 select * from finish();
 rollback;

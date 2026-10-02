@@ -35,12 +35,19 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to VII: national dex numbers 1 to 809, in every form those
- * games had. A form a later game added, such as Galarian Meowth or Gigantamax
- * Pikachu, waits for its generation.
+ * Generations I to VIII as far as Sword and Shield: national dex numbers 1 to
+ * 898, in every form those games had. A form a later game added, such as
+ * Paldean Wooper, waits for its generation.
  */
-const LAST_DEX_NO = 809
-const LAST_GENERATION = 7
+const LAST_DEX_NO = 898
+const LAST_GENERATION = 8
+
+/**
+ * Games of a kept generation whose forms wait. Legends: Arceus is Generation
+ * VIII's, but Hisui, with its species from No.899 and its forms, comes in
+ * apart from Galar, with an egg of its own.
+ */
+const LATER_VERSION_GROUPS = new Set(['legends-arceus'])
 
 /**
  * Forms left out though their generation is in. Arceus's ??? type has no
@@ -55,6 +62,9 @@ const LAST_GENERATION = 7
  * Zygarde with another ability, and look the same; Ash-Greninja and Complete
  * Zygarde, which they become, stay. Minior's shell is the same whatever its
  * core, so one Meteor Form stands for the seven, beside the seven cores.
+ * Eternamax Eternatus is met in one battle and never caught. An Antique Form
+ * Sinistea or Polteageist is a Phony one with a mark under its pot, and
+ * Pokémon HOME shows the two alike.
  */
 const LEFT_OUT_FORMS = new Set([
   'arceus-unknown',
@@ -90,6 +100,9 @@ const LEFT_OUT_FORMS = new Set([
   'minior-blue-meteor',
   'minior-indigo-meteor',
   'minior-violet-meteor',
+  'eternatus-eternamax',
+  'sinistea-antique',
+  'polteageist-antique',
 ])
 
 /**
@@ -103,9 +116,10 @@ const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa', 'mothim'])
 /**
  * Species whose default form alone comes from the form before, as Mothim
  * comes only from Plant Cloak Burmy: every Vivillon pattern comes from
- * Spewpa, and twenty in a row would bury the rest of the family.
+ * Spewpa, and twenty in a row would bury the rest of the family. So with
+ * Alcremie's 63 creams and sweets from Milcery.
  */
-const ONLY_DEFAULT_EVOLVES = new Set(['vivillon'])
+const ONLY_DEFAULT_EVOLVES = new Set(['vivillon', 'alcremie'])
 
 /**
  * Forms Pokémon HOME never held, so it has no render of them; they take the
@@ -127,6 +141,7 @@ const NEVER_SHINY = new Set([
   'pikachu-kalos-cap',
   'pikachu-alola-cap',
   'pikachu-partner-cap',
+  'pikachu-world-cap',
 ])
 
 /** PokéAPI names these forms in English only. */
@@ -151,7 +166,51 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-dark': '악타입',
   'arceus-fairy': '페어리타입',
   'rockruff-own-tempo': '마이페이스',
+  'toxtricity-amped-gmax': '하이한 모습 거다이맥스',
+  'toxtricity-low-key-gmax': '로우한 모습 거다이맥스',
+  'urshifu-single-strike-gmax': '일격의 태세 거다이맥스',
+  'urshifu-rapid-strike-gmax': '연격의 태세 거다이맥스',
+  ...alcremieKoNames(),
 }
+
+/**
+ * Alcremie's 63 looks, a cream and a sweet each. PokéAPI names in Korean only
+ * the cream, and only with the Strawberry Sweet, so each takes its cream's
+ * name and its sweet's, as the sweet's item is named less 사탕공예.
+ */
+function alcremieKoNames(): Record<string, string> {
+  const creams: Record<string, string> = {
+    'vanilla-cream': '밀키바닐라',
+    'ruby-cream': '밀키루비',
+    'matcha-cream': '밀키말차',
+    'mint-cream': '밀키민트',
+    'lemon-cream': '밀키레몬',
+    'salted-cream': '밀키솔트',
+    'ruby-swirl': '루비믹스',
+    'caramel-swirl': '캐러멜믹스',
+    'rainbow-swirl': '트리플믹스',
+  }
+  const sweets: Record<string, string> = {
+    strawberry: '딸기',
+    berry: '베리',
+    love: '하트',
+    star: '스타',
+    clover: '네잎',
+    flower: '꽃',
+    ribbon: '리본',
+  }
+  return Object.fromEntries(
+    Object.entries(creams).flatMap(([cream, creamKo]) =>
+      Object.entries(sweets).map(([sweet, sweetKo]) => [
+        `alcremie-${cream}-${sweet}-sweet`,
+        `${creamKo} ${sweetKo}`,
+      ]),
+    ),
+  )
+}
+
+/** Gigantamax, as the games name it in Korean; PokéAPI names it in English only. */
+const GIGANTAMAX_KO = '거다이맥스'
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -233,11 +292,20 @@ const POKEDEXES: Record<
     versions: ['ultra-sun', 'ultra-moon', 'sun', 'moon'],
     appended: [808, 809],
   },
+  // Sword and Shield's, with the Isle of Armor's and the Crown Tundra's after
+  // it, numbered on as Kalos's three are, as one Galar egg holds all three.
+  // The two add theirs to many Galar has already: one already listed keeps
+  // its first number. Together they list every Generation VIII species.
+  galar: {
+    apiId: [27, 28, 29],
+    names: { ko: '가라르도감', en: 'Galar Pokédex' },
+    versions: ['sword', 'shield'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261001140001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261002120001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -442,13 +510,36 @@ const VERSION_ONLY: Record<string, string> = { solgaleo: 'sun', lunala: 'moon' }
  * Damp Rock in place of Sliggoo's rain, and Meltan Candy in place of the
  * 400 Pokémon GO asks.
  */
-const GAME_ITEMS = ['linking-cord', 'prism-scale', 'damp-rock', 'meltan-candy']
+const GAME_ITEMS = [
+  'linking-cord',
+  'prism-scale',
+  'damp-rock',
+  'meltan-candy',
+  // In place of Galarian Farfetch'd's three critical hits, a Leek, which
+  // PokéAPI files under Stick, its name before Generation VIII.
+  'stick',
+  // In place of Kubfu's towers, the scrolls that stand for them in Scarlet
+  // and Violet.
+  'scroll-of-darkness',
+  'scroll-of-waters',
+]
 
 /**
  * Items PokeAPI/sprites has no bag sprite for, even on master: PokeGosu draws
  * its own, in the same 30px style, with scripts/draw-items.ts.
  */
-const DRAWN_ITEMS = new Set(['linking-cord', 'meltan-candy'])
+const DRAWN_ITEMS = new Set([
+  'linking-cord',
+  'meltan-candy',
+  'tart-apple',
+  'sweet-apple',
+  'cracked-pot',
+  'galarica-cuff',
+  'galarica-wreath',
+  'strawberry-sweet',
+  'scroll-of-darkness',
+  'scroll-of-waters',
+])
 
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
@@ -457,6 +548,11 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   trade: '통신교환',
   shed: '탈피',
   'meltan-candies': 'Pokémon GO에서 멜탄의 사탕 400개',
+  spin: '빙글빙글 돌기',
+  'three-critical-hits': '한 배틀에서 급소 3번',
+  'take-damage': '고인돌 아래 지나기',
+  'tower-of-darkness': '악의 탑에서 수행',
+  'tower-of-waters': '물의 탑에서 수행',
 }
 
 /**
@@ -469,6 +565,7 @@ const LOCATION_KO_NAMES: Record<string, string> = {
   'sinnoh-route-217': '217번도로',
   'vast-poni-canyon': '포니대협곡',
   'mount-lanakila': '라나키라마운틴',
+  'dusty-bowl': '모래먼지구덩이',
 }
 
 const triggers = new Map<string, Record<string, string>>()
@@ -507,6 +604,8 @@ type Evolution = {
   upsideDown: boolean
   region: string | null
   version: string | null
+  natures: string[] | null
+  damage: number | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -548,6 +647,8 @@ const KNOWN_CONDITIONS = new Set([
   'evolved_pokemon_form',
   'version_group',
   'is_default',
+  'allowed_natures',
+  'min_damage_taken',
 ])
 
 /** How relative_physical_stats reads in a method's id, Attack against Defense. */
@@ -565,6 +666,13 @@ const PHYSICAL_STATS: Record<number, string> = {
 const PERSONALITY = new Set(['personality-value', 'encryption-constant'])
 
 /**
+ * The variables of Milcery's spin, whose way and length pick Alcremie's
+ * cream. Only the default Alcremie comes from Milcery here, so they are
+ * dropped.
+ */
+const SPIN = new Set(['spin-direction', 'spin-duration'])
+
+/**
  * The share of Pokémon that go this way, as Wurmple's half to Silcoon and
  * half to Cascoon. PokéAPI writes it as an expression over a variable; any
  * other expression fails here, as a condition without a column does.
@@ -572,6 +680,7 @@ const PERSONALITY = new Set(['personality-value', 'encryption-constant'])
 function chanceOf(detail: EvolutionDetail): number | null {
   const expression = detail.condition_expression
   if (!expression) return null
+  if (expression.variables.every((v) => SPIN.has(v.name))) return null
   if (
     expression.percentage_chance === null ||
     !expression.variables.every((v) => PERSONALITY.has(v.name))
@@ -664,7 +773,7 @@ async function nameVersion(version: string) {
 
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to VII ask; anything
+ * A method has a column for each condition Generations I to VIII ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -715,6 +824,10 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   if (region) await nameRegion(region)
   const version = (detail.version as string | undefined) ?? null
   if (version) await nameVersion(version)
+  const natures = detail.allowed_natures
+    ? (detail.allowed_natures as Named[]).map((n) => n.name).sort()
+    : null
+  const damage = (detail.min_damage_taken as number | null | undefined) ?? null
   const id = [
     trigger,
     level,
@@ -737,6 +850,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     upsideDown && 'upside-down',
     region && `in-${region}`,
     version && `in-${version}`,
+    natures && `${natures[0]}-or-${natures.length - 1}-more-natures`,
+    damage && `after-${damage}-damage`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -766,6 +881,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       upsideDown,
       region,
       version,
+      natures,
+      damage,
     })
   }
   return methods.get(id)!
@@ -898,6 +1015,7 @@ async function main() {
         if (LEFT_OUT_FORMS.has(form.name)) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
+        if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
         kept.push({ form, pokemon })
       }
     }
@@ -949,9 +1067,18 @@ async function main() {
                 defaultOf(from))
             const fromDefault = ONLY_DEFAULT_EVOLVES.has(next.species.name)
             if (fromDefault && target.form.id !== to) continue
+            // Perrserker comes only from Galarian Meowth: a species every way
+            // to which asks for another form comes from that form.
+            const asked = next.evolution_details.every((d) => d.required_pokemon_form)
+              ? formsOf
+                  .get(from)!
+                  .find(
+                    (k) => k.form.name === next.evolution_details[0].required_pokemon_form?.name,
+                  )
+              : undefined
             const source =
               target.form.id === to
-                ? defaultOf(from)
+                ? (asked ?? defaultOf(from))
                 : (formsOf.get(from)!.find((k) => k.form.form_name === target.form.form_name) ??
                   namedSource ??
                   undefined)
@@ -1005,6 +1132,8 @@ async function main() {
       const formNames: Record<string, string> =
         kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
+      else if (kept.length > 1 && form.name.endsWith('-gmax') && !formNames.ko)
+        formNames.ko = GIGANTAMAX_KO
       // PokéAPI names a few default forms nothing, as Pichu's; a screen calls
       // those 기본. Any other form it cannot name is a name missing here.
       if (kept.length > 1 && form.id !== s.id && !formNames.ko)
@@ -1086,16 +1215,25 @@ async function main() {
     description: Record<string, string>
   }[] = []
   for (const [dex, { apiId, versions, appended = [] }] of Object.entries(POKEDEXES)) {
-    // A pokedex in sections numbers each on from the one before.
+    // A pokedex in sections numbers each on from the one before, and lists a
+    // species once, under the first number it had.
     const listed: { entry_number: number; pokemon_species: { url: string } }[] = []
     for (const id of [apiId].flat()) {
       const section = await get<{
         pokemon_entries: { entry_number: number; pokemon_species: { url: string } }[]
       }>(`pokedex/${id}`)
+      const seen = new Set(listed.map((e) => idOf(e.pokemon_species)))
       const before = listed.length > 0 ? Math.max(...listed.map((e) => e.entry_number)) : 0
-      for (const e of section.pokemon_entries) {
+      let skipped = 0
+      for (const e of [...section.pokemon_entries].sort(
+        (a, b) => a.entry_number - b.entry_number,
+      )) {
         if (appended.includes(idOf(e.pokemon_species))) continue
-        listed.push({ ...e, entry_number: before + e.entry_number })
+        if (seen.has(idOf(e.pokemon_species))) {
+          skipped += 1
+          continue
+        }
+        listed.push({ ...e, entry_number: before + e.entry_number - skipped })
       }
     }
     const last = Math.max(...listed.map((e) => e.entry_number))
@@ -1375,6 +1513,8 @@ async function main() {
         'turn_upside_down',
         'region',
         'version',
+        'natures',
+        'min_damage_taken',
       ],
       ['id'],
       [...methods.values()]
@@ -1386,7 +1526,8 @@ async function main() {
             ` ${sql(m.beauty)}, ${sql(m.chance)}, ${sql(m.gender)}, ${sql(m.move)},` +
             ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)},` +
             ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown},` +
-            ` ${sql(m.region)}, ${sql(m.version)})`,
+            ` ${sql(m.region)}, ${sql(m.version)},` +
+            ` ${m.natures ? sql(`{${m.natures.join(',')}}`) : 'null'}, ${sql(m.damage)})`,
         ),
     ),
     ...upsert(
