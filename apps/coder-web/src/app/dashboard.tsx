@@ -169,6 +169,7 @@ function PokemonPartner({
             value={shown - at.from}
             max={(at.to ?? shown) - at.from}
             label="다음 레벨까지"
+            animated
             size="lg"
           />
         </div>
@@ -245,7 +246,7 @@ function EggPartner({ box, game }: { box: Extract<Box, { started: true }>; game:
           <p className="text-muted text-right font-mono text-xs tabular-nums">
             {exactTokens(Math.floor(shown))} / {exactTokens(egg.tokens_needed)} 토큰
           </p>
-          <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
+          <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" animated />
         </div>
         <Tasks href={`/box/${egg.id}`} climbing={climbing}>
           {egg.tokens >= egg.tokens_needed && (

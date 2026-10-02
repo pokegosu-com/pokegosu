@@ -289,6 +289,7 @@ function PokemonDetail({
           value={shown - at.from}
           max={(at.to ?? shown) - at.from}
           label="다음 레벨까지"
+          animated
           size="lg"
         />
       </section>
@@ -431,7 +432,7 @@ function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: Hist
         <p className="text-muted text-right font-mono text-xs tabular-nums">
           {exactTokens(Math.floor(shown))} / {exactTokens(egg.tokens_needed)} 토큰
         </p>
-        <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" />
+        <ProgressBar value={shown} max={egg.tokens_needed} label="부화까지" size="lg" animated />
       </section>
 
       <Records history={history} tokens={egg.tokens} ribbons={[]} />

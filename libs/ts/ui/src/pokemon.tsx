@@ -23,6 +23,7 @@ export function ProgressBar({
   label,
   size = 'md',
   color = 'var(--accent)',
+  animated = false,
 }: {
   value: number
   max: number
@@ -30,6 +31,12 @@ export function ProgressBar({
   label: string
   size?: 'md' | 'lg'
   color?: string
+  /**
+   * The caller moves `value` a frame at a time. The bar then follows it
+   * without a transition: one restarted every frame barely leaves where it
+   * was, and a level's bar going back to empty would slide there.
+   */
+  animated?: boolean
 }) {
   const share = max > 0 ? Math.min(1, Math.max(0, value / max)) : 1
   return (
@@ -42,7 +49,7 @@ export function ProgressBar({
       className={`bg-surface-raised ring-line block overflow-hidden rounded-full ring-1 ring-inset ${size === 'lg' ? 'h-2' : 'h-1.5'}`}
     >
       <span
-        className="block h-full rounded-full transition-[width] duration-200 motion-reduce:transition-none"
+        className={`block h-full rounded-full ${animated ? '' : 'transition-[width] duration-200 motion-reduce:transition-none'}`}
         style={{ width: `${share * 100}%`, background: color }}
       />
     </span>
