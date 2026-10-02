@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(54);
+select plan(60);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -21,19 +21,25 @@ select is((select count(*)::int from public.pokedex_species where generation = 6
   'and every Generation VI species');
 select is((select count(*)::int from public.pokedex_species where generation = 7 and form_of is null), 88,
   'and every Generation VII species');
+select is((select count(*)::int from public.pokedex_species where generation = 8 and form_of is null), 89,
+  'and every Generation VIII species Sword and Shield had');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 249,
-  'and every other form those games had, Mega Evolutions and Alolan forms too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 378,
+  'and every other form those games had, Mega Evolutions, Alolan and Galarian forms and Gigantamax too, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
-         or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay') $$,
-  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak or one game''s form');
+         or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'eternatus-eternamax',
+                     'sinistea-antique') $$,
+  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak, look alike or one battle''s form');
+select is_empty(
+  $$ select slug from public.pokedex_species where slug like '%-hisui' or id > 898 and form_of is null $$,
+  'and nothing of Hisui''s yet');
 select is(
   (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
-  7, 'Pikachu''s caps are in, as they came to more than one game');
+  8, 'Pikachu''s caps are in, as they came to more than one game');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 809, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 898, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -65,11 +71,17 @@ select is(
   'rowlet:1 zeraora:403 meltan:404 melmetal:405',
   'Meltan and Melmetal come after Zeraora');
 select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'galar' and e.is_default and e.number in (1, 400, 401, 584)),
+  'grookey:1 eternatus:400 slowpoke:401 calyrex:584',
+  'Galar''s 400, then those the Isle of Armor and the Crown Tundra add, each once');
+select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola'])[s.generation])),
+                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'])[s.generation])),
   0, 'every species is in its own generation''s regional pokedex');
 
 select isnt(
@@ -176,6 +188,30 @@ select is(
     || ' sandslash-alola:sandshrew-alola:use-item-ice-stone'
     || ' marowak-alola:cubone:level-up-28-night-in-alola',
   'an Alolan form comes from its own, or only in Alola from the default');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('toxtricity-amped', 'runerigus', 'alcremie-vanilla-cream-strawberry-sweet',
+                     'sirfetchd', 'urshifu-rapid-strike')),
+  'toxtricity-amped:toxel:level-up-30-adamant-or-12-more-natures'
+    || ' sirfetchd:farfetchd-galar:three-critical-hits'
+    || ' runerigus:yamask-galar:take-damage-at-dusty-bowl-after-49-damage'
+    || ' alcremie-vanilla-cream-strawberry-sweet:milcery:spin-holding-strawberry-sweet-day'
+    || ' urshifu-rapid-strike:kubfu:tower-of-waters',
+  'a method keeps what Generation VIII adds: a nature, damage taken, a spin and a tower');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('perrserker', 'mr-rime', 'weezing-galar', 'slowbro-galar')),
+  'perrserker:meowth-galar:level-up-28 mr-rime:mr-mime-galar:level-up-42'
+    || ' slowbro-galar:slowpoke-galar:use-item-galarica-cuff weezing-galar:koffing:level-up-35-in-galar',
+  'a species reached only from a Galarian form comes from it, and a Galarian form from its own or only in Galar');
+select is(
+  (select string_agg(slug || ':' || ko_form_name, ' ' order by id)
+     from public.pokedex_species
+    where slug in ('charizard-gmax', 'alcremie-matcha-cream-love-sweet', 'urshifu-rapid-strike-gmax')),
+  'charizard-gmax:거다이맥스 urshifu-rapid-strike-gmax:연격의 태세 거다이맥스 alcremie-matcha-cream-love-sweet:밀키말차 하트',
+  'Gigantamax is a look, and each Alcremie is named for its cream and its sweet');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)

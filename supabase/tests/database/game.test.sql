@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(122);
+select plan(128);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 421,
-  'a national egg holds the first form of every family up to Generation VII');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 468,
+  'a national egg holds the first form of every family up to Generation VIII');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -129,6 +129,17 @@ select is(
     where g.egg_kind = 'alola' and s.slug in ('rowlet', 'pikipek', 'type-null', 'minior-red-meteor', 'jangmo-o', 'nihilego', 'meltan')),
   'rowlet:very-rare pikipek:common type-null:mythic minior-red-meteor:rare jangmo-o:very-rare nihilego:mythic meltan:mythic',
   'Generation VII''s starters and Jangmo-o are very rare, Minior rare, and Type: Null, the Ultra Beasts and Meltan mythic');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'galar'), 287,
+  'a Galar egg holds the first form of every family Sword and Shield''s pokedexes list, those from before too');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'galar'
+      and s.slug in ('grookey', 'wooloo', 'applin', 'sinistea-phony', 'dracozolt', 'duraludon', 'kubfu', 'slowpoke')),
+  'slowpoke:uncommon grookey:very-rare wooloo:common applin:rare sinistea-phony:rare dracozolt:rare'
+    || ' duraludon:very-rare kubfu:mythic',
+  'Generation VIII''s starters, Dreepy and Duraludon are very rare, Applin, Sinistea and its fossils rare, and Kubfu mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -140,7 +151,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 66), ('uncommon', 178), ('rare', 66), ('very-rare', 36), ('mythic', 75) $$,
+  $$ values ('common', 74), ('uncommon', 194), ('rare', 74), ('very-rare', 41), ('mythic', 85) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -198,6 +209,13 @@ select is(
   pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'alola'), 0) || ' ' || pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'alola'), 12)
     || ' ' || pg_temp.next(pg_temp.mon('cubone', 'male', 28, 'kanto'), 0),
   'marowak-alola marowak marowak', 'an Alola egg''s Cubone becomes Alolan Marowak at night, and any other Marowak');
+select is(
+  coalesce(pg_temp.next(pg_temp.mon('meowth-galar', 'male', 28)), '-') || ' '
+    || coalesce(pg_temp.next(pg_temp.mon('yamask-galar', 'male', 34)), '-'),
+  'perrserker -', 'Galarian Meowth becomes Perrserker, never Persian, and Galarian Yamask never Cofagrigus');
+select is(
+  pg_temp.next(pg_temp.mon('koffing', 'male', 35, 'galar')) || ' ' || pg_temp.next(pg_temp.mon('koffing', 'male', 35)),
+  'weezing-galar weezing', 'a Galar egg''s Koffing becomes Galarian Weezing, and any other Weezing');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -318,7 +336,7 @@ select is(public.evolve(pg_temp.main()), '{"outcome": "evolved", "from": 4, "to"
   'it evolves when asked, not before');
 select is(public.evolve(pg_temp.main()), '{"outcome": "not_ready"}'::jsonb, 'Charmeleon waits for Lv.36');
 select is(public.box() -> 'pokemon' -> 0 -> 'evolves_to',
-  '{"species_id": 6, "ko_name": "리자몽", "en_name": "Charizard", "level": 36, "upside_down": false}'::jsonb,
+  '{"species_id": 6, "ko_name": "리자몽", "en_name": "Charizard", "level": 36, "upside_down": false, "spin": false}'::jsonb,
   'and the box says what comes next');
 
 
@@ -553,9 +571,40 @@ select is((select string_agg(distinct pg_temp.rattata_from('alola'), ' ') from g
   'rattata-alola', 'an Alola egg hatches an Alolan form in place of its default');
 select is((select string_agg(distinct pg_temp.rattata_from('kanto'), ' ') from generate_series(1, 20)),
   'rattata', 'another region''s egg never hatches it');
-select is((select string_agg(distinct slug, ' ' order by slug)
-             from (select pg_temp.rattata_from('national') as slug from generate_series(1, 40)) rolled),
-  'rattata rattata-alola', 'and a national egg hatches either');
+select is((select string_agg(distinct pg_temp.rattata_from('national'), ' ') from generate_series(1, 40)),
+  'rattata', 'and nor does a national egg');
+
+-- With Meowth alone in them, each region's egg hatches its own Meowth.
+delete from public.coder_egg_species where egg_kind in ('alola', 'galar', 'kanto', 'national');
+insert into public.coder_egg_species (egg_kind, species_id) values
+  ('alola', 52), ('galar', 52), ('kanto', 52), ('national', 52);
+create function pg_temp.hatches(egg_kind text) returns text language sql as $$
+  select egg_kind || ':' || string_agg(distinct pg_temp.rattata_from(egg_kind), ' ') from generate_series(1, 20);
+$$;
+select is(
+  pg_temp.hatches('alola') || ' ' || pg_temp.hatches('galar') || ' ' || pg_temp.hatches('kanto') || ' '
+    || pg_temp.hatches('national'),
+  'alola:meowth-alola galar:meowth-galar kanto:meowth national:meowth',
+  'Meowth hatches Alolan from an Alola egg, Galarian from a Galar egg, and as itself from any other');
+
+-- With Indeedee alone in it, a national egg hatches each Indeedee as its
+-- gender's form.
+delete from public.coder_egg_species where egg_kind = 'national';
+insert into public.coder_egg_species (egg_kind, species_id) values ('national', 876);
+create function pg_temp.indeedee() returns text language plpgsql as $$
+declare
+  egg uuid := public.roll_egg('00000000-0000-0000-0000-00000000000d', 'national');
+  hatched text;
+begin
+  select s.slug || ':' || c.gender into hatched
+    from public.coder_companions c join public.pokedex_species s on s.id = c.species_id where c.id = egg;
+  delete from public.coder_companions c where c.id = egg;
+  return hatched;
+end;
+$$;
+select is((select string_agg(distinct hatched, ' ' order by hatched)
+             from (select pg_temp.indeedee() as hatched from generate_series(1, 40)) rolled),
+  'indeedee-female:female indeedee-male:male', 'Indeedee hatches as her own form when female');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its trainer and companions with it');

@@ -157,12 +157,16 @@ function PokemonDetail({
   // every button here for it.
   const working = p.workplace_id !== null
   const { upsideDown, holdToFlip } = useUpsideDown(p.evolves_to?.upside_down ?? false)
+  const { spun, tapToSpin } = useSpin(p.evolves_to?.spin ?? false)
   // Inkay evolves with the console turned over, which here is its own
-  // render: the button is there only while it is upside down.
+  // render: the button is there only while it is upside down. Milcery
+  // evolves on a spin, its render's too: the button is there once it has
+  // spun.
   const evolveNow =
     p.evolves_to &&
     (p.can_evolve ||
-      (upsideDown && p.evolves_to.upside_down && at.level >= (p.evolves_to.level ?? 0)))
+      (upsideDown && p.evolves_to.upside_down && at.level >= (p.evolves_to.level ?? 0)) ||
+      (spun && p.evolves_to.spin))
 
   return (
     <>
@@ -171,7 +175,8 @@ function PokemonDetail({
       <header className="flex items-center gap-8">
         <span
           {...holdToFlip}
-          className={`motion-safe:transition-transform motion-safe:duration-500 ${upsideDown ? 'rotate-180' : ''}`}
+          {...tapToSpin}
+          className={`motion-safe:transition-transform motion-safe:duration-500 ${upsideDown ? 'rotate-180' : ''} ${spun ? 'rotate-360' : ''}`}
         >
           <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
         </span>
@@ -339,6 +344,31 @@ function useUpsideDown(flippable: boolean) {
       }
     : {}
   return { upsideDown: flippable && upsideDown, holdToFlip }
+}
+
+/** How many taps, and within how long, spin a Pokémon round. */
+const SPIN_TAPS = 5
+const SPIN_WITHIN_MS = 1000
+
+/**
+ * Tapping a Pokémon that evolves on a spin, as Milcery does, five times in a
+ * second spins its render round once, and from then on it may evolve. As
+ * with Inkay, nothing says so.
+ */
+function useSpin(spinnable: boolean) {
+  const [spun, setSpun] = useState(false)
+  const taps = useRef<number[]>([])
+  const tapToSpin =
+    spinnable && !spun
+      ? {
+          onPointerDown: () => {
+            const now = Date.now()
+            taps.current = [...taps.current.filter((t) => now - t < SPIN_WITHIN_MS), now]
+            if (taps.current.length >= SPIN_TAPS) setSpun(true)
+          },
+        }
+      : {}
+  return { spun: spinnable && spun, tapToSpin }
 }
 
 /** This Pokémon's own look in the Pokédex: its form, a female's look, and shiny or not. */
