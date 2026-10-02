@@ -1,8 +1,9 @@
 -- Workplaces, points and the shop.
 --
 -- now() stands still inside a test's transaction, so every workplace opens
--- and every shift starts at the same moment, and usage written for the hours
--- after it counts for all of them. Workplaces are rolled at random; where a
+-- and every shift starts at the same moment. An hour only counts once it is
+-- over, so once things have started they are moved back 40 hours, and usage
+-- is written for the hours after that moment. Workplaces are rolled at random; where a
 -- case needs known types, the row is set directly.
 
 begin;
@@ -10,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(80);
+select plan(81);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -25,11 +26,12 @@ create function pg_temp.as_person() returns void language sql as $$
                     json_build_object('sub', '00000000-0000-0000-0000-00000000000a', 'role', 'authenticated')::text, true);
 $$;
 
--- Usage in hours from the one now falls in: 0 is that hour, 1 the next.
+-- Usage in hours from the one things started in, 40 hours ago: 0 is that
+-- hour, 1 the next.
 create function pg_temp.work_hours(first integer, last integer) returns void language sql as $$
   insert into public.usage_rollups (user_id, device_id, provider, hour_bucket, tokens)
   select '00000000-0000-0000-0000-00000000000a', '11111111-1111-1111-1111-111111111111', 'claude_code',
-         date_trunc('hour', now(), 'UTC') + make_interval(hours => n), 1000
+         date_trunc('hour', now(), 'UTC') + make_interval(hours => n - 40), 1000
     from generate_series(first, last) n;
 $$;
 
@@ -187,6 +189,19 @@ select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"out
 select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "not_arrived"}'::jsonb, 'nor can it be turned down');
 
 reset role;
+insert into public.usage_rollups (user_id, device_id, provider, hour_bucket, tokens)
+values ('00000000-0000-0000-0000-00000000000a', '11111111-1111-1111-1111-111111111111', 'claude_code',
+        date_trunc('hour', now(), 'UTC'), 1000);
+select pg_temp.as_person();
+select is(public.work() -> 'workplaces' -> 0 -> 'worker' -> 'hours', '0'::jsonb,
+  'a Pokémon starts at 0 hours, though there was usage in the hour it was sent in');
+
+reset role;
+update public.coder_trainers set work_started_at = work_started_at - interval '40 hours'
+ where user_id = '00000000-0000-0000-0000-00000000000a';
+update public.coder_workplaces set assigned_at = assigned_at - interval '40 hours',
+                                   emptied_at = emptied_at - interval '40 hours'
+ where user_id = '00000000-0000-0000-0000-00000000000a';
 select pg_temp.work_hours(1, 7);
 select pg_temp.as_person();
 select is(public.work() -> 'workplaces' -> 0 -> 'worker' -> 'hours', '7'::jsonb, 'hours are the hours with usage');
@@ -197,10 +212,10 @@ reset role;
 select pg_temp.work_hours(0, 0);
 insert into public.usage_rollups (user_id, device_id, provider, hour_bucket, tokens)
 values ('00000000-0000-0000-0000-00000000000a', '11111111-1111-1111-1111-111111111111', 'codex',
-        date_trunc('hour', now(), 'UTC'), 5);
+        date_trunc('hour', now(), 'UTC') - interval '40 hours', 5);
 select pg_temp.as_person();
 select is(public.work() -> 'workplaces' -> 0 -> 'worker' -> 'hours', '8'::jsonb,
-  'the hour it was sent in counts, and an hour two agents worked in counts once');
+  'the hour it was sent in counts once over, and an hour two agents worked in counts once');
 select ok((public.work() -> 'workplaces' -> 0 -> 'worker' ->> 'can_settle')::boolean, 'eight is a shift');
 select ok((public.work() -> 'workplaces' -> 1 ->> 'arrived')::boolean, 'and the next request has arrived');
 select ok(public.work() -> 'workplaces' -> 1 -> 'client' <> 'null'::jsonb, 'saying who it is from');
