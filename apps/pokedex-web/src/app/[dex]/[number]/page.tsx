@@ -34,6 +34,8 @@ type Method = {
   version: Named | null
   natures: string[] | null
   min_damage_taken: number | null
+  used_move: Named | null
+  min_move_count: number | null
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -42,7 +44,12 @@ const PHYSICAL_STATS: Record<number, string> = {
   [-1]: '공격 < 방어',
 }
 
-const TIMES_OF_DAY: Record<string, string> = { day: '낮', night: '밤', dusk: '저녁' }
+const TIMES_OF_DAY: Record<string, string> = {
+  day: '낮',
+  night: '밤',
+  dusk: '저녁',
+  'full-moon': '보름달 밤',
+}
 
 /** A name with 와 or 과, as its last syllable ends in a vowel or not. */
 function withAnd(name: string): string {
@@ -58,7 +65,9 @@ function withAnd(name: string): string {
  * "쪼마리와 통신교환", "딱정곤과 통신교환", "Lv.32 · 동료 악타입",
  * "페어리타입 기술 배운 채 레벨업 · 절친도", "Lv.50 · 비", "Lv.30 · 기기를 거꾸로",
  * "Lv.25 · 저녁", "천둥의돌 사용 · 알로라에서", "Lv.53 · 썬에서", "Lv.30 · 성격 13가지",
- * "딸기사탕공예 지닌 채 빙글빙글 돌기 · 낮", "모래먼지구덩이에서 고인돌 아래 지나기 · 데미지 49 이상".
+ * "딸기사탕공예 지닌 채 빙글빙글 돌기 · 낮", "모래먼지구덩이에서 고인돌 아래 지나기 · 데미지 49 이상",
+ * "배리어러시 20번 속공으로 쓰기", "반동 데미지 받기 · ♂ · 데미지 294 이상",
+ * "피트블록 사용 · 보름달 밤".
  */
 function takes(method: Method): string {
   const parts: string[] = []
@@ -72,6 +81,11 @@ function takes(method: Method): string {
   else if (method.party) parts.push(`${ko(method.trigger)} · 동료 ${ko(method.party)}`)
   else if (method.trade_species)
     parts.push(`${withAnd(ko(method.trade_species))} ${ko(method.trigger)}`)
+  else if (method.used_move)
+    parts.push(`${ko(method.used_move)} ${method.min_move_count}번 ${ko(method.trigger)}`)
+  // A way that is not a level-up says what it is first, as recoil damage
+  // does, even with nothing to lead it.
+  else if (method.trigger.id !== 'level-up') parts.push(ko(method.trigger))
   // Without the number: the games ask 220 up to Generation VII and 160 since,
   // the same for every species in a game, and PokéAPI mixes the two.
   if (method.min_happiness) parts.push('친밀도')
@@ -208,10 +222,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
       method:pokedex_evolution_methods!evolution_method(
         level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
         min_affection, needs_overworld_rain, turn_upside_down, natures, min_damage_taken,
+        min_move_count, used_move:pokedex_moves!used_move(ko_name, en_name),
         trigger:pokedex_evolution_triggers(id, ko_name, en_name),
         item:pokedex_items!item(ko_name, en_name),
         held_item:pokedex_items!held_item(ko_name, en_name),
-        known_move:pokedex_moves(ko_name, en_name),
+        known_move:pokedex_moves!known_move(ko_name, en_name),
         location:pokedex_locations(ko_name, en_name),
         party:pokedex_species!party_species_id(ko_name, en_name),
         trade_species:pokedex_species!trade_species_id(ko_name, en_name),
