@@ -1,8 +1,9 @@
 // Draws the bag sprites PokeAPI/sprites has none for into public/drawn: the
 // Linking Cord and Meltan Candy, which the Coder game sells, the Shelmet
 // Shell, which is the game's own, and the items Generation VIII evolves
-// with, which PokeAPI/sprites stops short of. The files are not committed: this script is
-// what they are, and the same run draws the same bytes.
+// with, Legends: Arceus's too, which PokeAPI/sprites stops short of. The
+// files are not committed: this script is what they are, and the same run
+// draws the same bytes.
 //
 // Each is drawn as the bag sprites are, 30px with a #313131 outline and four
 // tones lit from the top left, so it sits among them. A shape is a function
@@ -415,6 +416,94 @@ function scroll(paper: Palette): Shape[] {
   ]
 }
 
+/** Whether a point is inside a polygon, by how many of its edges a ray crosses. */
+function inside(x: number, y: number, points: [number, number][]): boolean {
+  let crossings = 0
+  points.forEach(([ax, ay], i) => {
+    const [bx, by] = points[(i + 1) % points.length]
+    if (ay > y !== by > y && x < ax + ((y - ay) / (by - ay)) * (bx - ax)) crossings += 1
+  })
+  return crossings % 2 === 1
+}
+
+/** A flat face of a solid, in one colour: faces are lit by where they face, not shaded across. */
+function face(colour: Colour, points: [number, number][]): Shape {
+  return (x, y) => (inside(x, y, points) ? colour : null)
+}
+
+/**
+ * Black Augurite, the glassy stone Scyther becomes Kleavor with: a chunk of
+ * black crystal, cut in facets, the ones to the top left catching the light.
+ */
+function blackAugurite(): Shape[] {
+  const stone: Palette = ['#b4bccb', '#5d6372', '#3a3e48', '#22242a']
+  const top: [number, number] = [16, 5]
+  const left: [number, number] = [6, 13]
+  const right: [number, number] = [24, 11]
+  const bottom: [number, number] = [14, 26]
+  const middle: [number, number] = [15, 15]
+  return [
+    face(stone[1], [top, left, middle]),
+    face(stone[2], [top, middle, right]),
+    face(stone[2], [left, bottom, middle]),
+    face(stone[3], [middle, bottom, right]),
+    // A glint where the lit facets meet.
+    face(stone[0], [
+      [14.5, 7.5],
+      [11, 11.5],
+      [12.5, 12],
+    ]),
+  ]
+}
+
+/**
+ * A Peat Block, as Ursaring is given under a full moon: a cube of cut peat,
+ * its top lit, its sides in shade, flecked with the roots it is made of.
+ */
+function peatBlock(): Shape[] {
+  const peat: Palette = ['#c49a6c', '#9a7148', '#71502f', '#4b331c']
+  const fleck = (x: number, y: number) =>
+    (Math.floor(x) * 5 + Math.floor(y) * 3) % 11 === 0 ? peat[3] : null
+  return [
+    face(peat[1], [
+      [15, 4],
+      [26, 9.5],
+      [15, 15],
+      [4, 9.5],
+    ]),
+    face(peat[2], [
+      [4, 9.5],
+      [15, 15],
+      [15, 27],
+      [4, 21.5],
+    ]),
+    face(peat[3], [
+      [15, 15],
+      [26, 9.5],
+      [26, 21.5],
+      [15, 27],
+    ]),
+    (x, y) =>
+      inside(x, y, [
+        [15, 4],
+        [26, 9.5],
+        [15, 15],
+        [4, 9.5],
+      ])
+        ? (Math.floor(x) * 7 + Math.floor(y) * 5) % 13 === 0
+          ? peat[0]
+          : null
+        : inside(x, y, [
+              [4, 9.5],
+              [15, 15],
+              [15, 27],
+              [4, 21.5],
+            ])
+          ? fleck(x, y)
+          : null,
+  ]
+}
+
 const ITEMS: Record<string, Shape[]> = {
   'linking-cord': linkingCord(),
   'meltan-candy': meltanCandy(),
@@ -427,6 +516,8 @@ const ITEMS: Record<string, Shape[]> = {
   'strawberry-sweet': strawberrySweet(),
   'scroll-of-darkness': scroll(['#f4f4f6', '#c9c9d0', '#9a9aa6', '#62626e']),
   'scroll-of-waters': scroll(['#f2fbff', '#bfe6fb', '#8cc6e8', '#5592bd']),
+  'black-augurite': blackAugurite(),
+  'peat-block': peatBlock(),
 }
 
 await mkdir(DIR, { recursive: true })

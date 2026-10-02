@@ -836,6 +836,7 @@ export type Database = {
           min_beauty: number | null
           min_damage_taken: number | null
           min_happiness: number | null
+          min_move_count: number | null
           natures: string[] | null
           needs_overworld_rain: boolean
           party_species_id: number | null
@@ -846,6 +847,7 @@ export type Database = {
           trade_species_id: number | null
           trigger: string
           turn_upside_down: boolean
+          used_move: string | null
           version: string | null
         }
         Insert: {
@@ -862,6 +864,7 @@ export type Database = {
           min_beauty?: number | null
           min_damage_taken?: number | null
           min_happiness?: number | null
+          min_move_count?: number | null
           natures?: string[] | null
           needs_overworld_rain?: boolean
           party_species_id?: number | null
@@ -872,6 +875,7 @@ export type Database = {
           trade_species_id?: number | null
           trigger: string
           turn_upside_down?: boolean
+          used_move?: string | null
           version?: string | null
         }
         Update: {
@@ -888,6 +892,7 @@ export type Database = {
           min_beauty?: number | null
           min_damage_taken?: number | null
           min_happiness?: number | null
+          min_move_count?: number | null
           natures?: string[] | null
           needs_overworld_rain?: boolean
           party_species_id?: number | null
@@ -898,6 +903,7 @@ export type Database = {
           trade_species_id?: number | null
           trigger?: string
           turn_upside_down?: boolean
+          used_move?: string | null
           version?: string | null
         }
         Relationships: [
@@ -969,6 +975,13 @@ export type Database = {
             columns: ['trigger']
             isOneToOne: false
             referencedRelation: 'pokedex_evolution_triggers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_evolution_methods_used_move_fkey'
+            columns: ['used_move']
+            isOneToOne: false
+            referencedRelation: 'pokedex_moves'
             referencedColumns: ['id']
           },
           {
@@ -1469,6 +1482,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      full_moon: { Args: { at: string }; Returns: boolean }
       hatch: { Args: { companion_id: string }; Returns: Json }
       in_box: {
         Args: {

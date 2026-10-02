@@ -1,6 +1,6 @@
 -- The ways to evolve beyond a level or a stone: friendship, requests, the
 -- box, draws, items in place of trades and places, Shedinja, and
--- Generation VIII's.
+-- Generation VIII's and Legends: Arceus's.
 --
 -- now() stands still inside a test's transaction, and the hour it falls in is
 -- not known, so a case that hangs on the time of day asks the ways at an
@@ -13,7 +13,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(45);
+select plan(53);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -258,6 +258,44 @@ select is(
     || ' sweet-apple:appletun tart-apple:flapple cracked-pot:polteageist-phony'
     || ' galarica-cuff:slowbro-galar galarica-wreath:slowking-galar',
   'a Leek in place of three critical hits, scrolls in place of towers, and Galar''s own items');
+
+
+
+-- ------------------------------------------------------------
+-- Legends: Arceus
+-- ------------------------------------------------------------
+select ok(public.full_moon('2024-01-25 17:54+00') and public.full_moon('2024-01-24 18:00+00')
+          and public.full_moon('2024-01-26 18:00+00')
+          and not public.full_moon('2024-01-11 11:57+00') and not public.full_moon('2024-01-21 00:00+00'),
+  'the moon is full on the night of a full moon and a day either side, and not at a new moon');
+select is(public.at_time_of_day('full-moon', 0::smallint), public.full_moon(now()),
+  'a full-moon night is a night when the moon is full');
+select ok(not public.at_time_of_day('full-moon', 12::smallint), 'and never a day');
+
+create temporary table hisui as
+select pg_temp.pokemon('stantler', 1) as stantler, pg_temp.pokemon('qwilfish-hisui', 1) as qwilfish,
+       pg_temp.pokemon('basculin-white-striped', 1, 'female') as basculin, pg_temp.pokemon('scyther', 1) as scyther,
+       pg_temp.pokemon('sneasel-hisui', 1) as sneasel, pg_temp.pokemon('ursaring', 1) as ursaring;
+
+select is(coalesce(pg_temp.next((select stantler from hisui)), '-') || ' '
+            || coalesce(pg_temp.next((select qwilfish from hisui)), '-') || ' '
+            || coalesce(pg_temp.next((select basculin from hisui)), '-'),
+  '- - -', 'Stantler, Hisuian Qwilfish and White-Striped Basculin need requests');
+select pg_temp.done((select stantler from hisui), 'abra');
+select pg_temp.done((select qwilfish from hisui), 'ekans');
+select pg_temp.done((select basculin from hisui), 'squirtle');
+select is(pg_temp.next((select stantler from hisui)) || ' ' || pg_temp.next((select qwilfish from hisui)) || ' '
+            || pg_temp.next((select basculin from hisui)),
+  'wyrdeer overqwil basculegion-female',
+  'a Psychic one for Psyshield Bash, a Poison one for Barb Barrage, and a Water one for recoil damage');
+
+select is(pg_temp.items((select scyther from hisui)), 'black-augurite:kleavor metal-coat:scizor',
+  'Scyther becomes Kleavor with Black Augurite, from any egg');
+select is(pg_temp.items((select sneasel from hisui), 12) || ' ' || coalesce(pg_temp.items((select sneasel from hisui), 0), '-'),
+  'razor-claw:sneasler -', 'Hisuian Sneasel becomes Sneasler with a Razor Claw by day, never Weavile');
+select is(coalesce(pg_temp.items((select ursaring from hisui), 0), '-'),
+  case when public.full_moon(now()) then 'peat-block:ursaluna' else '-' end,
+  'Ursaring takes a Peat Block only on a full-moon night');
 
 select * from finish();
 rollback;
