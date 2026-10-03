@@ -21,6 +21,7 @@ export const DEXES = [
   'galar',
   'hisui',
   'paldea',
+  'lumiose',
 ]
 
 export function dexNo(n: number): string {

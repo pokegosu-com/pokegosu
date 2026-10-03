@@ -662,6 +662,93 @@ function gimmighoulCoin(): Shape[] {
   ]
 }
 
+/** The four tones of a colour, from near white to near its shadow. */
+function shades(colour: Colour): Palette {
+  const rgb = [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16))
+  const mix = (towards: number, by: number) =>
+    `#${rgb
+      .map((c) =>
+        Math.round(c + (towards - c) * by)
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')}`
+  return [mix(255, 0.75), mix(255, 0.3), colour, mix(0, 0.4)]
+}
+
+/**
+ * A Mega Stone, as the bag draws the ones before Legends: Z-A: a small
+ * marble, two colours meeting along an S through it, as the Mega Evolution
+ * mark does. The colours are the Pokémon's.
+ */
+function megaStone(left: Colour, right: Colour): Shape[] {
+  const [cx, cy, r] = [16, 16, 5.9]
+  const a = shades(left)
+  const b = shades(right)
+  return [
+    (x, y) => {
+      const u = (x - cx) / r
+      const v = (y - cy) / r
+      const d = u * u + v * v
+      if (d > 1) return null
+      // The S leans as the mark's does, and the light is soft, so it shows.
+      const s = u + 0.3 * v - 0.5 * Math.sin(Math.PI * v)
+      return tone(s < 0 ? a : b, lit([u * 0.7, v * 0.7, Math.sqrt(1 - d * 0.49)]))
+    },
+    // The glint, a pixel and a half.
+    (x, y) => (Math.hypot(x - 13, y - 12.6) < 0.95 ? '#ffffff' : null),
+  ]
+}
+
+/** Legends: Z-A's Mega Stones and Mega Dimension's, each in its Pokémon's colours. */
+const MEGA_STONES: Record<string, [Colour, Colour]> = {
+  clefablite: ['#f29ac0', '#f2e08a'],
+  victreebelite: ['#e8c838', '#4caf50'],
+  starminite: ['#8a5bc0', '#f2c94c'],
+  dragoninite: ['#f2a33a', '#48a8a0'],
+  meganiumite: ['#8ccf4a', '#f27ea8'],
+  feraligite: ['#3c8fd0', '#d8423a'],
+  skarmorite: ['#a8b4c4', '#c8402e'],
+  froslassite: ['#d8ecfa', '#8a5bc0'],
+  heatranite: ['#c0602e', '#6a6a78'],
+  darkranite: ['#4a4a5a', '#d84040'],
+  emboarite: ['#e2562e', '#4a3c3c'],
+  excadrite: ['#7a7a88', '#c84040'],
+  scolipite: ['#c0306a', '#6a3c9a'],
+  scraftinite: ['#f2c84a', '#d8403a'],
+  eelektrossite: ['#2a6a9a', '#f2d24a'],
+  chandelurite: ['#4a3c5a', '#8a5bf0'],
+  chesnaughtite: ['#4f9a4a', '#d8b070'],
+  delphoxite: ['#d8403a', '#f2d070'],
+  greninjite: ['#2e5ea8', '#f28aa0'],
+  pyroarite: ['#c84030', '#f2c040'],
+  floettite: ['#f2f2e0', '#d84050'],
+  malamarite: ['#7a3aa8', '#f2d24a'],
+  barbaracite: ['#8a6a4a', '#5aa0d0'],
+  dragalgite: ['#7a6a44', '#a85ac0'],
+  hawluchanite: ['#4a9a5a', '#d84040'],
+  zygardite: ['#4a4a4a', '#4ad06a'],
+  drampanite: ['#ececec', '#7ac06a'],
+  zeraorite: ['#f2d24a', '#3a5ab0'],
+  falinksite: ['#e8a02e', '#8a6a4a'],
+  'raichunite-x': ['#f2a43a', '#f2d24a'],
+  'raichunite-y': ['#f2a43a', '#7a5a3a'],
+  chimechite: ['#5aa0e0', '#f2e070'],
+  'absolite-z': ['#e8e8f2', '#4a4a68'],
+  staraptite: ['#6a5a6a', '#e8e8e8'],
+  'garchompite-z': ['#3a4a8a', '#d8403a'],
+  'lucarionite-z': ['#3a6ab0', '#4a4a5a'],
+  golurkite: ['#4a8a8a', '#e8c050'],
+  meowsticite: ['#3a4a8a', '#e8e8f2'],
+  crabominite: ['#e8e8f2', '#a86ac0'],
+  golisopite: ['#8a8aa0', '#e0e0e8'],
+  magearnite: ['#c8c8d0', '#d84060'],
+  scovillainite: ['#4aa04a', '#d8403a'],
+  glimmoranite: ['#4a4a6a', '#f2a0d0'],
+  baxcalibrite: ['#3a4a6a', '#a8d8f2'],
+  tatsugirinite: ['#f28a6a', '#f2e0b0'],
+}
+
 const ITEMS: Record<string, Shape[]> = {
   'linking-cord': linkingCord(),
   'meltan-candy': meltanCandy(),
@@ -689,6 +776,9 @@ const ITEMS: Record<string, Shape[]> = {
   'unremarkable-teacup': unremarkableTeacup(),
   'leaders-crest': leadersCrest(),
   'gimmighoul-coin': gimmighoulCoin(),
+  ...Object.fromEntries(
+    Object.entries(MEGA_STONES).map(([id, [left, right]]) => [id, megaStone(left, right)]),
+  ),
 }
 
 await mkdir(DIR, { recursive: true })

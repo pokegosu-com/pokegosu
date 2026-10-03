@@ -140,14 +140,6 @@ function formName(form: { ko_form_name: string | null; en_form_name: string | nu
   return form.ko_form_name ?? form.en_form_name ?? '기본'
 }
 
-/**
- * A form its own species becomes, as Charizard Mega Evolves: a stage in the
- * family, not a look of the species.
- */
-function isStage(form: { form_of: number | null; evolves_from_id: number | null }): boolean {
-  return form.form_of !== null && form.evolves_from_id === form.form_of
-}
-
 /** Every number the pokedex lists, each built as a file. */
 export async function generateStaticParams({ params }: { params: { dex: string } }) {
   const rows = await every((from, to) =>
@@ -252,6 +244,20 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     .map((f) => ({ ...f, ...entries.get(f.id)! }))
     .sort((a, b) => stageOf(a.id) - stageOf(b.id) || a.number - b.number)
   const familyOf = (id: number) => everyMember.filter((f) => firstOf(f.id) === firstOf(id))
+
+  // A form its own species becomes, as Charizard Mega Evolves: a stage in the
+  // family, not a look of the species. It may come from another of the
+  // species' forms, as Mega Floette comes from Floette of the Eternal Flower.
+  const speciesOf = new Map(
+    [...forms.data.map(({ species: f }) => f), ...members.data].map((f) => [
+      f.id,
+      f.form_of ?? f.id,
+    ]),
+  )
+  const isStage = (form: { form_of: number | null; evolves_from_id: number | null }) =>
+    form.form_of !== null &&
+    form.evolves_from_id !== null &&
+    speciesOf.get(form.evolves_from_id) === form.form_of
 
   // A form's page links by its number, by its name unless it is the default,
   // and with ?gender=female for a female that looks different.
