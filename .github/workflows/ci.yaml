@@ -33,7 +33,7 @@ jobs:
       - uses: 'actions/cache@v6'
         with:
           path: 'apps/pokedex-web/public/sprites'
-          key: "sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
+          key: "pokedex-sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
 
       # Builds here only check the code, so they run without production
       # NEXT_PUBLIC_* values. A deploy workflow must never set this.

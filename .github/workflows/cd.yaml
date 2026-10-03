@@ -101,7 +101,7 @@ jobs:
         uses: 'actions/cache/restore@v6'
         with:
           path: 'apps/pokedex-web/public/sprites'
-          key: "sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
+          key: "pokedex-sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
       # Every app gets every variable; each schema reads only its own.
       - run: 'pnpm --dir ${{ matrix.app.source }} run deploy:vinext'
         env:
