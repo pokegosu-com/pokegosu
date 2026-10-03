@@ -36,6 +36,8 @@ type Method = {
   min_damage_taken: number | null
   used_move: Named | null
   min_move_count: number | null
+  min_steps: number | null
+  needs_multiplayer: boolean
 }
 
 const PHYSICAL_STATS: Record<number, string> = {
@@ -67,13 +69,16 @@ function withAnd(name: string): string {
  * "Lv.25 · 저녁", "천둥의돌 사용 · 알로라에서", "Lv.53 · 썬에서", "Lv.30 · 성격 13가지",
  * "딸기사탕공예 지닌 채 빙글빙글 돌기 · 낮", "모래먼지구덩이에서 고인돌 아래 지나기 · 데미지 49 이상",
  * "배리어러시 20번 속공으로 쓰기", "반동 데미지 받기 · ♂ · 데미지 294 이상",
- * "피트블록 사용 · 보름달 밤".
+ * "피트블록 사용 · 보름달 밤", "배틀 중 Lv.25 · 성격값 1%", "함께 1000걸음",
+ * "Lv.38 · 유니온서클", "분노의주먹 20번 쓰기".
  */
 function takes(method: Method): string {
   const parts: string[] = []
   if (method.item) parts.push(`${ko(method.item)} 사용`)
   else if (method.held_item) parts.push(`${ko(method.held_item)} 지닌 채 ${ko(method.trigger)}`)
   else if (method.trigger.id === 'level-up' && method.level) parts.push(`Lv.${method.level}`)
+  else if (method.trigger.id === 'in-battle-level-up' && method.level)
+    parts.push(`배틀 중 Lv.${method.level}`)
   else if (method.known_move) parts.push(`${ko(method.known_move)} 배운 채 ${ko(method.trigger)}`)
   else if (method.known_move_type)
     parts.push(`${ko(method.known_move_type)}타입 기술 배운 채 ${ko(method.trigger)}`)
@@ -107,6 +112,9 @@ function takes(method: Method): string {
   // which half they are.
   if (method.natures) parts.push(`성격 ${method.natures.length}가지`)
   if (method.min_damage_taken) parts.push(`데미지 ${method.min_damage_taken} 이상`)
+  // Walked together in Let's Go, and with other players in a Union Circle.
+  if (method.min_steps) parts.push(`함께 ${method.min_steps}걸음`)
+  if (method.needs_multiplayer) parts.push('유니온서클')
   return parts.join(' · ') || ko(method.trigger)
 }
 
@@ -222,7 +230,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
       method:pokedex_evolution_methods!evolution_method(
         level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
         min_affection, needs_overworld_rain, turn_upside_down, natures, min_damage_taken,
-        min_move_count, used_move:pokedex_moves!used_move(ko_name, en_name),
+        min_move_count, min_steps, needs_multiplayer, used_move:pokedex_moves!used_move(ko_name, en_name),
         trigger:pokedex_evolution_triggers(id, ko_name, en_name),
         item:pokedex_items!item(ko_name, en_name),
         held_item:pokedex_items!held_item(ko_name, en_name),

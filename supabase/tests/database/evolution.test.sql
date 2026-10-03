@@ -1,6 +1,6 @@
 -- The ways to evolve beyond a level or a stone: friendship, requests, the
 -- box, draws, items in place of trades and places, Shedinja, and
--- Generation VIII's and Legends: Arceus's.
+-- Generation VIII's, Legends: Arceus's and Generation IX's.
 --
 -- now() stands still inside a test's transaction, and the hour it falls in is
 -- not known, so a case that hangs on the time of day asks the ways at an
@@ -13,7 +13,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(53);
+select plan(61);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -255,7 +255,7 @@ select is(
     || pg_temp.items((select applin from galar)) || ' ' || pg_temp.items((select sinistea from galar)) || ' '
     || pg_temp.items((select slowpoke from galar)),
   'stick:sirfetchd scroll-of-darkness:urshifu-single-strike scroll-of-waters:urshifu-rapid-strike'
-    || ' sweet-apple:appletun tart-apple:flapple cracked-pot:polteageist-phony'
+    || ' sweet-apple:appletun syrupy-apple:dipplin tart-apple:flapple cracked-pot:polteageist-phony'
     || ' galarica-cuff:slowbro-galar galarica-wreath:slowking-galar',
   'a Leek in place of three critical hits, scrolls in place of towers, and Galar''s own items');
 
@@ -296,6 +296,57 @@ select is(pg_temp.items((select sneasel from hisui), 12) || ' ' || coalesce(pg_t
 select is(coalesce(pg_temp.items((select ursaring from hisui), 0), '-'),
   case when public.full_moon(now()) then 'peat-block:ursaluna' else '-' end,
   'Ursaring takes a Peat Block only on a full-moon night');
+
+
+
+-- ------------------------------------------------------------
+-- Generation IX
+-- ------------------------------------------------------------
+create temporary table paldea as
+select pg_temp.pokemon('pawmo', 40) as pawmo, pg_temp.pokemon('bramblin', 39) as bramblin,
+       pg_temp.pokemon('finizen', 38) as finizen, pg_temp.pokemon('primeape', 1) as primeape,
+       pg_temp.pokemon('girafarig', 1) as girafarig, pg_temp.pokemon('dipplin', 1) as dipplin,
+       pg_temp.pokemon('bisharp', 1) as bisharp, pg_temp.pokemon('gimmighoul-chest', 1, null) as gimmighoul,
+       pg_temp.pokemon('charcadet', 1) as charcadet, pg_temp.pokemon('duraludon', 1) as duraludon,
+       pg_temp.pokemon('poltchageist-counterfeit', 1, null) as poltchageist;
+
+select is(pg_temp.next((select pawmo from paldea)) || ' ' || coalesce(pg_temp.next((select bramblin from paldea)), '-'),
+  'pawmot -', 'a thousand steps are friendship: Pawmo at Lv.40 is friendly enough, Bramblin at Lv.39 not');
+select is(pg_temp.next((select finizen from paldea)), null, 'Finizen at Lv.38 is not friendly enough alone');
+insert into public.coder_main_periods (companion_id, user_id, started_at, ended_at)
+select finizen, '00000000-0000-0000-0000-00000000000a', now() - interval '1 hour', now() from paldea;
+select is(pg_temp.next((select finizen from paldea)), 'palafin-zero', 'but is after an hour as the partner');
+
+select is(
+  coalesce(pg_temp.next((select primeape from paldea)), '-') || ' ' || coalesce(pg_temp.next((select girafarig from paldea)), '-')
+    || ' ' || coalesce(pg_temp.next((select dipplin from paldea)), '-'),
+  '- - -', 'Primeape, Girafarig and Dipplin need requests');
+select pg_temp.done((select primeape from paldea), 'gastly');
+select pg_temp.done((select girafarig from paldea), 'abra');
+select pg_temp.done((select dipplin from paldea), 'dratini');
+select is(pg_temp.next((select primeape from paldea)) || ' ' || pg_temp.next((select girafarig from paldea)) || ' '
+            || pg_temp.next((select dipplin from paldea)),
+  'annihilape farigiraf hydrapple',
+  'a Ghost one for Rage Fist, a Psychic one for Twin Beam, and a Dragon one for Dragon Cheer, from any egg');
+
+select is(
+  pg_temp.items((select bisharp from paldea)) || ' ' || pg_temp.items((select gimmighoul from paldea)) || ' '
+    || pg_temp.items((select charcadet from paldea)) || ' ' || pg_temp.items((select duraludon from paldea)) || ' '
+    || pg_temp.items((select poltchageist from paldea)),
+  'leaders-crest:kingambit gimmighoul-coin:gholdengo auspicious-armor:armarouge malicious-armor:ceruledge'
+    || ' metal-alloy:archaludon unremarkable-teacup:sinistcha-unremarkable',
+  'a Leader''s Crest in place of three Bisharp, a coin in place of 999, and Paldea''s own items');
+
+-- A hundred Tandemaus: a Family of Three is one in a hundred, five times
+-- that once the person has only Families of Four, never most.
+select setseed(0.5);
+create temporary table mice as
+select pg_temp.pokemon('tandemaus', 25) as id from generate_series(1, 100);
+select is(pg_temp.boxed((select id from mice limit 1)) -> 'evolves_to' ->> 'species_id', null,
+  'Tandemaus''s family is a draw, so the box names no form');
+select ok((select count(*) < 20 from mice, lateral public.evolve(mice.id) e
+            where (e ->> 'to')::int = (select id from public.pokedex_species where slug = 'maushold-family-of-three')),
+  'and a Family of Three comes up a few times in a hundred at most');
 
 select * from finish();
 rollback;

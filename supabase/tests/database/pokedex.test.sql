@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(64);
+select plan(68);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -23,23 +23,27 @@ select is((select count(*)::int from public.pokedex_species where generation = 7
   'and every Generation VII species');
 select is((select count(*)::int from public.pokedex_species where generation = 8 and form_of is null), 96,
   'and every Generation VIII species, Legends: Arceus''s too');
+select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
+  'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 399,
-  'and every other form those games had, Mega Evolutions, Alolan, Galarian and Hisuian forms and Gigantamax too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 419,
+  'and every other form those games had, Mega Evolutions, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax too, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
          or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'eternatus-eternamax',
-                     'sinistea-antique') $$,
-  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak, look alike or one battle''s form');
+                     'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
+         or slug ~ '^(koraidon|miraidon)-' and slug not in ('koraidon-apex-build', 'miraidon-ultimate-mode') $$,
+  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
 select is_empty(
-  $$ select slug from public.pokedex_species where slug in ('ursaluna-bloodmoon') or id > 905 and form_of is null $$,
-  'but nothing of Generation IX''s, Bloodmoon Ursaluna among it');
+  $$ select slug from public.pokedex_species where slug like '%-mega%' and generation = 9
+         or slug in ('dragonite-mega', 'absol-mega-z', 'raichu-mega-x') $$,
+  'and none of Legends: Z-A''s Mega Evolutions yet');
 select is(
   (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
   8, 'Pikachu''s caps are in, as they came to more than one game');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 905, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 1025, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -85,11 +89,18 @@ select is(
   'rowlet:1 wyrdeer:50 enamorus-incarnate:234 darkrai:242',
   'from Rowlet to Darkrai, Hisui''s own species among them');
 select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'paldea' and e.is_default and e.number in (1, 400, 401, 499, 664)),
+  'sprigatito:1 miraidon-ultimate-mode:400 spinarak:401 ogerpon:499 pecharunt:664',
+  'Paldea''s 400, then those Kitakami and Blueberry add, each once');
+select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and (e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'])[s.generation]
+                         and (e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar',
+                                             'paldea'])[s.generation]
                               or e.dex = 'hisui' and s.generation = 8))),
   0, 'every species is in its own generation''s regional pokedex, Generation VIII''s in Galar''s or Hisui''s');
 
@@ -240,6 +251,26 @@ select is(
     where slug in ('growlithe-hisui', 'dialga-origin', 'basculin-white-striped', 'enamorus-therian')),
   'growlithe-hisui:히스이의 모습 dialga-origin:오리진폼 basculin-white-striped:백색근의 모습 enamorus-therian:영물폼',
   'Hisuian forms, Origin Dialga, White-Striped Basculin and Therian Enamorus are looks');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('pawmot', 'palafin-zero', 'annihilape', 'clodsire', 'kingambit', 'gholdengo',
+                     'maushold-family-of-three', 'sinistcha-unremarkable')),
+  'pawmot:pawmo:level-up-after-1000-steps palafin-zero:finizen:level-up-38-in-union-circle'
+    || ' annihilape:primeape:use-move-using-rage-fist-20-times clodsire:wooper-paldea:level-up-20'
+    || ' kingambit:bisharp:three-defeated-bisharp gholdengo:gimmighoul-chest:gimmighoul-coins'
+    || ' sinistcha-unremarkable:poltchageist-counterfeit:use-item-unremarkable-teacup'
+    || ' maushold-family-of-three:tandemaus:in-battle-level-up-25-chance-1',
+  'a method keeps what Generation IX adds: steps, a Union Circle, a move used, and Paldean Wooper''s own');
+select is(
+  (select string_agg(slug || ':' || ko_form_name || ':' || (evolves_from_id is not null), ' ' order by id)
+     from public.pokedex_species
+    where slug in ('tauros-paldea-aqua-breed', 'wooper-paldea', 'palafin-hero', 'ursaluna-bloodmoon',
+                   'gimmighoul-roaming', 'terapagos-stellar')),
+  'tauros-paldea-aqua-breed:팔데아의 모습 워터종:false wooper-paldea:팔데아의 모습:false'
+    || ' palafin-hero:마이티폼:false gimmighoul-roaming:도보폼:false'
+    || ' ursaluna-bloodmoon:붉은 달:false terapagos-stellar:스텔라폼:false',
+  'Paldean forms, Hero Palafin, Roaming Gimmighoul, Bloodmoon Ursaluna and Stellar Terapagos are looks');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)
