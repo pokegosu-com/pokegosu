@@ -3,7 +3,8 @@
 -- Meowth hatches as itself, Alolan or Galarian, each one time in three, and
 -- Tauros as itself one time in two, or in one of its three Paldean breeds.
 -- A region's own egg still hatches only its region's form, and another
--- region's egg only the default.
+-- region's egg only the default. A Lumiose egg, whose forms are no
+-- region's, hatches them beside the default, evenly, as before.
 
 
 -- ============================================================
@@ -77,6 +78,10 @@ begin
           select s.id from public.coder_egg_forms ef
             join public.pokedex_species s on s.id = ef.species_id
            where s.form_of = drawn and region is null
+          union all
+          select s.id from public.coder_egg_kind_forms kf
+            join public.pokedex_species s on s.id = kf.species_id
+           where s.form_of = drawn and kf.egg_kind = roll_egg.egg_kind and region is null
           union all
           select s.id from public.coder_egg_regional_forms rf
             join public.pokedex_species s on s.id = rf.species_id
