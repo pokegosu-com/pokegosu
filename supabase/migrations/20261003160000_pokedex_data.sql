@@ -5,9 +5,9 @@
 -- The licence is in LICENSES/PokeAPI-BSD-3-Clause.txt.
 --
 -- With the earlier generated migrations, it says every form up to national
--- No.1025 that its games had, 1493 of them, and their entries in the
+-- No.1025 that its games had, 1491 of them, and their entries in the
 -- national, kanto, johto, hoenn, sinnoh, unova, kalos, alola, galar, hisui, paldea, lumiose pokedexes. Only the rows that differ from what
--- those wrote are here.
+-- those wrote are here, and the forms they wrote that are no longer in.
 
 insert into public.pokedex_items (id, ko_name, en_name, sprite) values
   ('absolite-z', '앱솔나이트Z', 'Absolite Z', '/drawn/items/absolite-z.png'),
@@ -682,7 +682,6 @@ insert into public.pokedex_entries (dex, number, species_id, is_default, ko_desc
   ('lumiose', 50, 10376, false, '오른팔에서 내보내는 독액은 약한 생물이 맞으면 즉사할 정도로 위험하다.', 'The toxic liquid it launches from its right arm is so virulent that it can kill a weakened creature instantly.'),
   ('lumiose', 51, 702, true, '전기를 만들어내는 힘이 약해서 콘센트나 다른 전류포켓몬에게 훔친다.', 'Since Dedenne can’t generate much electricity on its own, it steals electricity from outlets or other electric Pokémon.'),
   ('lumiose', 52, 172, true, '볼의 전기 주머니가 작아서 조금이라도 전기가 넘치게 되면 자기 자신이 감전되어 버린다.', 'Pichu stores electricity in the sacs on its cheeks but discharges it inadvertently when agitated or excited. Being yet immature, the Pokémon''s handling of electricity is rather inept.'),
-  ('lumiose', 52, 10065, false, '볼의 전기 주머니가 작아서 조금이라도 전기가 넘치게 되면 자기 자신이 감전되어 버린다.', 'Pichu stores electricity in the sacs on its cheeks but discharges it inadvertently when agitated or excited. Being yet immature, the Pokémon''s handling of electricity is rather inept.'),
   ('lumiose', 53, 25, true, '서로의 꼬리를 붙여서 전기를 흐르게 하는 게 피카츄 사이의 인사법이다.', 'Possesses cheek sacs in which it stores electricity. This clever forest-dweller roasts tough berries with an electric shock before consuming them.'),
   ('lumiose', 53, 10196, false, '서로의 꼬리를 붙여서 전기를 흐르게 하는 게 피카츄 사이의 인사법이다.', 'Possesses cheek sacs in which it stores electricity. This clever forest-dweller roasts tough berries with an electric shock before consuming them.'),
   ('lumiose', 53, 10197, false, '서로의 꼬리를 붙여서 전기를 흐르게 하는 게 피카츄 사이의 인사법이다.', 'Possesses cheek sacs in which it stores electricity. This clever forest-dweller roasts tough berries with an electric shock before consuming them.'),
@@ -930,7 +929,6 @@ insert into public.pokedex_entries (dex, number, species_id, is_default, ko_desc
   ('lumiose', 209, 656, true, '섬세한 거품으로 몸을 감싸 피부를 보호한다. 태평한 척하면서 빈틈없이 주위를 살핀다.', 'It protects its skin by covering its body in delicate bubbles. Beneath its happy-go-lucky air, it keeps a watchful eye on its surroundings.'),
   ('lumiose', 210, 657, true, '누구보다도 가벼운 몸을 갖고 있다. 600m를 넘는 타워의 꼭대기까지 1분이면 올라간다.', 'Its swiftness is unparalleled. It can scale a tower of more than 2,000 feet in a minute’s time.'),
   ('lumiose', 211, 658, true, '닌자처럼 신출귀몰하다. 재빠른 움직임으로 상대를 농락하면서 물의 수리검으로 벤다.', 'It appears and vanishes with a ninja’s grace. It toys with its enemies using swift movements, while slicing them with throwing stars of sharpest water.'),
-  ('lumiose', 211, 10219, false, '닌자처럼 신출귀몰하다. 재빠른 움직임으로 상대를 농락하면서 물의 수리검으로 벤다.', 'It appears and vanishes with a ninja’s grace. It toys with its enemies using swift movements, while slicing them with throwing stars of sharpest water.'),
   ('lumiose', 211, 10519, false, '닌자처럼 신출귀몰하다. 재빠른 움직임으로 상대를 농락하면서 물의 수리검으로 벤다.', 'It appears and vanishes with a ninja’s grace. It toys with its enemies using swift movements, while slicing them with throwing stars of sharpest water.'),
   ('lumiose', 212, 870, true, '6마리가 1마리의 포켓몬이다. 대열을 바꿔가며 팀워크로 싸운다.', 'The six of them work together as one Pokémon. Teamwork is also their battle strategy, and they constantly change their formation as they fight.'),
   ('lumiose', 212, 10528, false, '6마리가 1마리의 포켓몬이다. 대열을 바꿔가며 팀워크로 싸운다.', 'The six of them work together as one Pokémon. Teamwork is also their battle strategy, and they constantly change their formation as they fight.'),
