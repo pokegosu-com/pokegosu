@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <Fonts />
       </head>
       <body className="bg-surface text-ink flex min-h-full flex-col antialiased">
-        <AppHeader app="pokedex" name="PokeGosu Pokédex" sections={sections} />
+        <AppHeader app="pokedex" name="PokeGosu Pokédex" sections={sections} picker />
         {children}
         <p className="text-muted max-w-wide mx-auto px-6 pb-2 text-center text-xs">
           비공식·비상업 팬 프로젝트입니다. 포켓몬과 관련 이미지의 권리는 Nintendo, Creatures, GAME
