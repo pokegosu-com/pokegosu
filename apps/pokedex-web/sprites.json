@@ -503,6 +503,26 @@
       "sha256": "2febe971e35464dc09326b767175292038ec9dcd964e0121dd569dd57c692cec"
     },
     {
+      "path": "sprites/pokemon/10364.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10195.png",
+      "sha256": "e1ca5bb42ffc6f0ffd40f241cad3657dc3aa223a1071cf66440068cd9c81d3e3"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10364.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10195.png",
+      "sha256": "5ae1a758cdadb716efdcf3fa1d55f6d34ce60430acd2477b2407a8c29a65cb39"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10364.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10195.png",
+      "sha256": "7e95d3641d054bd74db06a4a410836ea0c2edf35a4df62777ed311d6f2c142c9"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10364.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10195.png",
+      "sha256": "e059c5334614156103936ef38976c2c6389c9c756a3f947028a9d76dd0bedd46"
+    },
+    {
       "path": "sprites/pokemon/4.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/4.png",
       "sha256": "4e943ded73aff00aa8323800481412cf0912649d640f5ad5021e8e1e2b3e77c6"
@@ -603,6 +623,26 @@
       "sha256": "3623ecf1f80f72467d3a82fee73ab41250a1e2275dcbdc760c474a678f9f53ea"
     },
     {
+      "path": "sprites/pokemon/10365.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10196.png",
+      "sha256": "3b93e101c30d677a9c0b96835d3056c3aace5105bfc773137476666aa5b89c38"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10365.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10196.png",
+      "sha256": "0ccb47c8c4539cd0f02fe3bc1d123fe10905e8b89aba892e00f4d02c07225a89"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10365.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10196.png",
+      "sha256": "c006d878ec3176df98490486c825ccb8fdb5da2d231215fae2fa2fbc2003b91b"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10365.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10196.png",
+      "sha256": "6ca56403e0d59e4fd0e4f8b658e0c3301afc4bfc3013156cb2b8809afdbc9525"
+    },
+    {
       "path": "sprites/pokemon/7.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/7.png",
       "sha256": "1309dd0971ab7c5cd1699fa6ead8b00c9d8fa7f39e09313e697b3d31527f0517"
@@ -683,6 +723,26 @@
       "sha256": "629735895daa19ef26fde8943708f959faf293b4806139ba40e35f9f50bfd2ce"
     },
     {
+      "path": "sprites/pokemon/10366.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10197.png",
+      "sha256": "508e13fc5fd0da4b653851dfcd5c80d140be4fbf27d6d9667be59bf6dbf0f876"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10366.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10197.png",
+      "sha256": "d32e68fa0b80f254fa91d98a037992d3502d2f59dc9aa317e7d2a268a0e27222"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10366.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10197.png",
+      "sha256": "e7402b7c90c13d6732f7ab2c1aac450fe109e7f1cc3c7954455187fd51c60cf6"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10366.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10197.png",
+      "sha256": "e47af6871a516e6cd6e6b44f9a46e491f90df87c8027a9fbd480786dacd6fed6"
+    },
+    {
       "path": "sprites/pokemon/10.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10.png",
       "sha256": "a1289541d01ae034b4549742a999838967dbda70b2a194fa38271f5a24e7e132"
@@ -761,6 +821,26 @@
       "path": "sprites/pokemon/artwork/shiny/female/12.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/female/12.png",
       "sha256": "5cff09e8c460d94ef900a6298e298b44a23944364c947a397a8fc935f583a220"
+    },
+    {
+      "path": "sprites/pokemon/10367.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10198.png",
+      "sha256": "ecb9c903204fc9609a71d3604685c6ecc3695717bf23fd3dd17f06ecce12a417"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10367.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10198.png",
+      "sha256": "149a887ebf92b82994dad7f535844aab10e66facc8e9ad20f86453c0b1b1086e"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10367.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10198.png",
+      "sha256": "8737ccc970ed0d2e58f7df38ac261c672024991f4af4c343c104adf3ff97c6e2"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10367.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10198.png",
+      "sha256": "c2264fa35faa0453bac8c35220cab7d11e2201858f4aa1f2d2371bfe8b463537"
     },
     {
       "path": "sprites/pokemon/13.png",
@@ -1321,6 +1401,26 @@
       "path": "sprites/pokemon/artwork/shiny/10319.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10160.png",
       "sha256": "f0129c80deb1676640d13db5bb9d2abe877795938be2f3c0e21982874c71d93b"
+    },
+    {
+      "path": "sprites/pokemon/10368.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10199.png",
+      "sha256": "b7775ffbf921b027272d237d5612b901c2e3579d14d9d116f86a31ac1c0e7529"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10368.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10199.png",
+      "sha256": "08f71a28f9d25eda54e45cd000417c6b6a033fdcc61a5b6041feda21b40ca962"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10368.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10199.png",
+      "sha256": "185eb3b6be1084d77c0d8a722c48ed62d9705b5a0f7565f5b8881f73d3b2ae2c"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10368.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10199.png",
+      "sha256": "f4ee17f68ebbe428efe9e9f77dba699e76c6ad89628c004e927a04746ab64233"
     },
     {
       "path": "sprites/pokemon/26.png",
@@ -2143,6 +2243,26 @@
       "sha256": "f47db7b83a49a5f008f2e96d7d8196fd1ff1193c5e304474a83feae078e13d36"
     },
     {
+      "path": "sprites/pokemon/10369.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10200.png",
+      "sha256": "8aca7d974d8b0aae602751dd208d26d54311f99ccf39d4c11db382c6afdfaa68"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10369.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10200.png",
+      "sha256": "e4d3ffbf14afe959b94e2cd38cd450d603e47fc1ab07d83d8e76dc2cb1354cf2"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10369.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10200.png",
+      "sha256": "5b28a6fd344b228b63d6c5550fdeb26483392971f1d08c7aab64b52de7e4cc31"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10369.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10200.png",
+      "sha256": "a1d22cb690be411e44eae4c7f2f225d6dd3f234c931651f44864b8a4c18927ff"
+    },
+    {
       "path": "sprites/pokemon/53.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/53.png",
       "sha256": "8436b3e48656bc2a4f2c4a091fd9fb49d311dfb9b29ec1a023876ffd5b2069b2"
@@ -2581,6 +2701,26 @@
       "path": "sprites/pokemon/artwork/shiny/68.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/68.png",
       "sha256": "aebfd242145baa834292b440908c80177a100ceffbfb71a78b311c9ca52e9cca"
+    },
+    {
+      "path": "sprites/pokemon/10370.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10201.png",
+      "sha256": "ee35b85f8ab6a8106a1e6d78ce70ef13ec9064bde470c470d6aa7aba1d2717bf"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10370.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10201.png",
+      "sha256": "d4758e017327256ce94db05ba60fb871bb7618d398bbaa033b47bc2413f5ac56"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10370.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10201.png",
+      "sha256": "f22eaa41e5871a5cce5e258d52a96a55e536036d40f14cc2b693c065eb93071b"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10370.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10201.png",
+      "sha256": "92e4cc80410c46f8ce73616dd0d84fdbe49cfc5101f6ea6fd4ba6cd2d98dd858"
     },
     {
       "path": "sprites/pokemon/69.png",
@@ -3383,6 +3523,26 @@
       "sha256": "f348e46ceb4cb56467073d2fde7545bfe8ae7ca3bb2e294d0fae47cb06eec8cb"
     },
     {
+      "path": "sprites/pokemon/10371.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10202.png",
+      "sha256": "005ca640c36a2f922b1d6c8e46737a057709cd6a2db23df79dca754c0cebcca5"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10371.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10202.png",
+      "sha256": "598d824f74396955eb2cb69e2246245a5546c19b18642555ff93d9198bbfa397"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10371.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10202.png",
+      "sha256": "3de423c05811b73fed0a87f054970c3bcf835c1558786634dc52f6e04bcde427"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10371.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10202.png",
+      "sha256": "a11f859a86361a7c1932c1a180df3a334fc489b892b3d199ab9c74b2b4fd9068"
+    },
+    {
       "path": "sprites/pokemon/95.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/95.png",
       "sha256": "85b38372ca190f64c8d562a69a50c444d116e8f01d3f19891d66df11d8977ae3"
@@ -3501,6 +3661,26 @@
       "path": "sprites/pokemon/artwork/shiny/99.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/99.png",
       "sha256": "a76b8e7cd1eed927b79d4004a926821f1ac33f7b52c07cac132f148f162e366c"
+    },
+    {
+      "path": "sprites/pokemon/10372.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10203.png",
+      "sha256": "7170c98cb378f5d19d51f3629f4bb2dcbd6a43d464dbc5a0bc67b75026b4f44b"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10372.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10203.png",
+      "sha256": "d70fcaa817f6bc7890be59676c82e9f2719fd66d6ed11c8285a26a5640198bd7"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10372.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10203.png",
+      "sha256": "e9c28ad6de48f0db2618e55ce6952d4375d3c04b0e9f7f91a4c1975d0d654c8b"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10372.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10203.png",
+      "sha256": "5dff952f058220283628f1ce4e9c337283b493f6a1514b6dd74ec6e5475adfd9"
     },
     {
       "path": "sprites/pokemon/100.png",
@@ -4523,6 +4703,26 @@
       "sha256": "167b9306a22df86e98c3b0f6b5514c86255c04249670e2f3d524c31557fe1c99"
     },
     {
+      "path": "sprites/pokemon/10373.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10204.png",
+      "sha256": "db8e8d799cc748dac3dd0cd0f3d53bf56d383cfedd67763b16d26e8a16401edb"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10373.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10204.png",
+      "sha256": "9af6a3984871e70519f52ece4e7fd957bfd2ce9d24d2c463f4912e8998f537f8"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10373.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10204.png",
+      "sha256": "dc9b9cd1333efdcbeb14d093c597f69bd4f6696b1d5a70b463640fee404da18e"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10373.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10204.png",
+      "sha256": "33c81af70f2606dd0dcf8c191b98c7b4560a83a71182b1ad7d14baa00996cb52"
+    },
+    {
       "path": "sprites/pokemon/132.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/132.png",
       "sha256": "57567a3971b2262783eecf8b9d4b80a200b87069b36ab95868f664066876ea5b"
@@ -4581,6 +4781,26 @@
       "path": "sprites/pokemon/artwork/shiny/female/133.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/female/133.png",
       "sha256": "0c8718dfe61be9c47dd6ceea72a35fbe46d76d416771c2c3ce9613bc17cffbd0"
+    },
+    {
+      "path": "sprites/pokemon/10374.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10205.png",
+      "sha256": "a4ba91204405783a038c3ed4d4077bc88f086fac148d4a822494ec459afe91a6"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10374.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10205.png",
+      "sha256": "9743676148bd46982e81de6bb77148fe6b03f91f65acb3840ac10833a36def9a"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10374.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10205.png",
+      "sha256": "ddd71f10c02e40ae142a723913382a79513fb7e4d5c61334a35eb006737bdaeb"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10374.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10205.png",
+      "sha256": "c2a5c06d85954482247e63304f77cd2d06b64390eccf7c969514a64951092bc2"
     },
     {
       "path": "sprites/pokemon/134.png",
@@ -4801,6 +5021,26 @@
       "path": "sprites/pokemon/artwork/shiny/143.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/143.png",
       "sha256": "b7faa18a78cf551b95a7eadae63a03773011ffe75eb3def0a9030a7bd46fb6ee"
+    },
+    {
+      "path": "sprites/pokemon/10375.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10206.png",
+      "sha256": "e994f1a12b560b7d12a7bc717b20a53559ec166e75c9c49c648fcffc2d673a19"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10375.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10206.png",
+      "sha256": "6189ace969bb1c177296d481d4465a2c9a4f45dcb352290f398f8b56b261c8fe"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10375.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10206.png",
+      "sha256": "5d0cc46d4c8bceb45fcee12b9a8ea8b95a5de1d04c896404cb79d4cf516eee75"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10375.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10206.png",
+      "sha256": "3efed36c3319473de86fde11e18dc67764ff678efb2cc9c45f3de51ce8ba2ac5"
     },
     {
       "path": "sprites/pokemon/144.png",
@@ -17203,6 +17443,26 @@
       "sha256": "d466ce8e01d07dbb1a09b304e52de1ddec0ed4a095acee31ed374836318e1967"
     },
     {
+      "path": "sprites/pokemon/10376.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10207.png",
+      "sha256": "2389a6be5c2bd1a3538dc238693e0b21941e1937873b379dbec9510c2b4be3e0"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10376.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10207.png",
+      "sha256": "c46d98eb47ab9cea8beb9b33aed56727aa22d13408adf5ebf39f16802cdf5080"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10376.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10207.png",
+      "sha256": "ddef3aec6fe29b1c1891cdc5214e3650d5073eee56df8c16db16615f8d6029c1"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10376.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10207.png",
+      "sha256": "74efe6e12c09b414232b7229c3fc8468e029588996d7032dcbe1b82ce2bebb9e"
+    },
+    {
       "path": "sprites/pokemon/570.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/570.png",
       "sha256": "202d8d5868a7d47ae74ecf2750561c18a77b72c719b8cf4c0766aae33efe3dde"
@@ -24363,6 +24623,26 @@
       "sha256": "423dfba52415aca4500323abd8db9e4089fe357e25cb5dc211c518f49ef3d540"
     },
     {
+      "path": "sprites/pokemon/10377.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10208.png",
+      "sha256": "ac70bcd9905d18496a5133c4229a998f11c305045e95e44d7b63eb107147ae30"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10377.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10208.png",
+      "sha256": "d65587e9a8c3d080fda11047251bfc1a4d93037e57c5ec295fc39e1839647da0"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10377.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10208.png",
+      "sha256": "c388c4b165c50f18cd07e7c8c8a447cfd62807bbcf4ae34fc52b18f4e895935f"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10377.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10208.png",
+      "sha256": "015fe9c4c9b5f15a1ff489b53ce94c23e81191a9707babd54f33b6c5c88646ea"
+    },
+    {
       "path": "sprites/pokemon/810.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/810.png",
       "sha256": "954159e666600825f91a54c065698c4421145322b9b06fa98c203a227c67b4ba"
@@ -24421,6 +24701,26 @@
       "path": "sprites/pokemon/artwork/shiny/812.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/812.png",
       "sha256": "f9b8ec8e43ac938d9e28336eacd2c77498d26791849cf578be69139bf1505a52"
+    },
+    {
+      "path": "sprites/pokemon/10378.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10209.png",
+      "sha256": "b59f59a7d02c81da42aa129de0ee7e5bd8b77affa4dc97f7612305620e9fb2be"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10378.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10209.png",
+      "sha256": "3ee129328913c7a83172874cd66230db0c521b44fe4695d2e4f4f37ab17f0158"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10378.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10209.png",
+      "sha256": "60a4e9a56598593dab396533e763a25a6da7a9946ca3439e3ab2a7a3d6295e29"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10378.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10209.png",
+      "sha256": "6aae9c2f99c03fcbca0becaaa7bb55de16f6a28483ba255026c8bfc2e08c2e76"
     },
     {
       "path": "sprites/pokemon/813.png",
@@ -24483,6 +24783,26 @@
       "sha256": "3dc72a76b3224066c8f5c1190b0303adeeec863bd65e8e38486e7b8b5be5f8bb"
     },
     {
+      "path": "sprites/pokemon/10379.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10210.png",
+      "sha256": "2efd8166ef22070187040085a4947a44fd2c9febe82e3af48db046137b87c7c4"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10379.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10210.png",
+      "sha256": "1b5713603738feb313e6c13a2cf6dea0850a6d35571c9eca04f27f03e55797ee"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10379.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10210.png",
+      "sha256": "d4ad908545cdaa9cbf6aa277b5c9128ba6ad98661ac90aff89958bed9b2c470e"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10379.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10210.png",
+      "sha256": "2fef93a02e017f68ae1fcaa67e0b169e6956f392aa5a72b880b0e8df2b63c40b"
+    },
+    {
       "path": "sprites/pokemon/816.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/816.png",
       "sha256": "2920f003372e6d102b6623aa8ddeffa247006bff4cb2fefa5bca718a4d1f596f"
@@ -24541,6 +24861,26 @@
       "path": "sprites/pokemon/artwork/shiny/818.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/818.png",
       "sha256": "b3e2701ddf8336d4bf435b3adac4cab67e3ce640dfdb85d4c019afaaf2c753a1"
+    },
+    {
+      "path": "sprites/pokemon/10380.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10211.png",
+      "sha256": "4f0d8c5775cf8d1115b33515c7646123c83a9e03c18dab926b12534d16b9c69e"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10380.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10211.png",
+      "sha256": "d20cf9ebb4f219ea3d74d8d03d81b778002bdac9f46b05676e1efbbde09fb023"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10380.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10211.png",
+      "sha256": "c0b569cb7a8dfc513bd00665f713a53892e6c2daa25dac1a8a8104be3b312ad3"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10380.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10211.png",
+      "sha256": "e8adce66454bd7c650c9cd742364dc4ee5c2cfae5fc9223069f638378789b917"
     },
     {
       "path": "sprites/pokemon/819.png",
@@ -24643,6 +24983,26 @@
       "sha256": "e156ecaee550088f612124e3be4d0372a61c13671c29777baf436f91eb1fc812"
     },
     {
+      "path": "sprites/pokemon/10381.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10212.png",
+      "sha256": "27d31a7418a3982fcc006e47beb966b52f3fc2fccdf8b3c92d1c3021e3eb8544"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10381.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10212.png",
+      "sha256": "78e20de941d6ad36a63980b26a9fe27ddebf924c1d56f4fa92f85c78583634dd"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10381.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10212.png",
+      "sha256": "c7ab304638efded7c7d592ab75af2064274576a42fa08bbd51120fd07826c795"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10381.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10212.png",
+      "sha256": "b69bddc844211a87329f36648fd80dcb08e5960c527e11809227be70e0e5aa15"
+    },
+    {
       "path": "sprites/pokemon/824.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/824.png",
       "sha256": "c3a8fb22d1a6b208aafe0948a631c075a7fb5247e9ff4ad77c261ad7a8c2c164"
@@ -24701,6 +25061,26 @@
       "path": "sprites/pokemon/artwork/shiny/826.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/826.png",
       "sha256": "7935e74adc5ccb6ef96dba787a2799f367bca303af8a33d781ce150be62d947b"
+    },
+    {
+      "path": "sprites/pokemon/10382.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10213.png",
+      "sha256": "cad06c68f209869edda0d3c8dfcf05bea8e47f7863a4e16f5d98900543f6fcff"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10382.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10213.png",
+      "sha256": "4846973cf9211700d7a0508e88ecf3fbe5b4e935bac219062ff537e42046fbca"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10382.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10213.png",
+      "sha256": "5a7198ef0922766db3241189b6e1f6290bddd582512bd7a9c4344ce2cb5db77c"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10382.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10213.png",
+      "sha256": "854ec266be48f7aa09e9ed62881eb368f213bf9eee110baf7da6d4aaa14626f7"
     },
     {
       "path": "sprites/pokemon/827.png",
@@ -24863,6 +25243,26 @@
       "sha256": "c4163acd681eb6750bcccfcf2a7d094f515b5a4a3aa71a2b5d04ae8f59bec4cc"
     },
     {
+      "path": "sprites/pokemon/10383.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10214.png",
+      "sha256": "e272073bdf3ca663d0eafb02256081684abceaf9bb672c61f10de81deb1b796b"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10383.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10214.png",
+      "sha256": "a88e271f8b75cac3ff8283f145ca88b1eac46f9cfe4285e5341f172f5d14bf48"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10383.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10214.png",
+      "sha256": "5588788f1dddba4ffc23a73195612afb22fd004f470df58b3742af165d6357a1"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10383.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10214.png",
+      "sha256": "bfc184e593813d9d2f3330b2ffcb4830d3ea58fd8d70113d9308ad8251174543"
+    },
+    {
       "path": "sprites/pokemon/835.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/835.png",
       "sha256": "67ff78bc455dd21f21587c311df9fcbdf48b23bd593080d657bc1f6ac60f0e6c"
@@ -24963,6 +25363,26 @@
       "sha256": "3f39c3ed503baf2c152785f850756ffb133a003dd68bcd6bdec30f5dba7ea144"
     },
     {
+      "path": "sprites/pokemon/10384.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10215.png",
+      "sha256": "8e62061e64fae8907afbd68ec2bab30bd7456158c615a6a3ecec1b77640555df"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10384.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10215.png",
+      "sha256": "b1301762ef6571892e7a78d21c81258e3b4f2f7fe394197397ee30d314f42ab5"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10384.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10215.png",
+      "sha256": "5cf40a3817a8872292ac68a9269cc918b9d5bf07a79d8bf523598411e06ee006"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10384.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10215.png",
+      "sha256": "07010b49d9933d0e1665592c4b6d5a0f35efa2558c2911d5505c351f12f8707e"
+    },
+    {
       "path": "sprites/pokemon/840.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/840.png",
       "sha256": "7afc8c25bef9e8aa846b6f5a90bfe4f131ce8eafad18bdc63baac2ca3f20e0e7"
@@ -25003,6 +25423,26 @@
       "sha256": "64656a0664eeaabd51ae1aa73998325a47e46228fcfa9f75f39dcf49052e0743"
     },
     {
+      "path": "sprites/pokemon/10385.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10216.png",
+      "sha256": "784383b9f09a11e58d50f677673aa3022e7c16da35f105a3cf6166dc490b0c25"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10385.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10216.png",
+      "sha256": "fb89651bcc3e1697755db25678168bcf6143301dda7e6b998f8ce86d0ac75487"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10385.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10216.png",
+      "sha256": "c79693acc5f29b9c3f8423ebd6478f87192c1c9d113908e0e901069eb46c02d7"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10385.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10216.png",
+      "sha256": "3fce38ba4325c662ff440c583a498fc7c194013fa89ac21095f6140a208146e7"
+    },
+    {
       "path": "sprites/pokemon/842.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/842.png",
       "sha256": "48328eda48b6fe3d29275ce6bf348724e55c4d159aac2a501a4a19e6050a43c3"
@@ -25021,6 +25461,26 @@
       "path": "sprites/pokemon/artwork/shiny/842.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/842.png",
       "sha256": "c310fcb397a5ecc0e700c4720c9831939c8dcf8b8085eadc4bdd1169593008c3"
+    },
+    {
+      "path": "sprites/pokemon/10386.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10217.png",
+      "sha256": "784383b9f09a11e58d50f677673aa3022e7c16da35f105a3cf6166dc490b0c25"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10386.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10217.png",
+      "sha256": "fb89651bcc3e1697755db25678168bcf6143301dda7e6b998f8ce86d0ac75487"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10386.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10217.png",
+      "sha256": "8271853dc6993bfef3259c1358b2d89963dca92a9b6604a4fe89a812be5be271"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10386.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10217.png",
+      "sha256": "4960893989b37c16dc830b6865d03267aaa24b822d6c235042f6b47af71435e2"
     },
     {
       "path": "sprites/pokemon/843.png",
@@ -25061,6 +25521,26 @@
       "path": "sprites/pokemon/artwork/shiny/844.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/844.png",
       "sha256": "cfebc3f6985ca824d73a17828508bbe05bd0c760798a62f7824e50956e4f7621"
+    },
+    {
+      "path": "sprites/pokemon/10387.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10218.png",
+      "sha256": "7a7a1c6fcb6bc033051ef0f65002e7d80d0ff88597d5232eac87aa00980a4a03"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10387.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10218.png",
+      "sha256": "1fcf6e0f9821394329995d85d4833c50cb11b0dcf0335a1a770156bb356dfc02"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10387.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10218.png",
+      "sha256": "ca44fb054ab91e800e550680ab13def2cc0d0a98c2eb08233bdd68418070197b"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10387.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10218.png",
+      "sha256": "9d1ef0fd81eaeeba76ab10a88185869faf918c0bfc04bd18898324d8bcfac53e"
     },
     {
       "path": "sprites/pokemon/845.png",
@@ -25223,6 +25703,46 @@
       "sha256": "036749ea1fc09a63fb15885c163116963c37d3747b85994cb7f82dbb9937e34a"
     },
     {
+      "path": "sprites/pokemon/10388.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10219.png",
+      "sha256": "b09692c7c039a5f16b98914f50c3d3e6d31adf39266f3b3a2aee60090b48e86e"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10388.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10219.png",
+      "sha256": "12319ed5c9bc67e2abc71e4ff4b16c254b77062f0f60b669675c8c57511c541c"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10388.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10219.png",
+      "sha256": "0841e8a50ec9acabb8136506b7fed4f2850a3023ba1c2fe94036e752991ec49b"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10388.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10219.png",
+      "sha256": "d811462007efe1bd15d62fa278250fc45052405c0629077c6661660f09ce83c3"
+    },
+    {
+      "path": "sprites/pokemon/10397.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10228.png",
+      "sha256": "b09692c7c039a5f16b98914f50c3d3e6d31adf39266f3b3a2aee60090b48e86e"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10397.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10228.png",
+      "sha256": "12319ed5c9bc67e2abc71e4ff4b16c254b77062f0f60b669675c8c57511c541c"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10397.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10228.png",
+      "sha256": "331a518d4da2e6060548c314642a9109f64d6d0eb538f8961684095ad4c9574f"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10397.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10228.png",
+      "sha256": "fe43069a4276d24b63481e6c351f72f59829c98d91fe171390ad884e13ba5c8b"
+    },
+    {
       "path": "sprites/pokemon/850.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/850.png",
       "sha256": "d33949508ae3330d2de968c7dccf2945e2adb1de92214225393a75dc45c4ee18"
@@ -25261,6 +25781,26 @@
       "path": "sprites/pokemon/artwork/shiny/851.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/851.png",
       "sha256": "1b86f1e68c29035c37686a062081d3bcabb5e5a303fa18e284d0d796fc5207fb"
+    },
+    {
+      "path": "sprites/pokemon/10389.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10220.png",
+      "sha256": "5abdc800cdaeb3d5c3cb94b5437209892977f452756f04d539f835b671897052"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10389.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10220.png",
+      "sha256": "95cd1f4a53e5373e885aecc03dc7b76af0537f0d24a7b6d77d5a3a12cd686664"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10389.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10220.png",
+      "sha256": "3658d140021d92d86df7930fc9d015e2f595f21bad527d23a1b844f08ced38a8"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10389.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10220.png",
+      "sha256": "54fb234b9a7e4f5bfa1767aa50d573a45ea199398fdc3fd9e208abf48ef69fe3"
     },
     {
       "path": "sprites/pokemon/852.png",
@@ -25403,6 +25943,26 @@
       "sha256": "2920c98e40aa3888c84eaf7b6a977daa41bfed437296d2b2ffefac537e52b446"
     },
     {
+      "path": "sprites/pokemon/10390.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10221.png",
+      "sha256": "a574e6244222f77c1b29162c64be671c80f86fcaf8678f920e89eaaaa48d5c85"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10390.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10221.png",
+      "sha256": "2e82a7efd422aa17d750df9a7a3472ed29fb0cae41d30ecb12f20a02adbb215f"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10390.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10221.png",
+      "sha256": "a52bb4d412756233f20b06acd49d2bf9305e4eea3d67e82290e38dc560a894aa"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10390.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10221.png",
+      "sha256": "f9eb682f19bbd10e2698966c1abb395bf4520afc0e2ba036b207e84bbe96b058"
+    },
+    {
       "path": "sprites/pokemon/859.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/859.png",
       "sha256": "ca0465dbbd9fb912338a740ee617fd9a09c476ff42692789acc92fc88ef9ea0d"
@@ -25461,6 +26021,26 @@
       "path": "sprites/pokemon/artwork/shiny/861.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/861.png",
       "sha256": "62392a9f2f29806abcfaa01cb806c846854964022e40e762c5a157d2760cc59d"
+    },
+    {
+      "path": "sprites/pokemon/10391.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10222.png",
+      "sha256": "89ba810ea7533e1a9e3528ab5694bf6eae3e88566eda1190391709aae4fb86ed"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10391.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10222.png",
+      "sha256": "bdc9e57b64fd33f5060d877020546b948d64f143b4ddd3ec8a11cbbe1cb46bed"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10391.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10222.png",
+      "sha256": "92cb5d6ed29026c268b32b5b5b2def3bbe4d9f6570cd911308c7b49fe5a31d00"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10391.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10222.png",
+      "sha256": "4df0301f9617a28825b50bb414961bad7108747ba26f67f4c19b77a64cedb87f"
     },
     {
       "path": "sprites/pokemon/862.png",
@@ -25781,6 +26361,26 @@
       "path": "sprites/pokemon/artwork/shiny/10353.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/869-rainbow-swirl-strawberry-sweet.png",
       "sha256": "adfefab5325da64851534cc2e0e126c6094e493a5ea407fa9fd6919f86f17ef4"
+    },
+    {
+      "path": "sprites/pokemon/10392.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10223.png",
+      "sha256": "8fe4e5050306428510f4233d453aeb5c5022ad46866be93abe3053f027f8769b"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10392.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10223.png",
+      "sha256": "923c84d60384e35f7ed45002a0398e0cdc28f9e56e0689ee8989274150b55797"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10392.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10223.png",
+      "sha256": "e957da99556244f421df99cd5edd4322a8bf34cb49db0fc9a6cbb8e74398b873"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10392.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10223.png",
+      "sha256": "ff27f0d8693078fd009e4605b30843f2eef1858030cc0cfb68d8f5562f12eadd"
     },
     {
       "path": "sprites/pokemon/10449.png",
@@ -27123,6 +27723,26 @@
       "sha256": "d81af5ecc15113863a1f44d1ae48cefd81079d939387a67c1d2931a646a0f61a"
     },
     {
+      "path": "sprites/pokemon/10393.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10224.png",
+      "sha256": "c59fea62b53d0744427cae9d5229c1137e3c0ccc8d49a2aa63951f886d31a0c6"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10393.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10224.png",
+      "sha256": "3846743ee577cf2465d3a38618441a074c3640018306fc98b7129981f67819f5"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10393.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10224.png",
+      "sha256": "6df25086277380d0af3301910037de96c1b5fd926f6ad37544d9d39f331e7095"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10393.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10224.png",
+      "sha256": "fff2ebc9137a6987541a9eb3af58e69db16643b31dcb9007acae9faf03fcf426"
+    },
+    {
       "path": "sprites/pokemon/880.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/880.png",
       "sha256": "42135d591986812a79843994a90ee10d258118f7394256a54271f9d6a94d9a51"
@@ -27221,6 +27841,26 @@
       "path": "sprites/pokemon/artwork/shiny/884.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/884.png",
       "sha256": "d37b3a2f4852631c835f3eca7ea8cc2b5b572ed1e55ceb2824bb7e41c7c1ee29"
+    },
+    {
+      "path": "sprites/pokemon/10394.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10225.png",
+      "sha256": "b535395f57eaef9e50bba1bc151d77dc0878110ea4a14cbbdad04f7396ee8bf6"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10394.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10225.png",
+      "sha256": "489acc030ea9d51910fb128ea865138f7cc302072755b2ead4e5ef4e6a324036"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10394.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10225.png",
+      "sha256": "aff7b545e3774a947c6307d1025680b0ffbfbf306b34ccbda7ac0edfadfa901a"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10394.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10225.png",
+      "sha256": "fbe9dd2f636ffab5140129cb7deda37d30410d576c977e48dec5e47c8414c4d2"
     },
     {
       "path": "sprites/pokemon/885.png",
@@ -27441,6 +28081,46 @@
       "path": "sprites/pokemon/artwork/shiny/10360.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10191.png",
       "sha256": "d061eb234a17f82edb9174dcdfae4243fa4fb34f1ceb9e50a51e72e6184b5dba"
+    },
+    {
+      "path": "sprites/pokemon/10395.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10226.png",
+      "sha256": "825a561be88faf2c517ccf5fd361562e7a459168abb7e9fa08bb6368ba63c8b2"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10395.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10226.png",
+      "sha256": "2d85486ea1e87b4fc711cf6c0aec406fbf3bad31222fc8d28bdbcfff22c24211"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10395.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10226.png",
+      "sha256": "d1385a57dfc5b273b2ebf38710135502e140e4c50f78607e46410e4354d7c387"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10395.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10226.png",
+      "sha256": "3a60cdb3987279d3d352fe9e35b6a6440f0b8536df70527b97abafac1f56075c"
+    },
+    {
+      "path": "sprites/pokemon/10396.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/10227.png",
+      "sha256": "192be9a161f0d753933884e05a94efca42b1674daeede80a9fd2fa00d1590661"
+    },
+    {
+      "path": "sprites/pokemon/shiny/10396.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/shiny/10227.png",
+      "sha256": "f3d88e96c12d0424cc5cd4b92891af3839822999b1182e0d362c28df5e37594d"
+    },
+    {
+      "path": "sprites/pokemon/artwork/10396.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/10227.png",
+      "sha256": "3e0b1a597437e965f8e6977a151b6b479250602aa6a2ec8d35a5b2a149b3d475"
+    },
+    {
+      "path": "sprites/pokemon/artwork/shiny/10396.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/pokemon/other/home/shiny/10227.png",
+      "sha256": "9cdd0fdea5a1457ac42e5038dfda09f2c498e666d94523dab3ea2630fe19a1ef"
     },
     {
       "path": "sprites/pokemon/893.png",

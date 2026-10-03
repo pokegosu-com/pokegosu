@@ -68,10 +68,9 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  * could never leave them. Battle Bond Greninja and Power Construct Zygarde
  * are Greninja and Zygarde with another ability, and look the same; Complete
  * Zygarde, which Zygarde becomes, stays, as later games have it too, but
- * Ash-Greninja is only Sun and Moon's and Ultra Sun and Ultra Moon's. So is
- * Gigantamax only Sword and Shield's; its forms, whose names all end in
- * -gmax, are left out by that rather than listed here. Minior's shell is the same whatever its
- * core, so one Meteor Form stands for the seven, beside the seven cores.
+ * Ash-Greninja is only Sun and Moon's and Ultra Sun and Ultra Moon's.
+ * Minior's shell is the same whatever its core, so one Meteor Form stands for
+ * the seven, beside the seven cores.
  * Eternamax Eternatus is met in one battle and never caught. An Antique Form
  * Sinistea or Polteageist is a Phony one with a mark under its pot, and
  * Pokémon HOME shows the two alike; so is an Artisan Poltchageist or a
@@ -183,6 +182,10 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-dark': '악타입',
   'arceus-fairy': '페어리타입',
   'rockruff-own-tempo': '마이페이스',
+  'toxtricity-amped-gmax': '하이한 모습 거다이맥스',
+  'toxtricity-low-key-gmax': '로우한 모습 거다이맥스',
+  'urshifu-single-strike-gmax': '일격의 태세 거다이맥스',
+  'urshifu-rapid-strike-gmax': '연격의 태세 거다이맥스',
   'dialga-origin': '오리진폼',
   'palkia-origin': '오리진폼',
   'basculin-white-striped': '백색근의 모습',
@@ -252,6 +255,9 @@ function alcremieKoNames(): Record<string, string> {
     ),
   )
 }
+
+/** Gigantamax, as the games name it in Korean; PokéAPI names it in English only. */
+const GIGANTAMAX_KO = '거다이맥스'
 
 /** A Hisuian form, as the games name it in Korean; PokéAPI names it in English only. */
 const HISUIAN_KO = '히스이의 모습'
@@ -1147,7 +1153,7 @@ async function main() {
     for (const variety of s.varieties) {
       const pokemon = await get<Pokemon>(variety.pokemon.url)
       for (const form of await Promise.all(pokemon.forms.map((f) => get<Form>(f.url)))) {
-        if (LEFT_OUT_FORMS.has(form.name) || form.name.endsWith('-gmax')) continue
+        if (LEFT_OUT_FORMS.has(form.name)) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
         if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
@@ -1267,6 +1273,8 @@ async function main() {
       const formNames: Record<string, string> =
         kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
+      else if (kept.length > 1 && form.name.endsWith('-gmax') && !formNames.ko)
+        formNames.ko = GIGANTAMAX_KO
       else if (kept.length > 1 && form.name.endsWith('-hisui') && !formNames.ko)
         formNames.ko = HISUIAN_KO
       // PokéAPI names a few default forms nothing, as Pichu's; a screen calls

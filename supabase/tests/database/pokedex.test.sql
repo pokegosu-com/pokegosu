@@ -26,15 +26,15 @@ select is((select count(*)::int from public.pokedex_species where generation = 8
 select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
   'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 383,
-  'and every other form those games had, Mega Evolutions, Alolan, Galarian, Hisuian and Paldean forms too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 417,
+  'and every other form those games had, Mega Evolutions, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax too, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
-      where slug ~ '(totem|starter|battle-bond|power-construct|gmax|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
+      where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
          or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'pichu-spiky-eared', 'greninja-ash',
                      'eternatus-eternamax', 'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
          or slug ~ '^(koraidon|miraidon)-' and slug not in ('koraidon-apex-build', 'miraidon-ultimate-mode') $$,
-  'but no Totem, Partner, Gigantamax, one game''s form, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
+  'but no Totem, Partner, one game''s form, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
 select is_empty(
   $$ select slug from public.pokedex_species where slug like '%-mega%' and generation = 9
          or slug in ('dragonite-mega', 'absol-mega-z', 'raichu-mega-x') $$,
@@ -229,9 +229,9 @@ select is(
 select is(
   (select string_agg(slug || ':' || ko_form_name, ' ' order by id)
      from public.pokedex_species
-    where slug in ('urshifu-rapid-strike', 'alcremie-matcha-cream-love-sweet')),
-  'urshifu-rapid-strike:연격의 태세 alcremie-matcha-cream-love-sweet:밀키말차 하트',
-  'Rapid Strike Urshifu is a look, and each Alcremie is named for its cream and its sweet');
+    where slug in ('charizard-gmax', 'alcremie-matcha-cream-love-sweet', 'urshifu-rapid-strike-gmax')),
+  'charizard-gmax:거다이맥스 urshifu-rapid-strike-gmax:연격의 태세 거다이맥스 alcremie-matcha-cream-love-sweet:밀키말차 하트',
+  'Gigantamax is a look, and each Alcremie is named for its cream and its sweet');
 select is(
   (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
      from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
