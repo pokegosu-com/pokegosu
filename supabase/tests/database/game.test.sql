@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(128);
+select plan(133);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 468,
-  'a national egg holds the first form of every family up to Generation VIII');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 469,
+  'a national egg holds the first form of every family up to Generation VIII, Enamorus too');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -140,6 +140,15 @@ select is(
   'slowpoke:uncommon grookey:very-rare wooloo:common applin:rare sinistea-phony:rare dracozolt:rare'
     || ' duraludon:very-rare kubfu:mythic',
   'Generation VIII''s starters, Dreepy and Duraludon are very rare, Applin, Sinistea and its fossils rare, and Kubfu mythic');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'hisui'), 111,
+  'a Hisui egg holds the first form of every family Legends: Arceus''s pokedex lists');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'hisui' and s.slug in ('stantler', 'basculin-red-striped', 'enamorus-incarnate')),
+  'stantler:uncommon basculin-red-striped:uncommon enamorus-incarnate:mythic',
+  'Enamorus is mythic, and the families from before keep their tiers');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -151,7 +160,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 74), ('uncommon', 194), ('rare', 74), ('very-rare', 41), ('mythic', 85) $$,
+  $$ values ('common', 74), ('uncommon', 194), ('rare', 74), ('very-rare', 41), ('mythic', 86) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -216,6 +225,15 @@ select is(
 select is(
   pg_temp.next(pg_temp.mon('koffing', 'male', 35, 'galar')) || ' ' || pg_temp.next(pg_temp.mon('koffing', 'male', 35)),
   'weezing-galar weezing', 'a Galar egg''s Koffing becomes Galarian Weezing, and any other Weezing');
+select is(
+  pg_temp.next(pg_temp.mon('quilava', 'male', 36, 'hisui')) || ' ' || pg_temp.next(pg_temp.mon('quilava', 'male', 36))
+    || ' ' || pg_temp.next(pg_temp.mon('goomy', 'male', 40, 'hisui')) || ' ' || pg_temp.next(pg_temp.mon('goomy', 'male', 40)),
+  'typhlosion-hisui typhlosion sliggoo-hisui sliggoo',
+  'a Hisui egg''s Quilava becomes Hisuian Typhlosion, and its Goomy Hisuian Sliggoo, and any other the default');
+select is(
+  coalesce(pg_temp.next(pg_temp.mon('voltorb-hisui', 'male', 30)), '-') || ' '
+    || coalesce(pg_temp.next(pg_temp.mon('zorua-hisui', 'male', 30)), '-'),
+  '- zoroark-hisui', 'Hisuian Voltorb never becomes Electrode, and Hisuian Zorua becomes Hisuian Zoroark');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -586,6 +604,13 @@ select is(
     || pg_temp.hatches('national'),
   'alola:meowth-alola galar:meowth-galar kanto:meowth national:meowth',
   'Meowth hatches Alolan from an Alola egg, Galarian from a Galar egg, and as itself from any other');
+
+-- With Basculin alone in them, a Hisui egg hatches the Basculin Hisui has.
+delete from public.coder_egg_species where egg_kind in ('hisui', 'national');
+insert into public.coder_egg_species (egg_kind, species_id) values ('hisui', 550), ('national', 550);
+select is(pg_temp.hatches('hisui') || ' ' || pg_temp.hatches('national'),
+  'hisui:basculin-white-striped national:basculin-red-striped',
+  'Basculin hatches White-Striped from a Hisui egg, and as itself from any other');
 
 -- With Indeedee alone in it, a national egg hatches each Indeedee as its
 -- gender's form.

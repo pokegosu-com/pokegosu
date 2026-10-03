@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(60);
+select plan(64);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -21,11 +21,11 @@ select is((select count(*)::int from public.pokedex_species where generation = 6
   'and every Generation VI species');
 select is((select count(*)::int from public.pokedex_species where generation = 7 and form_of is null), 88,
   'and every Generation VII species');
-select is((select count(*)::int from public.pokedex_species where generation = 8 and form_of is null), 89,
-  'and every Generation VIII species Sword and Shield had');
+select is((select count(*)::int from public.pokedex_species where generation = 8 and form_of is null), 96,
+  'and every Generation VIII species, Legends: Arceus''s too');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 378,
-  'and every other form those games had, Mega Evolutions, Alolan and Galarian forms and Gigantamax too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 399,
+  'and every other form those games had, Mega Evolutions, Alolan, Galarian and Hisuian forms and Gigantamax too, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
@@ -33,13 +33,13 @@ select is_empty(
                      'sinistea-antique') $$,
   'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak, look alike or one battle''s form');
 select is_empty(
-  $$ select slug from public.pokedex_species where slug like '%-hisui' or id > 898 and form_of is null $$,
-  'and nothing of Hisui''s yet');
+  $$ select slug from public.pokedex_species where slug in ('ursaluna-bloodmoon') or id > 905 and form_of is null $$,
+  'but nothing of Generation IX''s, Bloodmoon Ursaluna among it');
 select is(
   (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
   8, 'Pikachu''s caps are in, as they came to more than one game');
 
-select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 898, 'the national pokedex lists them');
+select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 905, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
 select is((select count(*)::int from public.pokedex_entries where dex = 'johto' and is_default), 251, 'Johto''s the first 251, in its own order');
 select is((select number from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
@@ -76,13 +76,22 @@ select is(
     where e.dex = 'galar' and e.is_default and e.number in (1, 400, 401, 584)),
   'grookey:1 eternatus:400 slowpoke:401 calyrex:584',
   'Galar''s 400, then those the Isle of Armor and the Crown Tundra add, each once');
+select is((select count(*)::int from public.pokedex_entries where dex = 'hisui' and is_default), 242,
+  'and Legends: Arceus''s 242');
+select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'hisui' and e.is_default and e.number in (1, 50, 234, 242)),
+  'rowlet:1 wyrdeer:50 enamorus-incarnate:234 darkrai:242',
+  'from Rowlet to Darkrai, Hisui''s own species among them');
 select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
       and not exists (select 1 from public.pokedex_entries e
                        where e.species_id = s.id
-                         and e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'])[s.generation])),
-  0, 'every species is in its own generation''s regional pokedex');
+                         and (e.dex = (array['kanto', 'johto', 'hoenn', 'sinnoh', 'unova', 'kalos', 'alola', 'galar'])[s.generation]
+                              or e.dex = 'hisui' and s.generation = 8))),
+  0, 'every species is in its own generation''s regional pokedex, Generation VIII''s in Galar''s or Hisui''s');
 
 select isnt(
   (select ko_description from public.pokedex_entries where dex = 'national' and number = 6 and is_default),
@@ -212,6 +221,25 @@ select is(
     where slug in ('charizard-gmax', 'alcremie-matcha-cream-love-sweet', 'urshifu-rapid-strike-gmax')),
   'charizard-gmax:거다이맥스 urshifu-rapid-strike-gmax:연격의 태세 거다이맥스 alcremie-matcha-cream-love-sweet:밀키말차 하트',
   'Gigantamax is a look, and each Alcremie is named for its cream and its sweet');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('wyrdeer', 'ursaluna', 'basculegion-female', 'overqwil', 'typhlosion-hisui',
+                     'arcanine-hisui', 'goodra-hisui')),
+  'wyrdeer:stantler:agile-style-move-using-psyshield-bash-20-times'
+    || ' ursaluna:ursaring:use-item-peat-block-full-moon'
+    || ' overqwil:qwilfish-hisui:level-up-knowing-barb-barrage'
+    || ' arcanine-hisui:growlithe-hisui:use-item-fire-stone'
+    || ' typhlosion-hisui:quilava:level-up-36-in-hisui'
+    || ' goodra-hisui:sliggoo-hisui:level-up-50-in-rain'
+    || ' basculegion-female:basculin-white-striped:recoil-damage-female-after-294-damage',
+  'a method keeps what Legends: Arceus adds, a move used in a style and a full moon, but Overqwil''s as Scarlet and Violet have it');
+select is(
+  (select string_agg(slug || ':' || ko_form_name, ' ' order by id)
+     from public.pokedex_species
+    where slug in ('growlithe-hisui', 'dialga-origin', 'basculin-white-striped', 'enamorus-therian')),
+  'growlithe-hisui:히스이의 모습 dialga-origin:오리진폼 basculin-white-striped:백색근의 모습 enamorus-therian:영물폼',
+  'Hisuian forms, Origin Dialga, White-Striped Basculin and Therian Enamorus are looks');
 
 select is(
   (select string_agg(s.slug || ':' || e.is_default, ' ' order by s.id)
