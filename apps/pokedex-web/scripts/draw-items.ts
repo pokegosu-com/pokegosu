@@ -547,29 +547,43 @@ function metalAlloy(): Shape[] {
 }
 
 /**
- * A breastplate, as Charcadet takes one of two to become Armarouge or
- * Ceruledge: rounded at the shoulders and coming to a point, ridged down the
- * middle and set with a gem.
+ * A suit of armour, as Charcadet takes one of two to become Armarouge or
+ * Ceruledge: a cuirass seen from the front, a notch for the neck, a
+ * pauldron on each shoulder and a belt above the skirt of plates, ridged
+ * down the middle and set with a gem on the chest.
  */
 function armor(plate: Palette, gem: Palette): Shape[] {
-  const outline: [number, number][] = [
-    [6, 7],
-    [12, 5],
-    [18, 5],
-    [24, 7],
-    [24, 15],
-    [15, 26],
-    [6, 15],
+  const body: [number, number][] = [
+    [9, 7],
+    [12.5, 7],
+    [15, 10],
+    [17.5, 7],
+    [21, 7],
+    [22, 12],
+    [20.5, 19],
+    [22.5, 26],
+    [7.5, 26],
+    [9.5, 19],
+    [8, 12],
   ]
+  const shaded = (x: number, y: number) => {
+    // Rounded across the chest: lit to the left of the ridge, shaded right.
+    const u = (x - 15) / 8
+    return tone(plate, lit([u, (y - 15) / 16, Math.sqrt(Math.max(0, 1 - u * u))]))
+  }
   return [
-    (x, y) => {
-      if (!inside(x, y, outline)) return null
-      // Lit from the left of the ridge, shaded to the right of it.
-      const u = (x - 15) / 9
-      return tone(plate, lit([u, (y - 14) / 14, Math.sqrt(Math.max(0, 1 - u * u))]))
-    },
-    tube(plate, 15, 7, 15, 22, 0.6),
-    ball(gem, 15, 12, 2.6, 2.6),
+    (x, y) => (inside(x, y, body) ? shaded(x, y) : null),
+    // The ridge down the chest, and the belt and the skirt's seams below it.
+    (x, y) => (inside(x, y, body) && Math.abs(x - 15) < 0.5 && y > 10 && y < 19 ? plate[3] : null),
+    (x, y) => (inside(x, y, body) && Math.abs(y - 19.5) < 1 ? plate[3] : null),
+    (x, y) =>
+      inside(x, y, body) && y > 20.5 && [11.5, 15, 18.5].some((sx) => Math.abs(x - sx) < 0.5)
+        ? plate[2]
+        : null,
+    // The pauldrons, over the shoulders.
+    ball(plate, 6.6, 11, 4.2, 3.6),
+    ball(plate, 23.4, 11, 4.2, 3.6),
+    ball(gem, 15, 14, 2.2, 2.2),
   ]
 }
 
