@@ -64,9 +64,13 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  * own, stays a form. Cosplay Pikachu is only Omega Ruby's and Alpha
  * Sapphire's, and never leaves them; so are Totem Pokémon only Sun and Moon's
  * and Ultra Sun and Ultra Moon's, and Partner Pikachu and Eevee only Let's
- * Go's. Battle Bond Greninja and Power Construct Zygarde are Greninja and
- * Zygarde with another ability, and look the same; Ash-Greninja and Complete
- * Zygarde, which they become, stay. Minior's shell is the same whatever its
+ * Go's. Spiky-eared Pichu came to one event in HeartGold and SoulSilver and
+ * could never leave them. Battle Bond Greninja and Power Construct Zygarde
+ * are Greninja and Zygarde with another ability, and look the same; Complete
+ * Zygarde, which Zygarde becomes, stays, as later games have it too, but
+ * Ash-Greninja is only Sun and Moon's and Ultra Sun and Ultra Moon's. So is
+ * Gigantamax only Sword and Shield's; its forms, whose names all end in
+ * -gmax, are left out by that rather than listed here. Minior's shell is the same whatever its
  * core, so one Meteor Form stands for the seven, beside the seven cores.
  * Eternamax Eternatus is met in one battle and never caught. An Antique Form
  * Sinistea or Polteageist is a Phony one with a mark under its pot, and
@@ -77,6 +81,7 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  */
 const LEFT_OUT_FORMS = new Set([
   'arceus-unknown',
+  'pichu-spiky-eared',
   'frillish-female',
   'jellicent-female',
   'pyroar-female',
@@ -101,6 +106,7 @@ const LEFT_OUT_FORMS = new Set([
   'mimikyu-totem-busted',
   'kommo-o-totem',
   'greninja-battle-bond',
+  'greninja-ash',
   'zygarde-10-power-construct',
   'zygarde-50-power-construct',
   'minior-orange-meteor',
@@ -141,13 +147,6 @@ const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa', 'mothim'])
 const ONLY_DEFAULT_EVOLVES = new Set(['vivillon', 'alcremie'])
 
 /**
- * Forms Pokémon HOME never held, so it has no render of them; they take the
- * official artwork instead. Spiky-eared Pichu came to one event in Generation
- * IV and could never leave it.
- */
-const NOT_IN_HOME = new Set(['pichu-spiky-eared'])
-
-/**
  * Forms no game lets be shiny, so Pokémon HOME has no shiny render of them:
  * their shiny is their plain look. Pikachu in a cap came to events only,
  * never shiny.
@@ -165,7 +164,6 @@ const NEVER_SHINY = new Set([
 
 /** PokéAPI names these forms in English only. */
 const FORM_KO_NAMES: Record<string, string> = {
-  'pichu-spiky-eared': '삐쭉귀',
   'arceus-normal': '노말타입',
   'arceus-fighting': '격투타입',
   'arceus-flying': '비행타입',
@@ -185,10 +183,6 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-dark': '악타입',
   'arceus-fairy': '페어리타입',
   'rockruff-own-tempo': '마이페이스',
-  'toxtricity-amped-gmax': '하이한 모습 거다이맥스',
-  'toxtricity-low-key-gmax': '로우한 모습 거다이맥스',
-  'urshifu-single-strike-gmax': '일격의 태세 거다이맥스',
-  'urshifu-rapid-strike-gmax': '연격의 태세 거다이맥스',
   'dialga-origin': '오리진폼',
   'palkia-origin': '오리진폼',
   'basculin-white-striped': '백색근의 모습',
@@ -258,9 +252,6 @@ function alcremieKoNames(): Record<string, string> {
     ),
   )
 }
-
-/** Gigantamax, as the games name it in Korean; PokéAPI names it in English only. */
-const GIGANTAMAX_KO = '거다이맥스'
 
 /** A Hisuian form, as the games name it in Korean; PokéAPI names it in English only. */
 const HISUIAN_KO = '히스이의 모습'
@@ -373,7 +364,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261003130001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261003150001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -1073,6 +1064,32 @@ async function writtenBefore(): Promise<Set<string>> {
   return written
 }
 
+/**
+ * Every pokedex_species id the earlier generated migrations wrote and did not
+ * delete after.
+ */
+async function speciesBefore(): Promise<Set<number>> {
+  const dir = new URL('./', `file://${MIGRATION}`)
+  const earlier = (await readdir(dir))
+    .filter((f) => f.endsWith('_pokedex_data.sql') && f < MIGRATION.split('/').pop()!)
+    .sort()
+  const ids = new Set<number>()
+  for (const file of earlier) {
+    const text = await readFile(new URL(file, dir), 'utf8')
+    for (const [, values] of text.matchAll(
+      /^insert into public\.pokedex_species .*? values\n([\s\S]*?)\non conflict/gm,
+    )) {
+      for (const [, id] of values.matchAll(/^  \((\d+), /gm)) ids.add(Number(id))
+    }
+    for (const [, list] of text.matchAll(
+      /^delete from public\.pokedex_species where id in \(([^)]*)\);/gm,
+    )) {
+      for (const id of list.split(', ')) ids.delete(Number(id))
+    }
+  }
+  return ids
+}
+
 /** An upsert of the rows not written before, or nothing if there are none. */
 function upsert(
   written: Set<string>,
@@ -1130,7 +1147,7 @@ async function main() {
     for (const variety of s.varieties) {
       const pokemon = await get<Pokemon>(variety.pokemon.url)
       for (const form of await Promise.all(pokemon.forms.map((f) => get<Form>(f.url)))) {
-        if (LEFT_OUT_FORMS.has(form.name)) continue
+        if (LEFT_OUT_FORMS.has(form.name) || form.name.endsWith('-gmax')) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
         if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
@@ -1246,12 +1263,10 @@ async function main() {
     for (const { form, pokemon } of kept) {
       const evolution = reached.get(form.id)
       // Named only where there is more than one to tell apart, so Greninja,
-      // whose Ash-Greninja is a later game's, has no name for its one.
+      // whose Ash-Greninja is left out, has no name for its one.
       const formNames: Record<string, string> =
         kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
-      else if (kept.length > 1 && form.name.endsWith('-gmax') && !formNames.ko)
-        formNames.ko = GIGANTAMAX_KO
       else if (kept.length > 1 && form.name.endsWith('-hisui') && !formNames.ko)
         formNames.ko = HISUIAN_KO
       // PokéAPI names a few default forms nothing, as Pichu's; a screen calls
@@ -1454,12 +1469,11 @@ async function main() {
       add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
       add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
     }
-    const large = NOT_IN_HOME.has(row.slug) ? `${SPRITES_BASE}/other/official-artwork` : home
-    add(`sprites/pokemon/artwork/${n}.png`, `${large}/${k}.png`)
-    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${large}/${shiny}${k}.png`)
+    add(`sprites/pokemon/artwork/${n}.png`, `${home}/${k}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${home}/${shiny}${k}.png`)
     if (row.femaleDiffers) {
-      add(`sprites/pokemon/artwork/female/${n}.png`, `${large}/female/${k}.png`)
-      add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${large}/shiny/female/${k}.png`)
+      add(`sprites/pokemon/artwork/female/${n}.png`, `${home}/female/${k}.png`)
+      add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${home}/shiny/female/${k}.png`)
     }
   }
   // Sixteen at a time, in the manifest's order.
@@ -1498,6 +1512,11 @@ async function main() {
   }
 
   const written = await writtenBefore()
+  // A form left out after an earlier migration wrote it goes, its entries
+  // first. Nobody can have one: an egg hatches no such form, and none is a
+  // stage a Pokémon evolves into.
+  const keptIds = new Set(rows.map((r) => r.id))
+  const gone = [...(await speciesBefore())].filter((id) => !keptIds.has(id)).sort((a, b) => a - b)
   const out = [
     '-- Generated by apps/pokedex-web/scripts/generate.ts from PokéAPI. Do not edit;',
     '-- change the script and run it again.',
@@ -1508,7 +1527,7 @@ async function main() {
     '-- With the earlier generated migrations, it says every form up to national',
     `-- No.${LAST_DEX_NO} that its games had, ${rows.length} of them, and their entries in the`,
     `-- ${Object.keys(POKEDEXES).join(', ')} pokedexes. Only the rows that differ from what`,
-    '-- those wrote are here.',
+    '-- those wrote are here, and the forms they wrote that are no longer in.',
     '',
     ...upsert(
       written,
@@ -1720,6 +1739,13 @@ async function main() {
           `  (${sql(e.dex)}, ${e.number}, ${e.row.id}, ${e.isDefault}, ${sql(e.description.ko)}, ${sql(e.description.en)})`,
       ),
     ),
+    ...(gone.length === 0
+      ? []
+      : [
+          `delete from public.pokedex_entries where species_id in (${gone.join(', ')});`,
+          `delete from public.pokedex_species where id in (${gone.join(', ')});`,
+          '',
+        ]),
   ]
   await writeFile(MIGRATION, out.join('\n'))
 
