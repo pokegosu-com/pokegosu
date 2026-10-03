@@ -35,19 +35,18 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to VIII as far as Sword and Shield: national dex numbers 1 to
- * 898, in every form those games had. A form a later game added, such as
+ * Generations I to VIII, Legends: Arceus with them: national dex numbers 1 to
+ * 905, in every form those games had. A form a later game added, such as
  * Paldean Wooper, waits for its generation.
  */
-const LAST_DEX_NO = 898
+const LAST_DEX_NO = 905
 const LAST_GENERATION = 8
 
 /**
- * Games of a kept generation whose forms wait. Legends: Arceus is Generation
- * VIII's, but Hisui, with its species from No.899 and its forms, comes in
- * apart from Galar, with an egg of its own.
+ * The generation of a region PokéAPI gives none. Hisui is Legends: Arceus's,
+ * a Generation VIII game.
  */
-const LATER_VERSION_GROUPS = new Set(['legends-arceus'])
+const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
 
 /**
  * Forms left out though their generation is in. Arceus's ??? type has no
@@ -170,6 +169,13 @@ const FORM_KO_NAMES: Record<string, string> = {
   'toxtricity-low-key-gmax': '로우한 모습 거다이맥스',
   'urshifu-single-strike-gmax': '일격의 태세 거다이맥스',
   'urshifu-rapid-strike-gmax': '연격의 태세 거다이맥스',
+  'dialga-origin': '오리진폼',
+  'palkia-origin': '오리진폼',
+  'basculin-white-striped': '백색근의 모습',
+  'basculegion-male': '수컷의 모습',
+  'basculegion-female': '암컷의 모습',
+  'enamorus-incarnate': '화신폼',
+  'enamorus-therian': '영물폼',
   ...alcremieKoNames(),
 }
 
@@ -211,6 +217,9 @@ function alcremieKoNames(): Record<string, string> {
 
 /** Gigantamax, as the games name it in Korean; PokéAPI names it in English only. */
 const GIGANTAMAX_KO = '거다이맥스'
+
+/** A Hisuian form, as the games name it in Korean; PokéAPI names it in English only. */
+const HISUIAN_KO = '히스이의 모습'
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -301,11 +310,18 @@ const POKEDEXES: Record<
     names: { ko: '가라르도감', en: 'Galar Pokédex' },
     versions: ['sword', 'shield'],
   },
+  // Legends: Arceus's, the one game in Hisui. It lists every species from
+  // No.899 on, among older ones, as the other regions' do.
+  hisui: {
+    apiId: 30,
+    names: { ko: '히스이도감', en: 'Hisui Pokédex' },
+    versions: ['legends-arceus'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261002120001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261002130001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -539,6 +555,8 @@ const DRAWN_ITEMS = new Set([
   'strawberry-sweet',
   'scroll-of-darkness',
   'scroll-of-waters',
+  'black-augurite',
+  'peat-block',
 ])
 
 /** PokéAPI names triggers in English only. */
@@ -553,6 +571,8 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   'take-damage': '고인돌 아래 지나기',
   'tower-of-darkness': '악의 탑에서 수행',
   'tower-of-waters': '물의 탑에서 수행',
+  'agile-style-move': '속공으로 쓰기',
+  'recoil-damage': '반동 데미지 받기',
 }
 
 /**
@@ -606,6 +626,8 @@ type Evolution = {
   version: string | null
   natures: string[] | null
   damage: number | null
+  usedMove: string | null
+  moveCount: number | null
 }
 
 const methods = new Map<string, Evolution>()
@@ -649,6 +671,9 @@ const KNOWN_CONDITIONS = new Set([
   'is_default',
   'allowed_natures',
   'min_damage_taken',
+  // Wyrdeer's Psyshield Bash, twenty times in the agile style.
+  'used_move',
+  'min_move_count',
 ])
 
 /** How relative_physical_stats reads in a method's id, Attack against Defense. */
@@ -705,8 +730,15 @@ function inKeptRegion(detail: EvolutionDetail): boolean {
  * ends in comes first, so Raichu's own way does not stand for Alolan
  * Raichu's. A species whose every form is named, as Burmy's cloaks are,
  * lists a way per form, each from its form and to its own; with no form to
- * come from, any way to its own will do.
+ * come from, any way to its own will do. A way only Legends: Arceus has
+ * comes last, as Overqwil's twenty Barb Barrages in the strong style, where
+ * Scarlet and Violet ask only that it know the move.
  */
+/** Legends: Arceus's ways by a move used in a style, which no other game asks. */
+function styled(detail: EvolutionDetail): boolean {
+  return ['agile-style-move', 'strong-style-move'].includes(detail.trigger.name)
+}
+
 function ownWay(
   details: EvolutionDetail[],
   from: string | null,
@@ -716,7 +748,9 @@ function ownWay(
     !d.required_pokemon_form || from === null || d.required_pokemon_form.name === from
   return (
     details.find((d) => inKeptRegion(d) && d.evolved_pokemon_form?.name === to && fromOk(d)) ??
-    details.find((d) => !d.region && !d.evolved_pokemon_form && fromOk(d))
+    [...details]
+      .sort((a, b) => Number(styled(a)) - Number(styled(b)))
+      .find((d) => !d.region && !d.evolved_pokemon_form && fromOk(d))
   )
 }
 
@@ -828,6 +862,9 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     ? (detail.allowed_natures as Named[]).map((n) => n.name).sort()
     : null
   const damage = (detail.min_damage_taken as number | null | undefined) ?? null
+  const usedMove = (detail.used_move as Named | null | undefined)?.name ?? null
+  if (usedMove) await nameMove(usedMove)
+  const moveCount = (detail.min_move_count as number | null | undefined) ?? null
   const id = [
     trigger,
     level,
@@ -852,6 +889,7 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     version && `in-${version}`,
     natures && `${natures[0]}-or-${natures.length - 1}-more-natures`,
     damage && `after-${damage}-damage`,
+    usedMove && `using-${usedMove}-${moveCount}-times`,
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -883,6 +921,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       version,
       natures,
       damage,
+      usedMove,
+      moveCount,
     })
   }
   return methods.get(id)!
@@ -1015,7 +1055,6 @@ async function main() {
         if (LEFT_OUT_FORMS.has(form.name)) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
-        if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
         kept.push({ form, pokemon })
       }
     }
@@ -1044,9 +1083,9 @@ async function main() {
   const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
   const { results: allRegions } = await get<{ results: Named[] }>('region?limit=100')
   for (const region of allRegions) {
-    // PokéAPI gives Hisui no generation; it is Legends: Arceus's, a later one.
     const { main_generation } = await get<{ main_generation: Named | null }>(region.url)
-    if (main_generation && idOf(main_generation) <= LAST_GENERATION) keptRegions.add(region.name)
+    const generation = main_generation ? idOf(main_generation) : REGION_GENERATIONS[region.name]
+    if (generation && generation <= LAST_GENERATION) keptRegions.add(region.name)
   }
   const chainUrls = [...new Set(species.map((s) => s.evolution_chain.url))]
   for (const url of chainUrls) {
@@ -1134,6 +1173,8 @@ async function main() {
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
       else if (kept.length > 1 && form.name.endsWith('-gmax') && !formNames.ko)
         formNames.ko = GIGANTAMAX_KO
+      else if (kept.length > 1 && form.name.endsWith('-hisui') && !formNames.ko)
+        formNames.ko = HISUIAN_KO
       // PokéAPI names a few default forms nothing, as Pichu's; a screen calls
       // those 기본. Any other form it cannot name is a name missing here.
       if (kept.length > 1 && form.id !== s.id && !formNames.ko)
@@ -1515,6 +1556,8 @@ async function main() {
         'version',
         'natures',
         'min_damage_taken',
+        'used_move',
+        'min_move_count',
       ],
       ['id'],
       [...methods.values()]
@@ -1527,7 +1570,8 @@ async function main() {
             ` ${sql(m.location)}, ${sql(m.partySpecies)}, ${sql(m.tradeSpecies)},` +
             ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown},` +
             ` ${sql(m.region)}, ${sql(m.version)},` +
-            ` ${m.natures ? sql(`{${m.natures.join(',')}}`) : 'null'}, ${sql(m.damage)})`,
+            ` ${m.natures ? sql(`{${m.natures.join(',')}}`) : 'null'}, ${sql(m.damage)},` +
+            ` ${sql(m.usedMove)}, ${sql(m.moveCount)})`,
         ),
     ),
     ...upsert(
