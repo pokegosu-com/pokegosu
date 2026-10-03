@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(140);
+select plan(141);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -608,36 +608,42 @@ select is((select string_agg(distinct pg_temp.rattata_from('alola'), ' ') from g
   'rattata-alola', 'an Alola egg hatches an Alolan form in place of its default');
 select is((select string_agg(distinct pg_temp.rattata_from('kanto'), ' ') from generate_series(1, 20)),
   'rattata', 'another region''s egg never hatches it');
-select is((select string_agg(distinct pg_temp.rattata_from('national'), ' ') from generate_series(1, 40)),
-  'rattata', 'and nor does a national egg');
+select is((select string_agg(distinct r, ' ' order by r)
+             from (select pg_temp.rattata_from('national') r from generate_series(1, 40)) rolled),
+  'rattata rattata-alola', 'and a national egg hatches either');
 
--- With Meowth alone in them, each region's egg hatches its own Meowth.
+-- With Meowth alone in them, each region's egg hatches its own Meowth, and
+-- a national egg any of them.
 delete from public.coder_egg_species where egg_kind in ('alola', 'galar', 'kanto', 'national');
 insert into public.coder_egg_species (egg_kind, species_id) values
   ('alola', 52), ('galar', 52), ('kanto', 52), ('national', 52);
 create function pg_temp.hatches(egg_kind text) returns text language sql as $$
-  select egg_kind || ':' || string_agg(distinct pg_temp.rattata_from(egg_kind), ' ') from generate_series(1, 20);
+  select egg_kind || ':' || string_agg(distinct r, ' ' order by r)
+    from (select pg_temp.rattata_from(egg_kind) r from generate_series(1, 40)) rolled;
 $$;
 select is(
   pg_temp.hatches('alola') || ' ' || pg_temp.hatches('galar') || ' ' || pg_temp.hatches('kanto') || ' '
     || pg_temp.hatches('national'),
-  'alola:meowth-alola galar:meowth-galar kanto:meowth national:meowth',
-  'Meowth hatches Alolan from an Alola egg, Galarian from a Galar egg, and as itself from any other');
+  'alola:meowth-alola galar:meowth-galar kanto:meowth national:meowth meowth-alola meowth-galar',
+  'Meowth hatches Alolan from an Alola egg, Galarian from a Galar egg, as itself from any other region''s, and any of them from a national egg');
 
 -- With Basculin alone in them, a Hisui egg hatches the Basculin Hisui has.
 delete from public.coder_egg_species where egg_kind in ('hisui', 'national');
 insert into public.coder_egg_species (egg_kind, species_id) values ('hisui', 550), ('national', 550);
 select is(pg_temp.hatches('hisui') || ' ' || pg_temp.hatches('national'),
-  'hisui:basculin-white-striped national:basculin-red-striped',
-  'Basculin hatches White-Striped from a Hisui egg, and as itself from any other');
+  'hisui:basculin-white-striped national:basculin-red-striped basculin-white-striped',
+  'Basculin hatches White-Striped from a Hisui egg, and either from a national egg');
 
 -- With Tauros and Wooper alone in them, a Paldea egg hatches Paldean Tauros
 -- in any of its breeds, and Paldean Wooper.
 delete from public.coder_egg_species where egg_kind in ('paldea', 'national');
 insert into public.coder_egg_species (egg_kind, species_id) values ('paldea', 128), ('national', 128);
 select is(pg_temp.hatches('paldea') || ' ' || pg_temp.hatches('national'),
-  'paldea:tauros-paldea-aqua-breed tauros-paldea-blaze-breed tauros-paldea-combat-breed national:tauros',
-  'Tauros hatches in any Paldean breed from a Paldea egg, and as itself from any other');
+  'paldea:tauros-paldea-aqua-breed tauros-paldea-blaze-breed tauros-paldea-combat-breed national:tauros tauros-paldea-aqua-breed tauros-paldea-blaze-breed tauros-paldea-combat-breed',
+  'Tauros hatches in any Paldean breed from a Paldea egg, and in any form from a national egg');
+select ok((select count(*) filter (where r = 'tauros') between 110 and 190
+            from (select pg_temp.rattata_from('national') r from generate_series(1, 300)) rolled),
+  'a national egg draws the region first: Tauros hatches as itself about one time in two, not one in four');
 delete from public.coder_egg_species where egg_kind = 'paldea';
 insert into public.coder_egg_species (egg_kind, species_id) values ('paldea', 194);
 select is(pg_temp.hatches('paldea'), 'paldea:wooper-paldea', 'and Wooper as Paldean Wooper');
