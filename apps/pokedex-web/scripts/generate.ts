@@ -35,12 +35,19 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to VIII, Legends: Arceus with them: national dex numbers 1 to
- * 905, in every form those games had. A form a later game added, such as
- * Paldean Wooper, waits for its generation.
+ * Generations I to IX as far as Scarlet and Violet and their two DLC: national
+ * dex numbers 1 to 1025, in every form those games had. A form a later game
+ * added waits for its generation.
  */
-const LAST_DEX_NO = 905
-const LAST_GENERATION = 8
+const LAST_DEX_NO = 1025
+const LAST_GENERATION = 9
+
+/**
+ * Games of a kept generation whose forms wait. Legends: Z-A is Generation
+ * IX's, but its Mega Evolutions, Mega Dimension's too, come in apart from
+ * Paldea's, as Hisui's forms came in apart from Galar's.
+ */
+const LATER_VERSION_GROUPS = new Set(['legends-za', 'mega-dimension'])
 
 /**
  * The generation of a region PokéAPI gives none. Hisui is Legends: Arceus's,
@@ -63,7 +70,10 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  * core, so one Meteor Form stands for the seven, beside the seven cores.
  * Eternamax Eternatus is met in one battle and never caught. An Antique Form
  * Sinistea or Polteageist is a Phony one with a mark under its pot, and
- * Pokémon HOME shows the two alike.
+ * Pokémon HOME shows the two alike; so is an Artisan Poltchageist or a
+ * Masterpiece Sinistcha a Counterfeit or an Unremarkable one. Koraidon's builds
+ * and Miraidon's modes are how it is ridden in Scarlet and Violet: it battles
+ * and goes to HOME in one, its own.
  */
 const LEFT_OUT_FORMS = new Set([
   'arceus-unknown',
@@ -102,6 +112,16 @@ const LEFT_OUT_FORMS = new Set([
   'eternatus-eternamax',
   'sinistea-antique',
   'polteageist-antique',
+  'poltchageist-artisan',
+  'sinistcha-masterpiece',
+  'koraidon-limited-build',
+  'koraidon-sprinting-build',
+  'koraidon-swimming-build',
+  'koraidon-gliding-build',
+  'miraidon-low-power-mode',
+  'miraidon-drive-mode',
+  'miraidon-aquatic-mode',
+  'miraidon-glide-mode',
 ])
 
 /**
@@ -176,6 +196,30 @@ const FORM_KO_NAMES: Record<string, string> = {
   'basculegion-female': '암컷의 모습',
   'enamorus-incarnate': '화신폼',
   'enamorus-therian': '영물폼',
+  'tauros-paldea-combat-breed': '팔데아의 모습 컴뱃종',
+  'tauros-paldea-blaze-breed': '팔데아의 모습 블레이즈종',
+  'tauros-paldea-aqua-breed': '팔데아의 모습 워터종',
+  'wooper-paldea': '팔데아의 모습',
+  'oinkologne-male': '수컷의 모습',
+  'oinkologne-female': '암컷의 모습',
+  'maushold-family-of-four': '네 식구',
+  'maushold-family-of-three': '세 식구',
+  'squawkabilly-green-plumage': '그린 페더',
+  'squawkabilly-blue-plumage': '블루 페더',
+  'squawkabilly-yellow-plumage': '옐로 페더',
+  'squawkabilly-white-plumage': '화이트 페더',
+  'palafin-zero': '나이브폼',
+  'palafin-hero': '마이티폼',
+  'tatsugiri-curly': '젖힌 모습',
+  'tatsugiri-droopy': '늘어진 모습',
+  'tatsugiri-stretchy': '뻗은 모습',
+  'dudunsparce-two-segment': '두 마디폼',
+  'dudunsparce-three-segment': '세 마디폼',
+  'gimmighoul-chest': '상자폼',
+  'gimmighoul-roaming': '도보폼',
+  terapagos: '노말폼',
+  'terapagos-terastal': '테라스탈폼',
+  'terapagos-stellar': '스텔라폼',
   ...alcremieKoNames(),
 }
 
@@ -317,11 +361,19 @@ const POKEDEXES: Record<
     names: { ko: '히스이도감', en: 'Hisui Pokédex' },
     versions: ['legends-arceus'],
   },
+  // Scarlet and Violet's, with the Teal Mask's Kitakami and the Indigo Disk's
+  // Blueberry after it, numbered on as Galar's three are, as one Paldea egg
+  // holds all three. Together they list every Generation IX species.
+  paldea: {
+    apiId: [31, 32, 33],
+    names: { ko: '팔데아도감', en: 'Paldea Pokédex' },
+    versions: ['scarlet', 'violet'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261002130001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261003130001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -538,6 +590,10 @@ const GAME_ITEMS = [
   // and Violet.
   'scroll-of-darkness',
   'scroll-of-waters',
+  // In place of the three Bisharp leading others that Bisharp must defeat, the
+  // Leader's Crest they hold; in place of Gimmighoul's 999 coins, one coin.
+  'leaders-crest',
+  'gimmighoul-coin',
 ]
 
 /**
@@ -557,6 +613,13 @@ const DRAWN_ITEMS = new Set([
   'scroll-of-waters',
   'black-augurite',
   'peat-block',
+  'syrupy-apple',
+  'metal-alloy',
+  'auspicious-armor',
+  'malicious-armor',
+  'unremarkable-teacup',
+  'leaders-crest',
+  'gimmighoul-coin',
 ])
 
 /** PokéAPI names triggers in English only. */
@@ -573,6 +636,10 @@ const TRIGGER_KO_NAMES: Record<string, string> = {
   'tower-of-waters': '물의 탑에서 수행',
   'agile-style-move': '속공으로 쓰기',
   'recoil-damage': '반동 데미지 받기',
+  'use-move': '쓰기',
+  'in-battle-level-up': '배틀 중 레벨업',
+  'three-defeated-bisharp': '대장의징표를 지닌 절각참 3마리 쓰러뜨리기',
+  'gimmighoul-coins': '모으령의코인 999개 모으기',
 }
 
 /**
@@ -628,6 +695,8 @@ type Evolution = {
   damage: number | null
   usedMove: string | null
   moveCount: number | null
+  steps: number | null
+  multiplayer: boolean
 }
 
 const methods = new Map<string, Evolution>()
@@ -674,6 +743,9 @@ const KNOWN_CONDITIONS = new Set([
   // Wyrdeer's Psyshield Bash, twenty times in the agile style.
   'used_move',
   'min_move_count',
+  // Bramblin's thousand steps in Let's Go, and Finizen's Union Circle.
+  'min_steps',
+  'needs_multiplayer',
 ])
 
 /** How relative_physical_stats reads in a method's id, Attack against Defense. */
@@ -807,7 +879,7 @@ async function nameVersion(version: string) {
 
 /**
  * How a form is reached, as a row of evolution_methods named for what it is.
- * A method has a column for each condition Generations I to VIII ask; anything
+ * A method has a column for each condition Generations I to IX ask; anything
  * else fails here rather than being dropped, so a wider table grows the
  * columns it needs.
  */
@@ -865,6 +937,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
   const usedMove = (detail.used_move as Named | null | undefined)?.name ?? null
   if (usedMove) await nameMove(usedMove)
   const moveCount = (detail.min_move_count as number | null | undefined) ?? null
+  const steps = (detail.min_steps as number | null | undefined) ?? null
+  const multiplayer = detail.needs_multiplayer === true
   const id = [
     trigger,
     level,
@@ -890,6 +964,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
     natures && `${natures[0]}-or-${natures.length - 1}-more-natures`,
     damage && `after-${damage}-damage`,
     usedMove && `using-${usedMove}-${moveCount}-times`,
+    steps && `after-${steps}-steps`,
+    multiplayer && 'in-union-circle',
   ]
     .filter((part) => part !== null && part !== false)
     .join('-')
@@ -923,6 +999,8 @@ async function evolutionOf(detail: EvolutionDetail): Promise<Evolution> {
       damage,
       usedMove,
       moveCount,
+      steps,
+      multiplayer,
     })
   }
   return methods.get(id)!
@@ -1055,6 +1133,7 @@ async function main() {
         if (LEFT_OUT_FORMS.has(form.name)) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
+        if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
         kept.push({ form, pokemon })
       }
     }
@@ -1558,6 +1637,8 @@ async function main() {
         'min_damage_taken',
         'used_move',
         'min_move_count',
+        'min_steps',
+        'needs_multiplayer',
       ],
       ['id'],
       [...methods.values()]
@@ -1571,7 +1652,7 @@ async function main() {
             ` ${sql(m.partyType)}, ${sql(m.moveType)}, ${sql(m.affection)}, ${m.rain}, ${m.upsideDown},` +
             ` ${sql(m.region)}, ${sql(m.version)},` +
             ` ${m.natures ? sql(`{${m.natures.join(',')}}`) : 'null'}, ${sql(m.damage)},` +
-            ` ${sql(m.usedMove)}, ${sql(m.moveCount)})`,
+            ` ${sql(m.usedMove)}, ${sql(m.moveCount)}, ${sql(m.steps)}, ${m.multiplayer})`,
         ),
     ),
     ...upsert(

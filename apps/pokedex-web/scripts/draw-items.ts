@@ -1,9 +1,9 @@
 // Draws the bag sprites PokeAPI/sprites has none for into public/drawn: the
 // Linking Cord and Meltan Candy, which the Coder game sells, the Shelmet
 // Shell, which is the game's own, and the items Generation VIII evolves
-// with, Legends: Arceus's too, which PokeAPI/sprites stops short of. The
-// files are not committed: this script is what they are, and the same run
-// draws the same bytes.
+// with, Legends: Arceus's and Generation IX's too, which PokeAPI/sprites
+// stops short of. The files are not committed: this script is what they
+// are, and the same run draws the same bytes.
 //
 // Each is drawn as the bag sprites are, 30px with a #313131 outline and four
 // tones lit from the top left, so it sits among them. A shape is a function
@@ -504,6 +504,164 @@ function peatBlock(): Shape[] {
   ]
 }
 
+/**
+ * A Syrupy Apple, as Applin becomes Dipplin with: an apple in the amber of
+ * the syrup it is steeped in, a drop of it running down its side.
+ */
+function syrupyApple(): Shape[] {
+  const syrup: Palette = ['#fff1b8', '#f6c445', '#d8901c', '#94570c']
+  return [...apple(syrup), tube(syrup, 21.6, 19, 21.8, 23.4, 1.3)]
+}
+
+/**
+ * Metal Alloy, as Duraludon becomes Archaludon with: an ingot, its top lit,
+ * its front and end in shade, with a gleam along the top.
+ */
+function metalAlloy(): Shape[] {
+  return [
+    face(metal[1], [
+      [9, 9],
+      [25, 9],
+      [21, 14],
+      [5, 14],
+    ]),
+    face(metal[2], [
+      [5, 14],
+      [21, 14],
+      [20, 22],
+      [6, 22],
+    ]),
+    face(metal[3], [
+      [21, 14],
+      [25, 9],
+      [24, 17],
+      [20, 22],
+    ]),
+    face(metal[0], [
+      [10, 10],
+      [19, 10],
+      [17.5, 11.2],
+      [9, 11.2],
+    ]),
+  ]
+}
+
+/**
+ * A suit of armour, as Charcadet takes one of two to become Armarouge or
+ * Ceruledge: a cuirass seen from the front, a notch for the neck, a
+ * pauldron on each shoulder and a belt above the skirt of plates, ridged
+ * down the middle and set with a gem on the chest.
+ */
+function armor(plate: Palette, gem: Palette): Shape[] {
+  const body: [number, number][] = [
+    [9, 7],
+    [12.5, 7],
+    [15, 10],
+    [17.5, 7],
+    [21, 7],
+    [22, 12],
+    [20.5, 19],
+    [22.5, 26],
+    [7.5, 26],
+    [9.5, 19],
+    [8, 12],
+  ]
+  const shaded = (x: number, y: number) => {
+    // Rounded across the chest: lit to the left of the ridge, shaded right.
+    const u = (x - 15) / 8
+    return tone(plate, lit([u, (y - 15) / 16, Math.sqrt(Math.max(0, 1 - u * u))]))
+  }
+  return [
+    (x, y) => (inside(x, y, body) ? shaded(x, y) : null),
+    // The ridge down the chest, and the belt and the skirt's seams below it.
+    (x, y) => (inside(x, y, body) && Math.abs(x - 15) < 0.5 && y > 10 && y < 19 ? plate[3] : null),
+    (x, y) => (inside(x, y, body) && Math.abs(y - 19.5) < 1 ? plate[3] : null),
+    (x, y) =>
+      inside(x, y, body) && y > 20.5 && [11.5, 15, 18.5].some((sx) => Math.abs(x - sx) < 0.5)
+        ? plate[2]
+        : null,
+    // The pauldrons, over the shoulders.
+    ball(plate, 6.6, 11, 4.2, 3.6),
+    ball(plate, 23.4, 11, 4.2, 3.6),
+    ball(gem, 15, 14, 2.2, 2.2),
+  ]
+}
+
+/**
+ * The Unremarkable Teacup Poltchageist settles in to become Sinistcha: a bowl
+ * of plain glazed clay, matcha green inside its rim.
+ */
+function unremarkableTeacup(): Shape[] {
+  const clay: Palette = ['#f6f1e4', '#d9cfb6', '#b2a483', '#7b6e52']
+  const matcha: Palette = ['#d9f0a0', '#9bc25a', '#6f9636', '#4a6a20']
+  return [
+    // The bowl, narrowing from its rim to its foot.
+    (x, y) => {
+      const v = (y - 11) / 13
+      if (v < 0 || v > 1) return null
+      const half = 11 - 5 * v * v
+      const u = (x - 15) / half
+      if (Math.abs(u) > 1) return null
+      return tone(clay, lit([u, v - 0.3, Math.sqrt(1 - u * u)]))
+    },
+    tube(clay, 11, 24.5, 19, 24.5, 1.2),
+    ball(clay, 15, 11, 11, 3.6),
+    ball(matcha, 15, 11.4, 9.4, 2.6),
+  ]
+}
+
+/**
+ * The Leader's Crest, the blade Bisharp leading others wear on their heads:
+ * a gold axe-head, its edge curved, with the dark steel it is set in below.
+ */
+function leadersCrest(): Shape[] {
+  const steel: Palette = ['#9aa0ad', '#5e6472', '#40444f', '#2a2d35']
+  return [
+    (x, y) => {
+      // A blade between two arcs, widest at the top, meeting at the foot.
+      const outer = Math.hypot(x - 28, y - 13.5) < 19
+      const inner = Math.hypot(x - 39, y - 13.5) < 19
+      if (!outer || inner || y < 4 || y > 22) return null
+      return tone(gold, lit([(x - 15) / 8, (y - 13) / 12, 0.75]))
+    },
+    face(steel[2], [
+      [12, 21],
+      [19, 21],
+      [18, 26],
+      [13, 26],
+    ]),
+    face(steel[1], [
+      [12, 21],
+      [14.5, 21],
+      [14.5, 26],
+      [13, 26],
+    ]),
+  ]
+}
+
+/**
+ * A Gimmighoul Coin: a gold coin seen at a slant, a raised rim round it and
+ * Gimmighoul's mark, a ring, struck in the middle.
+ */
+function gimmighoulCoin(): Shape[] {
+  return [
+    ball(gold, 15.6, 15.6, 9.4, 10.4),
+    (x, y) => {
+      const r = Math.hypot((x - 15) / 9.4, (y - 15) / 10.4)
+      if (r > 1) return null
+      if (r > 0.82) return tone(gold, lit([(x - 15) / 9.4, (y - 15) / 10.4, 0.5]))
+      if (Math.abs(r - 0.42) < 0.1) return gold[3]
+      return gold[1]
+    },
+    face(gold[0], [
+      [9.5, 10],
+      [12, 7.5],
+      [13, 8.5],
+      [10.5, 11],
+    ]),
+  ]
+}
+
 const ITEMS: Record<string, Shape[]> = {
   'linking-cord': linkingCord(),
   'meltan-candy': meltanCandy(),
@@ -518,6 +676,19 @@ const ITEMS: Record<string, Shape[]> = {
   'scroll-of-waters': scroll(['#f2fbff', '#bfe6fb', '#8cc6e8', '#5592bd']),
   'black-augurite': blackAugurite(),
   'peat-block': peatBlock(),
+  'syrupy-apple': syrupyApple(),
+  'metal-alloy': metalAlloy(),
+  'auspicious-armor': armor(
+    ['#fff3c2', '#f0c64a', '#c9932a', '#8a5c14'],
+    ['#ffd0d6', '#e8485e', '#b21f3a', '#701024'],
+  ),
+  'malicious-armor': armor(
+    ['#b8b4d8', '#6c64a6', '#463f7a', '#2a244e'],
+    ['#d6f2ff', '#5cc8f2', '#2a8cc4', '#155a88'],
+  ),
+  'unremarkable-teacup': unremarkableTeacup(),
+  'leaders-crest': leadersCrest(),
+  'gimmighoul-coin': gimmighoulCoin(),
 }
 
 await mkdir(DIR, { recursive: true })
