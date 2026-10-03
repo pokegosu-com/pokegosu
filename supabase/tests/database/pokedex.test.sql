@@ -26,15 +26,15 @@ select is((select count(*)::int from public.pokedex_species where generation = 8
 select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
   'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 419,
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 417,
   'and every other form those games had, Mega Evolutions, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax too, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
-         or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'eternatus-eternamax',
-                     'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
+         or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'pichu-spiky-eared', 'greninja-ash',
+                     'eternatus-eternamax', 'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
          or slug ~ '^(koraidon|miraidon)-' and slug not in ('koraidon-apex-build', 'miraidon-ultimate-mode') $$,
-  'but no Totem, Partner, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
+  'but no Totem, Partner, one game''s form, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
 select is_empty(
   $$ select slug from public.pokedex_species where slug like '%-mega%' and generation = 9
          or slug in ('dragonite-mega', 'absol-mega-z', 'raichu-mega-x') $$,
@@ -300,7 +300,7 @@ select is(
   'a form evolves from the form of the same name');
 select is(
   (select count(*)::int from public.pokedex_species
-    where slug in ('cherrim-sunshine', 'rotom-heat', 'pichu-spiky-eared') and evolves_from_id is not null),
+    where slug in ('cherrim-sunshine', 'rotom-heat') and evolves_from_id is not null),
   0, 'and from nothing where the form before has no such form');
 
 select is(
