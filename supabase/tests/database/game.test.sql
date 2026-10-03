@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(133);
+select plan(140);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -39,8 +39,8 @@ $$;
 -- ------------------------------------------------------------
 -- What an egg can hold
 -- ------------------------------------------------------------
-select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 469,
-  'a national egg holds the first form of every family up to Generation VIII, Enamorus too');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'national'), 541,
+  'a national egg holds the first form of every family up to Generation IX');
 select is_empty(
   $$ select g.species_id from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
       where g.egg_kind = 'national' and s.evolves_from_id is not null $$,
@@ -149,6 +149,18 @@ select is(
     where g.egg_kind = 'hisui' and s.slug in ('stantler', 'basculin-red-striped', 'enamorus-incarnate')),
   'stantler:uncommon basculin-red-striped:uncommon enamorus-incarnate:mythic',
   'Enamorus is mythic, and the families from before keep their tiers');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'paldea'), 319,
+  'a Paldea egg holds the first form of every family Scarlet and Violet''s pokedexes list, those from before too');
+select is(
+  (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
+     from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
+     join public.coder_species_rarities sr on sr.species_id = g.species_id
+    where g.egg_kind = 'paldea'
+      and s.slug in ('wooper', 'sprigatito', 'lechonk', 'pawmi', 'charcadet', 'great-tusk', 'walking-wake',
+                     'koraidon-apex-build')),
+  'wooper:common sprigatito:very-rare lechonk:common pawmi:uncommon charcadet:rare great-tusk:very-rare'
+    || ' koraidon-apex-build:mythic walking-wake:mythic',
+  'Generation IX''s starters and Scarlet and Violet''s Paradox Pokémon are very rare, the DLC''s mythic');
 select ok((select count(*) = 3 from public.coder_egg_species g join public.pokedex_species s on s.id = g.species_id
             where g.egg_kind = 'national' and s.slug in ('tauros', 'mewtwo', 'ditto')),
   'one that never evolves is in, a legendary and Ditto too');
@@ -160,7 +172,7 @@ select results_eq(
       where g.egg_kind = 'national'
       group by sr.rarity, r.weight
       order by r.weight desc $$,
-  $$ values ('common', 74), ('uncommon', 194), ('rare', 74), ('very-rare', 41), ('mythic', 86) $$,
+  $$ values ('common', 84), ('uncommon', 214), ('rare', 80), ('very-rare', 59), ('mythic', 104) $$,
   'every species an egg can hold has a tier');
 select is(
   (select string_agg(s.slug || ':' || sr.rarity, ' ' order by s.id)
@@ -234,6 +246,13 @@ select is(
   coalesce(pg_temp.next(pg_temp.mon('voltorb-hisui', 'male', 30)), '-') || ' '
     || coalesce(pg_temp.next(pg_temp.mon('zorua-hisui', 'male', 30)), '-'),
   '- zoroark-hisui', 'Hisuian Voltorb never becomes Electrode, and Hisuian Zorua becomes Hisuian Zoroark');
+select is(
+  pg_temp.next(pg_temp.mon('wooper-paldea', 'male', 20)) || ' ' || pg_temp.next(pg_temp.mon('wooper', 'male', 20)),
+  'clodsire quagsire', 'Paldean Wooper becomes Clodsire, never Quagsire, and Wooper Quagsire');
+select is(
+  pg_temp.next(pg_temp.mon('lechonk', 'female', 18)) || ' ' || pg_temp.next(pg_temp.mon('greavard', 'male', 30), 0)
+    || ' ' || coalesce(pg_temp.next(pg_temp.mon('greavard', 'male', 30), 12), '-'),
+  'oinkologne-female houndstone -', 'a female Lechonk becomes a female Oinkologne, and Greavard evolves only at night');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
   400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
@@ -611,6 +630,23 @@ insert into public.coder_egg_species (egg_kind, species_id) values ('hisui', 550
 select is(pg_temp.hatches('hisui') || ' ' || pg_temp.hatches('national'),
   'hisui:basculin-white-striped national:basculin-red-striped',
   'Basculin hatches White-Striped from a Hisui egg, and as itself from any other');
+
+-- With Tauros and Wooper alone in them, a Paldea egg hatches Paldean Tauros
+-- in any of its breeds, and Paldean Wooper.
+delete from public.coder_egg_species where egg_kind in ('paldea', 'national');
+insert into public.coder_egg_species (egg_kind, species_id) values ('paldea', 128), ('national', 128);
+select is(pg_temp.hatches('paldea') || ' ' || pg_temp.hatches('national'),
+  'paldea:tauros-paldea-aqua-breed tauros-paldea-blaze-breed tauros-paldea-combat-breed national:tauros',
+  'Tauros hatches in any Paldean breed from a Paldea egg, and as itself from any other');
+delete from public.coder_egg_species where egg_kind = 'paldea';
+insert into public.coder_egg_species (egg_kind, species_id) values ('paldea', 194);
+select is(pg_temp.hatches('paldea'), 'paldea:wooper-paldea', 'and Wooper as Paldean Wooper');
+delete from public.coder_egg_species where egg_kind = 'paldea';
+insert into public.coder_egg_species (egg_kind, species_id) values ('paldea', 931);
+select is(pg_temp.hatches('paldea'),
+  'paldea:squawkabilly-blue-plumage squawkabilly-green-plumage squawkabilly-white-plumage'
+    || ' squawkabilly-yellow-plumage',
+  'and Squawkabilly in any plumage');
 
 -- With Indeedee alone in it, a national egg hatches each Indeedee as its
 -- gender's form.

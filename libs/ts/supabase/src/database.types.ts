@@ -837,7 +837,9 @@ export type Database = {
           min_damage_taken: number | null
           min_happiness: number | null
           min_move_count: number | null
+          min_steps: number | null
           natures: string[] | null
+          needs_multiplayer: boolean
           needs_overworld_rain: boolean
           party_species_id: number | null
           party_type: string | null
@@ -865,7 +867,9 @@ export type Database = {
           min_damage_taken?: number | null
           min_happiness?: number | null
           min_move_count?: number | null
+          min_steps?: number | null
           natures?: string[] | null
+          needs_multiplayer?: boolean
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
@@ -893,7 +897,9 @@ export type Database = {
           min_damage_taken?: number | null
           min_happiness?: number | null
           min_move_count?: number | null
+          min_steps?: number | null
           natures?: string[] | null
+          needs_multiplayer?: boolean
           needs_overworld_rain?: boolean
           party_species_id?: number | null
           party_type?: string | null
