@@ -3,14 +3,16 @@
 // are not committed: the manifest is what says exactly which bytes ship.
 //
 // A file already on disk with the right hash is kept, so a second run costs no
-// requests.
+// requests. A file the manifest no longer lists is deleted, so what ships is
+// the manifest and nothing more, even where public/sprites was restored from
+// a CI cache or left by an older manifest.
 //
 // The sprites repository is CC0, but that waives only its own rights: the
 // images are © The Pokémon Company, as the manifest's notice says.
 
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 type Manifest = { files: { path: string; source: string; sha256: string }[] }
@@ -47,4 +49,15 @@ for (const file of manifest.files) {
   fetched += 1
 }
 
-console.log(`${manifest.files.length} sprites in place, ${fetched} fetched`)
+const listed = new Set(manifest.files.map((file) => file.path))
+const entries = await readdir(`${root}public/sprites`, { recursive: true, withFileTypes: true })
+let deleted = 0
+for (const entry of entries) {
+  if (!entry.isFile()) continue
+  const path = `${entry.parentPath}/${entry.name}`
+  if (listed.has(relative(`${root}public`, path))) continue
+  await rm(path)
+  deleted += 1
+}
+
+console.log(`${manifest.files.length} sprites in place, ${fetched} fetched, ${deleted} deleted`)

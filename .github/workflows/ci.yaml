@@ -25,6 +25,16 @@ jobs:
       # from .moon/toolchains.yaml.
       - uses: 'moonrepo/setup-toolchain@v0'
 
+      # About six thousand sprites, fetched one by one, take minutes. The key is
+      # the manifest itself, with no fallback to an older one, and the fetch
+      # still checks every hash and deletes what the manifest does not list.
+      # A run that never builds pokedex-web has no sprites and saves nothing.
+      # Caches saved here, on main, are the ones CD restores.
+      - uses: 'actions/cache@v6'
+        with:
+          path: 'apps/pokedex-web/public/sprites'
+          key: "sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
+
       # Builds here only check the code, so they run without production
       # NEXT_PUBLIC_* values. A deploy workflow must never set this.
       #
