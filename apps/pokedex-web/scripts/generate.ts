@@ -938,6 +938,13 @@ function ownWay(
   )
 }
 
+/**
+ * Items PokéAPI names wrongly in Korean. It names the Floettite for
+ * Flabébé, 플라베베나이트, where the games name it for Floette, whose stone it
+ * is.
+ */
+const ITEM_KO_NAMES: Record<string, string> = { floettite: '플라엣테나이트' }
+
 async function nameItem(item: string) {
   if (items.has(item)) return
   if (ITEMS_NOT_IN_POKEAPI[item]) {
@@ -945,10 +952,9 @@ async function nameItem(item: string) {
     return
   }
   const fetched = await get<{ names: ({ name: string } & Localised)[] }>(`item/${item}`)
-  items.set(
-    item,
-    localise(fetched.names, (n) => n.name),
-  )
+  const names = localise(fetched.names, (n) => n.name)
+  if (ITEM_KO_NAMES[item]) names.ko = ITEM_KO_NAMES[item]
+  items.set(item, names)
 }
 
 async function nameMove(move: string) {

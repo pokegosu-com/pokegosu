@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(71);
+select plan(72);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -216,6 +216,11 @@ select is(
     || ' tatsugiri-droopy-mega:tatsugiri-droopy:메가싸리용 늘어진 모습'
     || ' meowstic-female-mega:meowstic-female:메가냐오닉스 암컷',
   'a Legends: Z-A Mega comes after the form that holds its stone, and is named in Korean');
+select is(
+  (select string_agg(id || ':' || ko_name, ' ' order by id) from public.pokedex_items
+    where id in ('floettite', 'magearnite')),
+  'floettite:플라엣테나이트 magearnite:마기아나이트',
+  'and its stone is named as the games name it, the Floettite for Floette');
 select is(
   (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
      from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id

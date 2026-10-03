@@ -28,7 +28,7 @@ insert into public.pokedex_items (id, ko_name, en_name, sprite) values
   ('excadrite', '몰드류나이트', 'Excadrite', '/drawn/items/excadrite.png'),
   ('falinksite', '대여르나이트', 'Falinksite', '/drawn/items/falinksite.png'),
   ('feraligite', '장크로다일나이트', 'Feraligite', '/drawn/items/feraligite.png'),
-  ('floettite', '플라베베나이트', 'Floettite', '/drawn/items/floettite.png'),
+  ('floettite', '플라엣테나이트', 'Floettite', '/drawn/items/floettite.png'),
   ('froslassite', '눈여아나이트', 'Froslassite', '/drawn/items/froslassite.png'),
   ('garchompite-z', '한카리아스나이트Z', 'Garchompite Z', '/drawn/items/garchompite-z.png'),
   ('glimmoranite', '킬라플로르나이트', 'Glimmoranite', '/drawn/items/glimmoranite.png'),
