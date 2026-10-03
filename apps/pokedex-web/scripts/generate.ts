@@ -35,19 +35,13 @@ const SPRITES_NOTICE =
   'Sprites from PokeAPI/sprites (CC0 1.0); the images are © The Pokémon Company.'
 
 /**
- * Generations I to IX as far as Scarlet and Violet and their two DLC: national
- * dex numbers 1 to 1025, in every form those games had. A form a later game
- * added waits for its generation.
+ * Generations I to IX as far as Scarlet and Violet and their two DLC, and
+ * Legends: Z-A and its Mega Dimension: national dex numbers 1 to 1025, in
+ * every form those games had. A form a later game added waits for its
+ * generation.
  */
 const LAST_DEX_NO = 1025
 const LAST_GENERATION = 9
-
-/**
- * Games of a kept generation whose forms wait. Legends: Z-A is Generation
- * IX's, but its Mega Evolutions, Mega Dimension's too, come in apart from
- * Paldea's, as Hisui's forms came in apart from Galar's.
- */
-const LATER_VERSION_GROUPS = new Set(['legends-za', 'mega-dimension'])
 
 /**
  * The generation of a region PokéAPI gives none. Hisui is Legends: Arceus's,
@@ -161,6 +155,13 @@ const NEVER_SHINY = new Set([
   'pikachu-world-cap',
 ])
 
+/**
+ * Default forms PokéAPI names that are better unnamed. It names Pyroar's
+ * Male, but a female Pyroar is the same default form with sprites of her
+ * own; her own form is left out.
+ */
+const UNNAMED_FORMS = new Set(['pyroar-male'])
+
 /** PokéAPI names these forms in English only. */
 const FORM_KO_NAMES: Record<string, string> = {
   'arceus-normal': '노말타입',
@@ -217,6 +218,13 @@ const FORM_KO_NAMES: Record<string, string> = {
   terapagos: '노말폼',
   'terapagos-terastal': '테라스탈폼',
   'terapagos-stellar': '스텔라폼',
+  // Megas of a form, which say which, beside megaKoName's.
+  'meowstic-male-mega': '메가냐오닉스 수컷',
+  'meowstic-female-mega': '메가냐오닉스 암컷',
+  'tatsugiri-curly-mega': '메가싸리용 젖힌 모습',
+  'tatsugiri-droopy-mega': '메가싸리용 늘어진 모습',
+  'tatsugiri-stretchy-mega': '메가싸리용 뻗은 모습',
+  'magearna-original-mega': '메가마기아나 500년 전의 색',
   ...alcremieKoNames(),
 }
 
@@ -261,6 +269,17 @@ const GIGANTAMAX_KO = '거다이맥스'
 
 /** A Hisuian form, as the games name it in Korean; PokéAPI names it in English only. */
 const HISUIAN_KO = '히스이의 모습'
+
+/**
+ * A Mega Evolution as the games name it in Korean, 메가 and the species, then
+ * X, Y or Z: PokéAPI names Legends: Z-A's in English only.
+ */
+function megaKoName(slug: string, species: string): string {
+  return `메가${species}${MEGA.exec(slug)![1]?.toUpperCase() ?? ''}`
+}
+
+/** A Mega Evolution's slug, and its X, Y or Z. */
+const MEGA = /-mega(?:-([xyz]))?$/
 
 /** The languages kept, Korean and English for now, as PokéAPI codes them. */
 const LANGUAGES = ['ko', 'en']
@@ -366,11 +385,19 @@ const POKEDEXES: Record<
     names: { ko: '팔데아도감', en: 'Paldea Pokédex' },
     versions: ['scarlet', 'violet'],
   },
+  // Legends: Z-A's, Lumiose City's, with Mega Dimension's Hyperspace Lumiose
+  // after it, numbered on as Galar's three are. Its game is Generation IX's
+  // but adds no species, only Megas, so none comes to it from its generation.
+  lumiose: {
+    apiId: [34, 35],
+    names: { ko: '미르도감', en: 'Lumiose Pokédex' },
+    versions: ['legends-za', 'mega-dimension'],
+  },
 }
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261003150001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261003160000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -484,9 +511,88 @@ function prose(text: string): string {
 /**
  * Mega Evolution and Primal Reversion, as a stage after the form they come
  * from rather than a look of it: what each holds, or for Rayquaza knows.
- * PokéAPI's chains leave them out, so they are listed here.
+ * PokéAPI's chains leave them out, so they are listed here. A stage comes
+ * after the default form, or after the form `from` names.
  */
-const MEGA_EVOLUTIONS: Record<string, { trigger: string; item?: string; move?: string }> = {
+type MegaEvolution = { trigger: string; item?: string; move?: string; from?: string }
+
+/**
+ * Legends: Z-A's Mega Evolutions, then Mega Dimension's. PokeAPI/sprites has
+ * no bag sprite for their stones, so they are drawn.
+ */
+const LEGENDS_ZA_MEGAS: Record<string, MegaEvolution> = {
+  'clefable-mega': { trigger: 'mega-evolution', item: 'clefablite' },
+  'victreebel-mega': { trigger: 'mega-evolution', item: 'victreebelite' },
+  'starmie-mega': { trigger: 'mega-evolution', item: 'starminite' },
+  'dragonite-mega': { trigger: 'mega-evolution', item: 'dragoninite' },
+  'meganium-mega': { trigger: 'mega-evolution', item: 'meganiumite' },
+  'feraligatr-mega': { trigger: 'mega-evolution', item: 'feraligite' },
+  'skarmory-mega': { trigger: 'mega-evolution', item: 'skarmorite' },
+  'froslass-mega': { trigger: 'mega-evolution', item: 'froslassite' },
+  'emboar-mega': { trigger: 'mega-evolution', item: 'emboarite' },
+  'excadrill-mega': { trigger: 'mega-evolution', item: 'excadrite' },
+  'scolipede-mega': { trigger: 'mega-evolution', item: 'scolipite' },
+  'scrafty-mega': { trigger: 'mega-evolution', item: 'scraftinite' },
+  'eelektross-mega': { trigger: 'mega-evolution', item: 'eelektrossite' },
+  'chandelure-mega': { trigger: 'mega-evolution', item: 'chandelurite' },
+  'chesnaught-mega': { trigger: 'mega-evolution', item: 'chesnaughtite' },
+  'delphox-mega': { trigger: 'mega-evolution', item: 'delphoxite' },
+  'greninja-mega': { trigger: 'mega-evolution', item: 'greninjite' },
+  'pyroar-mega': { trigger: 'mega-evolution', item: 'pyroarite' },
+  // Only Floette of the Eternal Flower holds its Floettite.
+  'floette-mega': { trigger: 'mega-evolution', item: 'floettite', from: 'floette-eternal' },
+  'malamar-mega': { trigger: 'mega-evolution', item: 'malamarite' },
+  'barbaracle-mega': { trigger: 'mega-evolution', item: 'barbaracite' },
+  'dragalge-mega': { trigger: 'mega-evolution', item: 'dragalgite' },
+  'hawlucha-mega': { trigger: 'mega-evolution', item: 'hawluchanite' },
+  // From the Complete Forme it takes in battle, below half its HP.
+  'zygarde-mega': { trigger: 'mega-evolution', item: 'zygardite', from: 'zygarde-complete' },
+  'drampa-mega': { trigger: 'mega-evolution', item: 'drampanite' },
+  'falinks-mega': { trigger: 'mega-evolution', item: 'falinksite' },
+  // Mega Dimension's.
+  'raichu-mega-x': { trigger: 'mega-evolution', item: 'raichunite-x' },
+  'raichu-mega-y': { trigger: 'mega-evolution', item: 'raichunite-y' },
+  'chimecho-mega': { trigger: 'mega-evolution', item: 'chimechite' },
+  'absol-mega-z': { trigger: 'mega-evolution', item: 'absolite-z' },
+  'staraptor-mega': { trigger: 'mega-evolution', item: 'staraptite' },
+  'garchomp-mega-z': { trigger: 'mega-evolution', item: 'garchompite-z' },
+  'lucario-mega-z': { trigger: 'mega-evolution', item: 'lucarionite-z' },
+  'heatran-mega': { trigger: 'mega-evolution', item: 'heatranite' },
+  'darkrai-mega': { trigger: 'mega-evolution', item: 'darkranite' },
+  'golurk-mega': { trigger: 'mega-evolution', item: 'golurkite' },
+  'meowstic-male-mega': { trigger: 'mega-evolution', item: 'meowsticite' },
+  'meowstic-female-mega': {
+    trigger: 'mega-evolution',
+    item: 'meowsticite',
+    from: 'meowstic-female',
+  },
+  'crabominable-mega': { trigger: 'mega-evolution', item: 'crabominite' },
+  'golisopod-mega': { trigger: 'mega-evolution', item: 'golisopite' },
+  'magearna-mega': { trigger: 'mega-evolution', item: 'magearnite' },
+  'magearna-original-mega': {
+    trigger: 'mega-evolution',
+    item: 'magearnite',
+    from: 'magearna-original',
+  },
+  'zeraora-mega': { trigger: 'mega-evolution', item: 'zeraorite' },
+  'scovillain-mega': { trigger: 'mega-evolution', item: 'scovillainite' },
+  'glimmora-mega': { trigger: 'mega-evolution', item: 'glimmoranite' },
+  'tatsugiri-curly-mega': { trigger: 'mega-evolution', item: 'tatsugirinite' },
+  'tatsugiri-droopy-mega': {
+    trigger: 'mega-evolution',
+    item: 'tatsugirinite',
+    from: 'tatsugiri-droopy',
+  },
+  'tatsugiri-stretchy-mega': {
+    trigger: 'mega-evolution',
+    item: 'tatsugirinite',
+    from: 'tatsugiri-stretchy',
+  },
+  'baxcalibur-mega': { trigger: 'mega-evolution', item: 'baxcalibrite' },
+}
+
+/** Every stage MegaEvolution describes. */
+const MEGA_EVOLUTIONS: Record<string, MegaEvolution> = {
   'venusaur-mega': { trigger: 'mega-evolution', item: 'venusaurite' },
   'charizard-mega-x': { trigger: 'mega-evolution', item: 'charizardite-x' },
   'charizard-mega-y': { trigger: 'mega-evolution', item: 'charizardite-y' },
@@ -537,6 +643,7 @@ const MEGA_EVOLUTIONS: Record<string, { trigger: string; item?: string; move?: s
   'gallade-mega': { trigger: 'mega-evolution', item: 'galladite' },
   'audino-mega': { trigger: 'mega-evolution', item: 'audinite' },
   'diancie-mega': { trigger: 'mega-evolution', item: 'diancite' },
+  ...LEGENDS_ZA_MEGAS,
   // From Dusk Mane or Dawn Wings Necrozma in the games, but a stage comes
   // after one form, and those two are looks of Necrozma's: it comes after
   // Necrozma, as the Megas do.
@@ -617,7 +724,15 @@ const DRAWN_ITEMS = new Set([
   'unremarkable-teacup',
   'leaders-crest',
   'gimmighoul-coin',
+  ...Object.values(LEGENDS_ZA_MEGAS).map((mega) => mega.item!),
 ])
+
+/**
+ * Forms PokeAPI/sprites has no pixel sprite for: a list shows their Pokémon
+ * HOME render, small, instead. Legends: Z-A is in 3D, and its Megas have
+ * pixel sprites only where someone drew them.
+ */
+const NO_PIXEL_SPRITE = new Set(['zygarde-mega'])
 
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
@@ -1156,7 +1271,6 @@ async function main() {
         if (LEFT_OUT_FORMS.has(form.name)) continue
         if (ONE_FORM_ONLY.has(s.name) && !form.is_default) continue
         if ((await generationOf(form.version_group)) > LAST_GENERATION) continue
-        if (LATER_VERSION_GROUPS.has(form.version_group.name)) continue
         kept.push({ form, pokemon })
       }
     }
@@ -1244,16 +1358,20 @@ async function main() {
     walk(chain)
   }
   // Every Mega Evolution, Primal Reversion and Ultra Burst kept, from its
-  // default form.
+  // default form or the one it names.
   for (const s of species) {
     for (const { form } of formsOf.get(s.id)!) {
       const mega = MEGA_EVOLUTIONS[form.name]
       if (!mega && /-(mega|primal|ultra)(-|$)/.test(form.name))
         throw new Error(`no Mega Evolution listed for ${form.name}`)
       if (!mega) continue
+      const from = mega.from
+        ? formsOf.get(s.id)!.find((k) => k.form.name === mega.from)?.form.id
+        : s.id
+      if (from === undefined) throw new Error(`no ${mega.from} for ${form.name} to come from`)
       const named = (name: string) => ({ name, url: '' })
       reached.set(form.id, {
-        from: s.id,
+        from,
         detail: {
           trigger: named(mega.trigger),
           held_item: mega.item ? named(mega.item) : null,
@@ -1271,12 +1389,16 @@ async function main() {
       // Named only where there is more than one to tell apart, so Greninja,
       // whose Ash-Greninja is left out, has no name for its one.
       const formNames: Record<string, string> =
-        kept.length > 1 ? localise(form.form_names, (n) => n.name) : {}
+        kept.length > 1 && !UNNAMED_FORMS.has(form.name)
+          ? localise(form.form_names, (n) => n.name)
+          : {}
       if (kept.length > 1 && FORM_KO_NAMES[form.name]) formNames.ko = FORM_KO_NAMES[form.name]
       else if (kept.length > 1 && form.name.endsWith('-gmax') && !formNames.ko)
         formNames.ko = GIGANTAMAX_KO
       else if (kept.length > 1 && form.name.endsWith('-hisui') && !formNames.ko)
         formNames.ko = HISUIAN_KO
+      else if (kept.length > 1 && MEGA.test(form.name) && !formNames.ko)
+        formNames.ko = megaKoName(form.name, localise(s.names, (n) => n.name).ko)
       // PokéAPI names a few default forms nothing, as Pichu's; a screen calls
       // those 기본. Any other form it cannot name is a name missing here.
       if (kept.length > 1 && form.id !== s.id && !formNames.ko)
@@ -1471,8 +1593,9 @@ async function main() {
     const n = row.id
     const k = row.spriteKey
     const shiny = NEVER_SHINY.has(row.slug) ? '' : 'shiny/'
-    add(`sprites/pokemon/${n}.png`, `${SPRITES_BASE}/${k}.png`)
-    add(`sprites/pokemon/shiny/${n}.png`, `${SPRITES_BASE}/${shiny}${k}.png`)
+    const pixel = NO_PIXEL_SPRITE.has(row.slug) ? home : SPRITES_BASE
+    add(`sprites/pokemon/${n}.png`, `${pixel}/${k}.png`)
+    add(`sprites/pokemon/shiny/${n}.png`, `${pixel}/${shiny}${k}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
       add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)

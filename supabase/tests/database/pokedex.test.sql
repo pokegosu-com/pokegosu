@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(68);
+select plan(71);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -26,8 +26,8 @@ select is((select count(*)::int from public.pokedex_species where generation = 8
 select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
   'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 417,
-  'and every other form those games had, Mega Evolutions, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax too, but Arceus''s ??? type');
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 466,
+  'and every other form those games had, Mega Evolutions, Legends: Z-A''s too, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
@@ -35,10 +35,12 @@ select is_empty(
                      'eternatus-eternamax', 'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
          or slug ~ '^(koraidon|miraidon)-' and slug not in ('koraidon-apex-build', 'miraidon-ultimate-mode') $$,
   'but no Totem, Partner, one game''s form, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
-select is_empty(
-  $$ select slug from public.pokedex_species where slug like '%-mega%' and generation = 9
-         or slug in ('dragonite-mega', 'absol-mega-z', 'raichu-mega-x') $$,
-  'and none of Legends: Z-A''s Mega Evolutions yet');
+select is(
+  (select count(*)::int from public.pokedex_species
+    where evolution_method like 'mega-evolution-holding-%'
+      and evolution_method not in (select 'mega-evolution-holding-' || id from public.pokedex_items
+                                    where sprite like '/sprites/%')),
+  49, 'Legends: Z-A''s and Mega Dimension''s 49 Mega Evolutions are in, each on a drawn stone');
 select is(
   (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
   8, 'Pikachu''s caps are in, as they came to more than one game');
@@ -94,6 +96,18 @@ select is(
     where e.dex = 'paldea' and e.is_default and e.number in (1, 400, 401, 499, 664)),
   'sprigatito:1 miraidon-ultimate-mode:400 spinarak:401 ogerpon:499 pecharunt:664',
   'Paldea''s 400, then those Kitakami and Blueberry add, each once');
+select is(
+  (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'lumiose' and e.is_default and e.number in (1, 232, 233, 364)),
+  'chikorita:1 mewtwo:232 mankey:233 zeraora:364',
+  'Lumiose''s 232, then Hyperspace Lumiose''s 132 numbered on');
+select is(
+  (select string_agg(s.slug, ' ' order by s.id)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.dex = 'lumiose' and e.number = 54),
+  'raichu raichu-alola raichu-mega-x raichu-mega-y',
+  'and a number lists its Megas with its other forms');
 select is(
   (select count(*)::int from public.pokedex_species s
     where s.form_of is null
@@ -191,6 +205,17 @@ select is(
     || ' kyogre-primal:kyogre:primal-reversion-holding-blue-orb'
     || ' rayquaza-mega:rayquaza:mega-evolution-knowing-dragon-ascent',
   'a Mega Evolution or Primal Reversion is a stage after its default form, on what it holds or knows');
+select is(
+  (select string_agg(s.slug || ':' || f.slug || ':' || s.ko_form_name, ' ' order by s.id)
+     from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
+    where s.slug in ('dragonite-mega', 'floette-mega', 'zygarde-mega', 'absol-mega-z', 'raichu-mega-y',
+                     'meowstic-female-mega', 'tatsugiri-droopy-mega', 'magearna-original-mega')),
+  'dragonite-mega:dragonite:메가망나뇽 floette-mega:floette-eternal:메가플라엣테'
+    || ' zygarde-mega:zygarde-complete:메가지가르데 raichu-mega-y:raichu:메가라이츄Y'
+    || ' absol-mega-z:absol:메가앱솔Z magearna-original-mega:magearna-original:메가마기아나 500년 전의 색'
+    || ' tatsugiri-droopy-mega:tatsugiri-droopy:메가싸리용 늘어진 모습'
+    || ' meowstic-female-mega:meowstic-female:메가냐오닉스 암컷',
+  'a Legends: Z-A Mega comes after the form that holds its stone, and is named in Korean');
 select is(
   (select string_agg(s.slug || ':' || f.slug || ':' || s.evolution_method, ' ' order by s.id)
      from public.pokedex_species s join public.pokedex_species f on f.id = s.evolves_from_id
