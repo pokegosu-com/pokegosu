@@ -202,6 +202,36 @@ export type Database = {
           },
         ]
       }
+      coder_egg_kind_forms: {
+        Row: {
+          egg_kind: string
+          species_id: number
+        }
+        Insert: {
+          egg_kind: string
+          species_id: number
+        }
+        Update: {
+          egg_kind?: string
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_egg_kind_forms_egg_kind_fkey'
+            columns: ['egg_kind']
+            isOneToOne: false
+            referencedRelation: 'coder_egg_kinds'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_egg_kind_forms_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_egg_kinds: {
         Row: {
           en_name: string | null

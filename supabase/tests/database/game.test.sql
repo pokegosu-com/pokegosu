@@ -9,7 +9,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(140);
+select plan(143);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local'),
@@ -149,6 +149,8 @@ select is(
     where g.egg_kind = 'hisui' and s.slug in ('stantler', 'basculin-red-striped', 'enamorus-incarnate')),
   'stantler:uncommon basculin-red-striped:uncommon enamorus-incarnate:mythic',
   'Enamorus is mythic, and the families from before keep their tiers');
+select is((select count(*)::int from public.coder_egg_species where egg_kind = 'lumiose'), 179,
+  'a Lumiose egg holds the first form of every family the Lumiose pokedex lists');
 select is((select count(*)::int from public.coder_egg_species where egg_kind = 'paldea'), 319,
   'a Paldea egg holds the first form of every family Scarlet and Violet''s pokedexes list, those from before too');
 select is(
@@ -647,6 +649,17 @@ select is(pg_temp.hatches('paldea'),
   'paldea:squawkabilly-blue-plumage squawkabilly-green-plumage squawkabilly-white-plumage'
     || ' squawkabilly-yellow-plumage',
   'and Squawkabilly in any plumage');
+
+-- With Meowth and Qwilfish alone in it, a Lumiose egg hatches each in any
+-- form Legends: Z-A has, its default too.
+delete from public.coder_egg_species where egg_kind = 'lumiose';
+insert into public.coder_egg_species (egg_kind, species_id) values ('lumiose', 52);
+select is(pg_temp.hatches('lumiose'), 'lumiose:meowth meowth-alola meowth-galar',
+  'Meowth hatches from a Lumiose egg as itself, Alolan or Galarian');
+delete from public.coder_egg_species where egg_kind = 'lumiose';
+insert into public.coder_egg_species (egg_kind, species_id) values ('lumiose', 211);
+select is(pg_temp.hatches('lumiose'), 'lumiose:qwilfish qwilfish-hisui',
+  'and Qwilfish as itself or Hisuian');
 
 -- With Indeedee alone in it, a national egg hatches each Indeedee as its
 -- gender's form.
