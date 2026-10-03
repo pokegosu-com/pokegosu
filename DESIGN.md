@@ -70,7 +70,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←, and ▾ marks a button that opens a menu. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 
@@ -78,7 +78,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 
 | Import                   | What it is                                                                                                                                                                                                                                     |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections, and the app drawer it opens. Each app's layout places it once.                                                                                            |
+| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections (or, with `picker`, a menu of them), and the app drawer it opens. Each app's layout places it once.                                                        |
 | `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                                                                                                                 |
 | `@pokegosu/ui/artwork`   | `Artwork`: a Pokémon's large render in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still.                                                                   |
 | `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in). |
@@ -88,7 +88,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 
 ## Behaviour
 
-**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. The name is not a link: the first section is home. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
+**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. An app with too many sections for the bar, as PokeGosu Pokédex has pokedexes, shows only the current one with ▾, which opens a menu of every section under it, home set apart by a line. The name is not a link: the first section is home. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
 
 **Every screen has four states.** Design each before it ships.
 

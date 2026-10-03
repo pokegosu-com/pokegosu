@@ -37,12 +37,15 @@ export function AppHeader({
   app,
   name,
   sections = [],
+  picker = false,
 }: {
   /** Which app this is, marked in the drawer; the account is none of them. */
   app: AppId | 'account'
   /** The full name: PokeGosu Coder, PokeGosu Pokédex, PokeGosu 계정. */
   name: string
   sections?: Section[]
+  /** Shows the current section alone, the rest in a menu under it, for an app with too many to fit in the bar. */
+  picker?: boolean
 }) {
   const pathname = usePathname()
   // Remembers the page it was opened over, so following a link inside it
@@ -77,16 +80,20 @@ export function AppHeader({
             {/* Not a link: the first section is already the way home. */}
             <span className="font-semibold tracking-tight">{name}</span>
           </span>
-          {sections.map((s) => (
-            <Link
-              key={s.href}
-              href={s.href}
-              aria-current={isCurrent(pathname, s.href) ? 'page' : undefined}
-              className="text-muted hover:text-ink aria-[current=page]:text-ink"
-            >
-              {s.label}
-            </Link>
-          ))}
+          {picker ? (
+            <SectionPicker sections={sections} pathname={pathname} />
+          ) : (
+            sections.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                aria-current={isCurrent(pathname, s.href) ? 'page' : undefined}
+                className="text-muted hover:text-ink aria-[current=page]:text-ink"
+              >
+                {s.label}
+              </Link>
+            ))
+          )}
         </nav>
       </header>
 
@@ -137,5 +144,59 @@ export function AppHeader({
         </div>
       )}
     </>
+  )
+}
+
+/** The current section as a button, opening a menu of every section below it. */
+function SectionPicker({ sections, pathname }: { sections: Section[]; pathname: string }) {
+  // Like the drawer, it remembers the page it was opened over, so it is shut
+  // on the page a link inside it leads to.
+  const [openOn, setOpenOn] = useState<string | null>(null)
+  const open = openOn === pathname
+  // A page under no section, such as a missing one, still names where home is.
+  const current = sections.find((s) => isCurrent(pathname, s.href)) ?? sections[0]
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenOn(null)
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [open])
+
+  if (!current) return null
+  return (
+    <span className="relative">
+      <button
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpenOn(open ? null : pathname)}
+        className="hover:bg-surface-raised -mx-2 flex items-center gap-1.5 rounded-md px-2 py-1"
+      >
+        {current.label}
+        <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpenOn(null)} />
+          <ul className="bg-surface border-line absolute top-full left-0 z-50 mt-1 -ml-2 grid w-44 gap-0.5 rounded-md border p-1 shadow-sm">
+            {sections.map((s, i) => (
+              // The first section is home, so it stands apart from the rest.
+              <li key={s.href} className={i === 1 ? 'border-line mt-0.5 border-t pt-1' : undefined}>
+                <Link
+                  href={s.href}
+                  aria-current={isCurrent(pathname, s.href) ? 'page' : undefined}
+                  className="text-muted hover:text-ink hover:bg-surface-raised aria-[current=page]:text-ink aria-[current=page]:bg-surface-raised block rounded px-2 py-1.5"
+                >
+                  {s.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </span>
   )
 }
