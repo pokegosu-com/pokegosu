@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { createClient } from '@pokegosu/supabase/client'
 
+import { env } from '@/env'
 import { points } from '@/lib/format'
 import { eggSpriteUrl, itemSpriteUrl, ko, type Item, type Named } from '@/lib/game'
 
@@ -57,7 +58,7 @@ function Ware({
   sprite: string | undefined
   large: boolean
   name: string
-  note: string
+  note: React.ReactNode
   price: number
   disabled: boolean
   onBuy: () => void
@@ -84,9 +85,16 @@ function Ware({
   )
 }
 
-/** "관동 지방의 포켓몬", from an egg named 관동 알. */
-function regionNote(egg: Named): string {
-  return `${ko(egg).replace(/ 알$/, '')} 지방의 포켓몬`
+/**
+ * "관동 지방의 포켓몬", from an egg named 관동 알, linked to that region's
+ * pokedex, which shares the egg's id.
+ */
+function RegionNote({ egg }: { egg: { id: string } & Named }) {
+  return (
+    <a href={`${env.NEXT_PUBLIC_POKEDEX_URL}/${egg.id}`} className="text-accent hover:text-ink">
+      {ko(egg).replace(/ 알$/, '')} 지방의 포켓몬
+    </a>
+  )
 }
 
 export function ShopView() {
@@ -161,7 +169,7 @@ export function ShopView() {
               sprite={eggSpriteUrl}
               large
               name={ko(s.egg!)}
-              note={regionNote(s.egg!)}
+              note={<RegionNote egg={s.egg!} />}
               price={s.price}
               disabled={busy || box.points < s.price}
               onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
