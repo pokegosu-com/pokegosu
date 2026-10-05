@@ -28,6 +28,8 @@
   --mark-red: oklch(0.645 0.246 16.439);
   --ribbon-surface: oklch(0.769 0.188 70.08 / 0.15);
   --sparkle: oklch(0.86 0.17 90);
+  /* A render turned to its outline in ink, as it evolves or hatches. */
+  --silhouette: brightness(0);
 
   /* Coding agents in usage charts, told apart by lightness as well as hue. */
   --provider-claude-code: oklch(0.64 0.15 45);
@@ -80,6 +82,10 @@
     --type-dragon: oklch(0.64 0.18 280);
     --type-dark: oklch(0.6 0.03 50);
 
+    /* White without inverting, so its colour fades in rather than passing
+       through its negative. */
+    --silhouette: contrast(0) brightness(2);
+
     color-scheme: dark;
   }
 }
@@ -113,12 +119,18 @@
 
 /* The official artwork is a still, so a Pokémon on its own page idles: it
    floats while its shadow narrows beneath it, and hops when it is touched.
-   A shiny one sparkles as it hops. */
+   A shiny one sparkles as it hops. One that has just evolved flickers
+   between its old and new outlines, faster and faster, then takes its
+   colour; one just hatched shakes out of its egg the same way. */
 @theme {
   --animate-idle: idle 2.5s ease-in-out infinite;
   --animate-idle-shadow: idle-shadow 2.5s ease-in-out infinite;
   --animate-hop: hop 0.5s cubic-bezier(0.3, 0, 0.3, 1);
   --animate-sparkle: sparkle 0.7s ease-out both;
+  --animate-evolve-out: evolve-out 2.4s linear both;
+  --animate-evolve-in: evolve-in 2.4s linear both;
+  --animate-hatch-out: hatch-out 2.2s ease-in-out both;
+  --animate-hatch-in: hatch-in 2.2s ease-out both;
 
   @keyframes idle {
     0%,
@@ -169,6 +181,146 @@
     }
     100% {
       transform: translateY(0) scale(1, 1);
+    }
+  }
+
+  /* The old render, turned to its outline, then flickering out. Each swap
+     with the new one comes sooner than the last. */
+  @keyframes evolve-out {
+    0% {
+      filter: none;
+      opacity: 1;
+    }
+    15%,
+    30% {
+      filter: var(--silhouette);
+      opacity: 1;
+    }
+    32%,
+    42% {
+      opacity: 0;
+    }
+    44%,
+    52% {
+      opacity: 1;
+    }
+    54%,
+    60% {
+      opacity: 0;
+    }
+    61%,
+    65% {
+      opacity: 1;
+    }
+    66%,
+    69% {
+      opacity: 0;
+    }
+    70%,
+    72% {
+      opacity: 1;
+    }
+    73%,
+    100% {
+      filter: var(--silhouette);
+      opacity: 0;
+    }
+  }
+  /* The new render's outline, shown whenever the old one is not, then its
+     colour coming in. */
+  @keyframes evolve-in {
+    0%,
+    30% {
+      filter: var(--silhouette);
+      opacity: 0;
+    }
+    32%,
+    42% {
+      opacity: 1;
+    }
+    44%,
+    52% {
+      opacity: 0;
+    }
+    54%,
+    60% {
+      opacity: 1;
+    }
+    61%,
+    65% {
+      opacity: 0;
+    }
+    66%,
+    69% {
+      opacity: 1;
+    }
+    70%,
+    72% {
+      opacity: 0;
+    }
+    73%,
+    80% {
+      filter: var(--silhouette);
+      opacity: 1;
+    }
+    100% {
+      filter: none;
+      opacity: 1;
+    }
+  }
+  /* The egg rocks twice, then bursts into an outline and is gone. */
+  @keyframes hatch-out {
+    0%,
+    8%,
+    26%,
+    40%,
+    58%,
+    64% {
+      transform: rotate(0) scale(1);
+      filter: none;
+      opacity: 1;
+    }
+    14%,
+    46% {
+      transform: rotate(-12deg);
+    }
+    20%,
+    52% {
+      transform: rotate(10deg);
+    }
+    70% {
+      transform: scale(1.25);
+      filter: var(--silhouette);
+      opacity: 1;
+    }
+    76%,
+    100% {
+      transform: scale(1.5);
+      filter: var(--silhouette);
+      opacity: 0;
+    }
+  }
+  /* What hatched grows out of the burst as an outline, then takes its
+     colour. */
+  @keyframes hatch-in {
+    0%,
+    70% {
+      transform: scale(0.6);
+      filter: var(--silhouette);
+      opacity: 0;
+    }
+    78% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+    84% {
+      transform: scale(1);
+      filter: var(--silhouette);
+    }
+    100% {
+      transform: scale(1);
+      filter: none;
+      opacity: 1;
     }
   }
 }

@@ -26,6 +26,7 @@ import { useCountUp } from './game/count-up'
 import { useLevelFill } from './game/level-fill'
 import { UseItemLabel } from './game/item-label'
 import { ActionToasts } from './game/action-toasts'
+import { cameFrom } from './game/came-from'
 import { Gender } from './game/gender'
 import { useGame } from './game/use-game'
 
@@ -140,7 +141,7 @@ function PokemonPartner({
       className="border-accent flex flex-col items-center gap-4 rounded-lg border p-5 sm:flex-row sm:gap-8 sm:p-6"
     >
       <ActionToasts game={game} level={at.level} />
-      <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
+      <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} from={cameFrom(game.last, p.id)} />
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 self-stretch">
         <div className="space-y-1">
           <p className="text-accent text-xs font-medium">파트너</p>
