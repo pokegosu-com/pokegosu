@@ -260,8 +260,8 @@ select is(public.work() -> 'trainer' ->> 'name', '지우', 'the person works und
 reset role;
 select pg_temp.work_hours(8, 30);
 select pg_temp.as_person();
-select is(public.settle_trainer(), '{"outcome": "settled", "hours": 23, "points": 230, "bonus": 1000}'::jsonb,
-  'with 1,000 more for reaching 24 hours');
+select is(public.settle_trainer(), '{"outcome": "settled", "hours": 23, "points": 230, "bonus": 500}'::jsonb,
+  'with 500 more for reaching 24 hours');
 
 
 -- ------------------------------------------------------------
@@ -277,7 +277,7 @@ create temporary table fox as select pg_temp.pokemon(37, 20) as vulpix;
 grant select on fox to authenticated;
 select pg_temp.as_person();
 
-select is(public.buy('fire-stone'), '{"outcome": "bought", "points": 36470}'::jsonb, 'a stone is bought with points');
+select is(public.buy('fire-stone'), '{"outcome": "bought", "points": 35970}'::jsonb, 'a stone is bought with points');
 select is(public.box() -> 'bag', '[{"id": "fire-stone", "ko_name": "불꽃의돌", "en_name": "Fire Stone",
                                     "sprite": "/sprites/items/fire-stone.png", "quantity": 1}]'::jsonb,
   'and goes in the bag');
