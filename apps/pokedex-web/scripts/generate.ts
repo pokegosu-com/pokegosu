@@ -391,7 +391,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261005120000_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261005130000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -1469,7 +1469,8 @@ async function main() {
   // Each pokedex's numbering, and its entry text in the game it prefers.
   // PokéAPI lists a species' entries oldest first. Every form of a species is
   // under its number, with the same text, and the default form is the one a
-  // list shows.
+  // list shows: the region's own where it has one, as Alolan Raichu is in
+  // Alola's, else the species' default form.
   const byDexNo = new Map<number, Row[]>()
   for (const row of rows) byDexNo.set(row.dexNo, [...(byDexNo.get(row.dexNo) ?? []), row])
   const entries: {
@@ -1518,12 +1519,18 @@ async function main() {
           versions.map((v) => matching.find((f) => f.version.name === v)).find(Boolean) ??
           matching.at(-1),
       )
+      // A regional form is named for its region, as raichu-alola is, and each
+      // such pokedex is named for its region too. Where there are several, the
+      // first stands for them: Combat Breed Tauros, Standard Mode Darmanitan.
+      const shown =
+        forms.find((row) => row.formOf !== null && row.slug.split('-').includes(dex)) ??
+        forms.find((row) => row.formOf === null)
       for (const row of forms) {
         entries.push({
           dex,
           number: entry.entry_number,
           row,
-          isDefault: row.formOf === null,
+          isDefault: row === shown,
           description,
         })
       }
