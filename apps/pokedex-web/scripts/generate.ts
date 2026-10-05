@@ -391,7 +391,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261005130000_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261005150001_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -901,34 +901,65 @@ function inKeptRegion(detail: EvolutionDetail): boolean {
   return !detail.region || keptRegions.has(detail.region.name)
 }
 
-/**
- * The detail for one form becoming another. PokéAPI lists a regional form's
- * way beside the rest, such as Alolan Rattata evolving only at night, or
- * Pikachu becoming Alolan Raichu only in Alola; a way that names the form it
- * ends in comes first, so Raichu's own way does not stand for Alolan
- * Raichu's. A species whose every form is named, as Burmy's cloaks are,
- * lists a way per form, each from its form and to its own; with no form to
- * come from, any way to its own will do. A way only Legends: Arceus has
- * comes last, as Overqwil's twenty Barb Barrages in the strong style, where
- * Scarlet and Violet ask only that it know the move.
- */
 /** Legends: Arceus's ways by a move used in a style, which no other game asks. */
 function styled(detail: EvolutionDetail): boolean {
   return ['agile-style-move', 'strong-style-move'].includes(detail.trigger.name)
 }
 
-function ownWay(
-  details: EvolutionDetail[],
-  from: string | null,
-  to: string,
-): EvolutionDetail | undefined {
+/**
+ * The details for one form becoming another, the one evolution_method keeps
+ * first. PokéAPI lists a regional form's way beside the rest, such as Alolan
+ * Rattata evolving only at night, or Pikachu becoming Alolan Raichu only in
+ * Alola; the ways that name the form they end in are its own, so Raichu's
+ * own way does not stand for Alolan Raichu's. A species whose every form is
+ * named, as Burmy's cloaks are, lists a way per form, each from its form and
+ * to its own; with no form to come from, any way to its own will do. A way
+ * only Legends: Arceus has comes last, as Overqwil's twenty Barb Barrages in
+ * the strong style, where Scarlet and Violet ask only that it know the move.
+ */
+function ownWays(details: EvolutionDetail[], from: string | null, to: string): EvolutionDetail[] {
   const fromOk = (d: EvolutionDetail) =>
     !d.required_pokemon_form || from === null || d.required_pokemon_form.name === from
-  return (
-    details.find((d) => inKeptRegion(d) && d.evolved_pokemon_form?.name === to && fromOk(d)) ??
-    [...details]
-      .sort((a, b) => Number(styled(a)) - Number(styled(b)))
-      .find((d) => !d.region && !d.evolved_pokemon_form && fromOk(d))
+  const named = details.filter(
+    (d) => inKeptRegion(d) && d.evolved_pokemon_form?.name === to && fromOk(d),
+  )
+  if (named.length > 0) return named
+  return [...details]
+    .sort((a, b) => Number(styled(a)) - Number(styled(b)))
+    .filter((d) => !d.region && !d.evolved_pokemon_form && fromOk(d))
+}
+
+/**
+ * The game PokéAPI should list a way under, where it lists it under an older
+ * one only: Milotic's Prism Scale trade is under Black and White, though
+ * Sword and Shield and Scarlet and Violet ask it too, and Omega Ruby and
+ * Alpha Sapphire's beauty would otherwise be the newest.
+ */
+const NEWEST_IN: Record<string, { trigger: string; versionGroup: string }> = {
+  milotic: { trigger: 'trade', versionGroup: 'scarlet-violet' },
+}
+
+/**
+ * Of a form's own ways, the newest game's, which the national pokedex shows:
+ * a Thunder Stone for Magnezone, not Diamond and Pearl's Mt. Coronet. Of two
+ * in one game, as Sun and Moon's two places for Vikavolt, the first.
+ */
+function newestWay(
+  ways: EvolutionDetail[],
+  to: string,
+  order: Map<string, number>,
+): EvolutionDetail | undefined {
+  const newest = NEWEST_IN[to]
+  const orderOf = (d: EvolutionDetail) => {
+    const group =
+      newest && d.trigger.name === newest.trigger
+        ? newest.versionGroup
+        : (d.version_group as Named | null | undefined)?.name
+    return group ? (order.get(group) ?? -1) : -1
+  }
+  return ways.reduce<EvolutionDetail | undefined>(
+    (best, d) => (best === undefined || orderOf(d) > orderOf(best) ? d : best),
+    undefined,
   )
 }
 
@@ -1139,6 +1170,8 @@ type Row = {
   category: 'baby' | 'legendary' | 'mythical' | null
   evolvesFrom: number | null
   evolution: Evolution | null
+  /** The newest game's way, where it is not the one evolution is. */
+  newestEvolution: Evolution | null
   sprites: Record<string, string>
   /** The file each style is under in PokeAPI/sprites: a Pokémon's id, or its number and form. */
   spriteKey: string
@@ -1296,7 +1329,17 @@ async function main() {
   // only Cherrim in the sun. A form with none of its name before it that a
   // way names for its own, as female Meowstic is a female Espurr's, evolves
   // from the form that way asks for, or else from the default form.
-  const reached = new Map<number, { from: number; detail: EvolutionDetail }>()
+  const reached = new Map<
+    number,
+    { from: number; detail: EvolutionDetail; newest?: EvolutionDetail }
+  >()
+  // Each game's place among the rest, oldest first, to tell a form's newest way.
+  const { results: allGroups } = await get<{ results: Named[] }>('version-group?limit=100')
+  const groupOrder = new Map(
+    await Promise.all(
+      allGroups.map(async (g) => [g.name, (await get<{ order: number }>(g.url)).order] as const),
+    ),
+  )
   const { results: allRegions } = await get<{ results: Named[] }>('region?limit=100')
   for (const region of allRegions) {
     const { main_generation } = await get<{ main_generation: Named | null }>(region.url)
@@ -1338,17 +1381,20 @@ async function main() {
                   namedSource ??
                   undefined)
             if (!source) continue
-            const detail = ownWay(
+            const ways = ownWays(
               next.evolution_details,
               fromDefault ? null : source.form.name,
               target.form.name,
             )
+            const detail = ways[0]
             if (!detail)
               throw new Error(`no way of its own from ${source.form.name} to ${target.form.name}`)
             const version = VERSION_ONLY[target.form.name]
+            const newest = newestWay(ways, target.form.name, groupOrder)!
             reached.set(target.form.id, {
               from: source.form.id,
               detail: version ? { ...detail, version } : detail,
+              newest: newest === detail ? undefined : newest,
             })
           }
         }
@@ -1439,6 +1485,7 @@ async function main() {
               : null,
         evolvesFrom: evolution ? evolution.from : null,
         evolution: evolution ? await evolutionOf(evolution.detail) : null,
+        newestEvolution: evolution?.newest ? await evolutionOf(evolution.newest) : null,
         // Under the form's id, which is the national number for a default form.
         // A female that looks different has sprites of her own, in pixels and
         // large.
@@ -1856,6 +1903,15 @@ async function main() {
           `   ${sql(r.evolvesFrom)}, ${sql(r.evolution?.id)}, ${sql(r.sprites)})`,
         ].join('\n'),
       ),
+    ),
+    ...upsert(
+      written,
+      'pokedex_latest_evolutions',
+      ['species_id', 'evolution_method'],
+      ['species_id'],
+      ordered
+        .filter((r) => r.newestEvolution && r.newestEvolution.id !== r.evolution!.id)
+        .map((r) => `  (${r.id}, ${sql(r.newestEvolution!.id)})`),
     ),
     ...upsert(
       written,
