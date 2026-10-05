@@ -54,11 +54,12 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 - Sections are 32 to 40px apart; cards in a grid 8 to 12px.
 - A list of Pokémon is a grid of small tiles with the 96px pixel sprite at its own size, never scaled up, shrinking only where the grid is too narrow for it: 8 across, in the box as in a pokedex. One Pokémon on its own page gets its large render, from Pokémon HOME, in a 192px slot.
 - Running text inside a wide page stays under about 40rem.
+- A pokedex's evolutions are a tree that runs left to right, branches stacked and each stage's top level with its first evolution's. It shows only the way down to the Pokémon on the page and all that comes after it: Eevee's page shows all eight, Vaporeon's only Eevee and Vaporeon.
 - On a phone, below Tailwind's `sm` (640px):
   - What sits side by side stacks: a Pokémon's artwork goes above its name, and the rest of the card spans the page.
   - The game's primary button spans its card, under the thumb.
   - Filters past search, kind and sort wait in a sheet from the bottom, behind a 필터 button that counts the ones on. A long run of type chips is one line that scrolls sideways.
-  - A pokedex's evolutions read top to bottom, one stage to a line.
+  - A pokedex's evolutions read top to bottom, one stage to a line, each set in under the one it comes from.
   - Grids keep their four tiles across; the sprite shrinks to fit.
 
 ## Shape

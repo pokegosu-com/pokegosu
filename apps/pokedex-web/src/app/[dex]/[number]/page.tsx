@@ -5,8 +5,9 @@ import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
 import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
 
+import { Family, type Stage } from './family'
 import { FormMarks, FormSprite } from './marks'
-import { ShinyChoice, StageLink } from './shiny'
+import { ShinyChoice } from './shiny'
 import { LookLink, Shown } from './shown'
 import { Sprite } from './sprite'
 
@@ -268,6 +269,37 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     return query.size ? `/${dex}/${number}?${query}` : `/${dex}/${number}`
   }
 
+  // A form's family as a tree, cut to the way down to it and all that comes
+  // after: on Vaporeon's page, Eevee's other evolutions are not Vaporeon's to
+  // show. A first stage evolves from none this pokedex lists.
+  const stagesOf = (id: number): Stage[] => {
+    const family = familyOf(id)
+    const listed = new Set(family.map((f) => f.id))
+    const from = (parent: number | null): Stage[] =>
+      family
+        .filter((f) =>
+          parent === null
+            ? f.evolves_from_id === null || !listed.has(f.evolves_from_id)
+            : f.evolves_from_id === parent,
+        )
+        .map((f) => ({
+          id: f.id,
+          href: hrefOf(f.number, f),
+          name: isStage(f) ? formName(f) : ko(f),
+          // Raichu and Alolan Raichu are both Pichu's family.
+          form: f.form_of !== null && !isStage(f) ? formName(f) : null,
+          number: f.number,
+          front: f.front ?? undefined,
+          shiny: f.front_shiny ?? undefined,
+          method: parent !== null && f.method ? takes(f.method) : null,
+          next: from(f.id),
+        }))
+    const holds = (s: Stage): boolean => s.id === id || s.next.some(holds)
+    const cut = (stages: Stage[]): Stage[] =>
+      stages.filter(holds).map((s) => (s.id === id ? s : { ...s, next: cut(s.next) }))
+    return cut(from(null))
+  }
+
   // Every form, and where a female looks different, as Pikachu's tail does,
   // the male and the female each. Each links to itself. A stage is in the
   // family instead.
@@ -333,7 +365,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
             artwork_shiny_female?: string
           }
           const description = ko_description ?? en_description
-          const family = familyOf(p.id)
+          const stages = stagesOf(p.id)
           const statTotal = STATS.reduce((sum, [key]) => sum + p[key], 0)
           // Only where she looks different; elsewhere ?gender=female changes nothing.
           const genders = sprites.artwork_female ? [false, true] : [null]
@@ -439,46 +471,10 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                 </div>
               </section>
 
-              {family.length > 1 && (
+              {stages.some((s) => s.next.length > 0) && (
                 <section className="space-y-3">
                   <h2 className="text-muted text-sm font-medium">진화</h2>
-                  <ol className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                    {family.map((f, i) => (
-                      <li key={f.id} className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                        {/* The first stage shown has nothing before it here, even
-                          where it evolves from one this pokedex leaves out. */}
-                        {i > 0 && f.method && (
-                          <span className="text-muted py-1.5 pl-7 text-xs sm:p-0">
-                            <span className="sm:hidden">↓</span>
-                            <span className="hidden sm:inline">→</span> {takes(f.method)}
-                          </span>
-                        )}
-                        <StageLink
-                          href={hrefOf(f.number, f)}
-                          aria-current={f.id === p.id ? 'page' : undefined}
-                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex items-center gap-3 rounded-lg border px-3 py-1.5 text-[13px] sm:flex-col sm:gap-1 sm:py-2"
-                        >
-                          <span className="absolute top-1 right-1">
-                            <FormMarks id={f.id} />
-                          </span>
-                          <span className="grid size-14 place-items-center rounded-md sm:size-24">
-                            <FormSprite
-                              src={f.front ?? undefined}
-                              shiny={f.front_shiny ?? undefined}
-                            />
-                          </span>
-                          {isStage(f) ? formName(f) : ko(f)}
-                          {/* Raichu and Alolan Raichu are both Pichu's family. */}
-                          {f.form_of !== null && !isStage(f) && (
-                            <span className="text-muted text-[11px]">{formName(f)}</span>
-                          )}
-                          <span className="text-muted ml-auto pr-5 font-mono text-[11px] sm:ml-0 sm:pr-0">
-                            {dexNo(f.number)}
-                          </span>
-                        </StageLink>
-                      </li>
-                    ))}
-                  </ol>
+                  <Family stages={stages} current={p.id} />
                 </section>
               )}
             </Shown>
