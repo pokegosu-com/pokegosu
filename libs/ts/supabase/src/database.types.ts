@@ -1127,6 +1127,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pokedex_latest_evolutions: {
+        Row: {
+          evolution_method: string
+          species_id: number
+        }
+        Insert: {
+          evolution_method: string
+          species_id: number
+        }
+        Update: {
+          evolution_method?: string
+          species_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pokedex_latest_evolutions_evolution_method_fkey'
+            columns: ['evolution_method']
+            isOneToOne: false
+            referencedRelation: 'pokedex_evolution_methods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pokedex_latest_evolutions_species_id_fkey'
+            columns: ['species_id']
+            isOneToOne: true
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       pokedex_locations: {
         Row: {
           en_name: string | null
