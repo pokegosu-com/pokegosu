@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(75);
+select plan(76);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -26,13 +26,13 @@ select is((select count(*)::int from public.pokedex_species where generation = 8
 select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
   'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 458,
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 460,
   'and every other form those games had, Mega Evolutions, Legends: Z-A''s too, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
       where slug ~ '(totem|starter|battle-bond|power-construct|-(orange|yellow|green|blue|indigo|violet)-meteor)$'
          or slug in ('mothim-sandy', 'scatterbug-polar', 'pikachu-cosplay', 'pichu-spiky-eared', 'greninja-ash',
-                     'eternatus-eternamax', 'sinistea-antique', 'poltchageist-artisan', 'sinistcha-masterpiece')
+                     'eternatus-eternamax', 'sinistea-antique', 'poltchageist-artisan')
          or slug ~ '^(koraidon|miraidon)-' and slug not in ('koraidon-apex-build', 'miraidon-ultimate-mode') $$,
   'but no Totem, Partner, one game''s form, other ability, Minior shell but one, Mothim cloak, look alike, one battle''s form or ride');
 select is(
@@ -41,6 +41,11 @@ select is(
       and evolution_method not in (select 'mega-evolution-holding-' || id from public.pokedex_items
                                     where sprite like '/sprites/%')),
   49, 'Legends: Z-A''s and Mega Dimension''s 49 Mega Evolutions are in, each on a drawn stone');
+select set_eq(
+  $$ select slug from public.pokedex_species
+      where slug in ('polteageist-antique', 'sinistcha-masterpiece') and evolves_from_id is null $$,
+  array['polteageist-antique', 'sinistcha-masterpiece'],
+  'Antique Polteageist and Masterpiece Sinistcha are looks that evolve from nothing, so no egg or evolution gives one');
 select is_empty(
   $$ select slug from public.pokedex_species where slug like 'pikachu-%-cap' $$,
   'and no Pikachu in a cap, an event gift in a costume');

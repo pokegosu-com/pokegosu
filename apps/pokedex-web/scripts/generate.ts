@@ -68,9 +68,10 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  * Minior's shell is the same whatever its core, so one Meteor Form stands for
  * the seven, beside the seven cores.
  * Eternamax Eternatus is met in one battle and never caught. An Antique Form
- * Sinistea or Polteageist is a Phony one with a mark under its pot, and
- * Pokémon HOME shows the two alike; so is an Artisan Poltchageist or a
- * Masterpiece Sinistcha a Counterfeit or an Unremarkable one. Koraidon's builds
+ * Sinistea is a Phony one with a mark under its pot, and Pokémon HOME shows
+ * the two alike; so is an Artisan Poltchageist a Counterfeit one. Antique
+ * Polteageist and Masterpiece Sinistcha, which they become, stay: see
+ * LOOKS_ONLY. Koraidon's builds
  * and Miraidon's modes are how it is ridden in Scarlet and Violet: it battles
  * and goes to HOME in one, its own.
  */
@@ -120,9 +121,7 @@ const LEFT_OUT_FORMS = new Set([
   'minior-violet-meteor',
   'eternatus-eternamax',
   'sinistea-antique',
-  'polteageist-antique',
   'poltchageist-artisan',
-  'sinistcha-masterpiece',
   'koraidon-limited-build',
   'koraidon-sprinting-build',
   'koraidon-swimming-build',
@@ -148,6 +147,15 @@ const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa', 'mothim'])
  * Alcremie's 63 creams and sweets from Milcery.
  */
 const ONLY_DEFAULT_EVOLVES = new Set(['vivillon', 'alcremie'])
+
+/**
+ * Forms kept as looks only, which evolve from nothing, as Gigantamax ones do.
+ * Antique Polteageist and Masterpiece Sinistcha come only from Antique
+ * Sinistea and Artisan Poltchageist, which are left out; and the Coder game
+ * hands out only the Phony and Unremarkable ones, as a look that evolves from
+ * nothing hatches from no egg.
+ */
+const LOOKS_ONLY = new Set(['polteageist-antique', 'sinistcha-masterpiece'])
 
 /**
  * Default forms PokéAPI names that are better unnamed. It names Pyroar's
@@ -177,6 +185,8 @@ const FORM_KO_NAMES: Record<string, string> = {
   'arceus-dark': '악타입',
   'arceus-fairy': '페어리타입',
   'rockruff-own-tempo': '마이페이스',
+  'polteageist-phony': '위작폼',
+  'polteageist-antique': '진작폼',
   'toxtricity-amped-gmax': '하이한 모습 거다이맥스',
   'toxtricity-low-key-gmax': '로우한 모습 거다이맥스',
   'urshifu-single-strike-gmax': '일격의 태세 거다이맥스',
@@ -391,7 +401,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261005150001_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261005180000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -727,6 +737,16 @@ const DRAWN_ITEMS = new Set([
  * pixel sprites only where someone drew them.
  */
 const NO_PIXEL_SPRITE = new Set(['zygarde-mega'])
+
+/**
+ * Forms Pokémon HOME draws as another, so PokeAPI/sprites has no render of
+ * their own: HOME shows Antique Polteageist as a Phony one, and Masterpiece
+ * Sinistcha as an Unremarkable one. Their pixel sprites tell them apart.
+ */
+const HOME_RENDER_OF: Record<string, string> = {
+  'polteageist-antique': '855',
+  'sinistcha-masterpiece': '1013',
+}
 
 /** PokéAPI names triggers in English only. */
 const TRIGGER_KO_NAMES: Record<string, string> = {
@@ -1363,6 +1383,7 @@ async function main() {
               named &&
               (formsOf.get(from)!.find((k) => k.form.name === named.required_pokemon_form?.name) ??
                 defaultOf(from))
+            if (LOOKS_ONLY.has(target.form.name)) continue
             const fromDefault = ONLY_DEFAULT_EVOLVES.has(next.species.name)
             if (fromDefault && target.form.id !== to) continue
             // Perrserker comes only from Galarian Meowth: a species every way
@@ -1653,8 +1674,9 @@ async function main() {
       add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
       add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
     }
-    add(`sprites/pokemon/artwork/${n}.png`, `${home}/${k}.png`)
-    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${home}/shiny/${k}.png`)
+    const render = HOME_RENDER_OF[row.slug] ?? k
+    add(`sprites/pokemon/artwork/${n}.png`, `${home}/${render}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${home}/shiny/${render}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/artwork/female/${n}.png`, `${home}/female/${k}.png`)
       add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${home}/shiny/female/${k}.png`)
