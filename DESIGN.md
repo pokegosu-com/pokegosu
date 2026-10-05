@@ -13,7 +13,7 @@ How PokeGosu looks, reads and behaves. The tokens live in [libs/ts/ui/theme.css]
 
 The apps are in Korean. Write the way the games talk to a trainer: plainly and briefly.
 
-- One language per page. A Korean page shows no English beside the Korean: no English names, no English labels. Product names such as PokeGosu Coder and Claude Code stay as they are.
+- One language per page. A Korean page shows no English beside the Korean: no English names, no English labels. Product and company names, such as PokeGosu Coder, Claude Code and Nintendo, stay as they are.
 - Names keep their capitals: PokeGosu, PokeGosu Coder, PokeGosu Pokédex, PokeGosu 계정. Never lowercase them, even in a logo spot.
 - The Pokémon a trainer is raising now is their 파트너, never 메인.
 - Buttons are the action, as short as the games put it: 알 받기, 부화시키기, 파트너로, 진화, 로그인. No trailing period.
