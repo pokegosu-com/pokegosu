@@ -14,8 +14,8 @@ export function FormSprite({ src, shiny }: { src?: string; shiny?: string }) {
   const [wantShiny] = useShiny()
   const shown = (wantShiny && shiny) || src
   if (!shown) return null
-  // The slot sets the size: 96px, the sprite's own, except in a phone's
-  // evolution list, where it shrinks rather than overflow.
+  // The slot sets the size: 96px, the sprite's own, except in the evolution
+  // tree, where 56px lets four stages fit across the page.
   // eslint-disable-next-line @next/next/no-img-element -- pixel sprites, served as they are
   return <img src={shown} alt="" className="size-full [image-rendering:pixelated]" />
 }
