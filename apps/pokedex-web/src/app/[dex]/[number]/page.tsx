@@ -136,6 +136,17 @@ const STATS = [
   ['speed', '스피드'],
 ] as const
 
+/**
+ * Looks listed in their own order rather than the default first: Zygarde's
+ * read as it grows, 10% to 50% to Complete, though 50% stays the default.
+ */
+const LOOK_ORDER = ['zygarde-10', 'zygarde-50', 'zygarde-complete']
+
+/** Where a look goes among the others; any not in LOOK_ORDER keeps its place. */
+function lookRank(slug: string): number {
+  return LOOK_ORDER.indexOf(slug)
+}
+
 /** A form's own name, or 기본 for a default form the games name nothing. */
 function formName(form: { ko_form_name: string | null; en_form_name: string | null }): string {
   return form.ko_form_name ?? form.en_form_name ?? '기본'
@@ -303,7 +314,9 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   // Every form, and where a female looks different, as Pikachu's tail does,
   // the male and the female each. Each links to itself. A stage is in the
   // family instead.
-  const lookForms = forms.data.filter(({ species: f }) => !isStage(f))
+  const lookForms = forms.data
+    .filter(({ species: f }) => !isStage(f))
+    .sort((a, b) => lookRank(a.species.slug) - lookRank(b.species.slug))
   const manyForms = lookForms.length > 1
   const looks = lookForms.flatMap(({ is_default, species: f }) => {
     const s = f.sprites as {
