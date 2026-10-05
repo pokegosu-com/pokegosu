@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { AppHeader } from '@pokegosu/ui/app-shell'
 import { Fonts } from '@pokegosu/ui/fonts'
 import { faviconUrl } from '@pokegosu/ui/icon'
-import { VersionFooter } from '@pokegosu/ui/version-footer'
+import { Footer } from '@pokegosu/ui/footer'
 
 import './globals.css'
 
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           bareOn={['/login', '/onboarding']}
         />
         {children}
-        <VersionFooter />
+        <Footer />
       </body>
     </html>
   )
