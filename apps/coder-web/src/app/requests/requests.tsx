@@ -75,8 +75,19 @@ function sayGift({ action, outcome: o, before }: WorkLast): string | null {
   const started = before?.started ? before : null
   const place = started?.workplaces.find((w) => w.id === action.workplace_id)
   const worker = started?.pokemon.find((p) => p.id === place?.worker?.companion_id)
-  const client = place?.client ? ko(place.client) : '의뢰인'
-  return `${josa(client, '이')} ${worker ? ko(worker) : '포켓몬'}에게 ${exactTokens(gift)} 포인트를 더 줬다!`
+  const client = josa(place?.client ? ko(place.client) : '의뢰인', '이')
+  const to = worker ? ko(worker) : '포켓몬'
+  const amount = `${exactTokens(gift)} 포인트`
+  // As family: a later stage gives to an earlier one as to a child, an
+  // earlier one to a later as to one it looks up to.
+  switch (o.line) {
+    case 'before':
+      return `${client} 대견해하며 ${to}에게 ${amount}를 용돈으로 줬다!`
+    case 'after':
+      return `${client} 신이 나서 ${to}에게 ${amount}를 더 줬다!`
+    default:
+      return `${client} ${to}에게 반갑게 인사하며 ${amount}를 더 줬다!`
+  }
 }
 
 function Sprite({ src, size }: { src: string | undefined; size: 40 | 56 }) {

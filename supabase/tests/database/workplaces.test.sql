@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(88);
+select plan(89);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -220,7 +220,7 @@ select ok((public.work() -> 'workplaces' -> 0 -> 'worker' ->> 'can_settle')::boo
 select ok((public.work() -> 'workplaces' -> 1 ->> 'arrived')::boolean, 'and the next request has arrived');
 select ok(public.work() -> 'workplaces' -> 1 -> 'client' <> 'null'::jsonb, 'saying who it is from');
 
-select is(public.settle(pg_temp.workplace(1)), '{"outcome": "settled", "points": 160, "family": 0}'::jsonb, 'settling pays the shift');
+select is(public.settle(pg_temp.workplace(1)), '{"outcome": "settled", "points": 160, "family": 0, "line": null}'::jsonb, 'settling pays the shift');
 select is((public.work() ->> 'points')::int, 160, 'into the points');
 select is(public.work() -> 'workplaces' -> 0 -> 'worker', 'null'::jsonb, 'and the workplace becomes a new one');
 select is(pg_temp.boxed((select machop from mon)) -> 'workplace_id', 'null'::jsonb, 'with its worker back');
@@ -348,19 +348,21 @@ reset role;
 -- ------------------------------------------------------------
 -- A gift from the client to a Pokémon of its own line
 -- ------------------------------------------------------------
-select ok(public.same_line(26, 172), 'Pichu is on Raichu''s line');
-select ok(public.same_line(26, 26), 'as is Raichu itself');
-select ok(not public.same_line(26, (select id from public.pokedex_species where slug = 'raichu-alola')),
+select is(public.line_of(26, 172), 'before', 'Pichu is on Raichu''s line, before it');
+select is(public.line_of(26, 26), 'same', 'as is Raichu itself');
+select is(public.line_of(172, (select id from public.pokedex_species where slug = 'raichu-mega-x')), 'after',
+  'and Mega Raichu X after Pichu');
+select is(public.line_of(26, (select id from public.pokedex_species where slug = 'raichu-alola')), null,
   'but not Alolan Raichu, a branch beside it');
-select ok(public.same_line(133, 134) and public.same_line(133, 136), 'Eevee''s line holds every evolution');
-select ok(public.same_line(134, 133) and not public.same_line(134, 135), 'Vaporeon''s holds Eevee alone');
+select ok(public.line_of(133, 134) = 'after' and public.line_of(133, 136) = 'after', 'Eevee''s line holds every evolution');
+select ok(public.line_of(134, 133) = 'before' and public.line_of(134, 135) is null, 'Vaporeon''s holds Eevee alone');
 
 update public.coder_workplaces
    set client_id = 26, emptied_at = null,
        companion_id = pg_temp.pokemon(25, 50), assigned_at = now() - interval '40 hours'
  where id = pg_temp.workplace(5);
 select pg_temp.as_person();
-select is(public.settle(pg_temp.workplace(5)), '{"outcome": "settled", "points": 40, "family": 320}'::jsonb,
+select is(public.settle(pg_temp.workplace(5)), '{"outcome": "settled", "points": 40, "family": 320, "line": "before"}'::jsonb,
   'Pikachu doing Raichu''s request gets 320 points from Raichu besides its pay');
 reset role;
 select is((select points from public.coder_point_entries where reason = 'family'), 320,

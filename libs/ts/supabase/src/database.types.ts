@@ -1557,6 +1557,10 @@ export type Database = {
           upside_down: boolean
         }[]
       }
+      line_of: {
+        Args: { client_id: number; species_id: number }
+        Returns: string
+      }
       local_hour: { Args: { time_zone: string }; Returns: number }
       lock_companion: {
         Args: { companion_id: string; owner: string }
@@ -1632,10 +1636,6 @@ export type Database = {
       roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
       roll_task: { Args: { client_id: number }; Returns: string }
-      same_line: {
-        Args: { client_id: number; species_id: number }
-        Returns: boolean
-      }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
         Args: { companion_id: string; markings: number }
