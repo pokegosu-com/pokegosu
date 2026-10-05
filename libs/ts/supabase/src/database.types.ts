@@ -546,6 +546,7 @@ export type Database = {
         Row: {
           bonus_every_hours: number
           bonus_points: number
+          family_points: number
           friendship_needed: number
           friendship_per_level: number
           friendship_per_partner_hour: number
@@ -561,6 +562,7 @@ export type Database = {
         Insert: {
           bonus_every_hours: number
           bonus_points: number
+          family_points: number
           friendship_needed: number
           friendship_per_level: number
           friendship_per_partner_hour: number
@@ -576,6 +578,7 @@ export type Database = {
         Update: {
           bonus_every_hours?: number
           bonus_points?: number
+          family_points?: number
           friendship_needed?: number
           friendship_per_level?: number
           friendship_per_partner_hour?: number
@@ -1629,6 +1632,10 @@ export type Database = {
       roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
       roll_task: { Args: { client_id: number }; Returns: string }
+      same_line: {
+        Args: { client_id: number; species_id: number }
+        Returns: boolean
+      }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
         Args: { companion_id: string; markings: number }

@@ -65,6 +65,20 @@ function say({ action, outcome: o, before }: WorkLast): string | null {
   }
 }
 
+/**
+ * The client's gift to a Pokémon of its own line, said apart after the pay.
+ * Nothing on the board tells of it beforehand.
+ */
+function sayGift({ action, outcome: o, before }: WorkLast): string | null {
+  const gift = Number(o.family ?? 0)
+  if (action.fn !== 'settle' || o.outcome !== 'settled' || gift <= 0) return null
+  const started = before?.started ? before : null
+  const place = started?.workplaces.find((w) => w.id === action.workplace_id)
+  const worker = started?.pokemon.find((p) => p.id === place?.worker?.companion_id)
+  const client = place?.client ? ko(place.client) : '의뢰인'
+  return `${josa(client, '이')} ${worker ? ko(worker) : '포켓몬'}에게 ${exactTokens(gift)} 포인트를 더 줬다!`
+}
+
 function Sprite({ src, size }: { src: string | undefined; size: 40 | 56 }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
@@ -489,6 +503,7 @@ export function RequestsView() {
   const { work, failure, busy, last, act } = useWork()
   const sinceSync = useHoursSinceSync()
   const message = last ? say(last) : null
+  const gift = last ? sayGift(last) : null
 
   if (!work) {
     return failure ? (
@@ -535,6 +550,7 @@ export function RequestsView() {
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
       <Toast id={last}>{message}</Toast>
+      <Toast id={gift ? last : null}>{gift}</Toast>
 
       <ul className="grid gap-3 sm:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />
