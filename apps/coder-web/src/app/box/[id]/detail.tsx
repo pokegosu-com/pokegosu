@@ -27,6 +27,7 @@ import { useCountUp } from '../../game/count-up'
 import { useLevelFill } from '../../game/level-fill'
 import { UseItemLabel } from '../../game/item-label'
 import { ActionToasts } from '../../game/action-toasts'
+import { cameFrom } from '../../game/came-from'
 import { Gender } from '../../game/gender'
 import { Marks } from '../../game/marks'
 import { useGame } from '../../game/use-game'
@@ -179,7 +180,7 @@ function PokemonDetail({
           {...tapToSpin}
           className={`motion-safe:transition-transform motion-safe:duration-500 ${upsideDown ? 'rotate-180' : ''} ${spun ? 'rotate-360' : ''}`}
         >
-          <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} />
+          <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} from={cameFrom(game.last, p.id)} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3 self-stretch">
           {p.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
