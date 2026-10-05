@@ -134,9 +134,171 @@ const toggle =
   'rounded-md border px-2.5 py-1.5 text-[13px] border-line aria-pressed:border-ink aria-pressed:bg-surface-raised'
 const MARK_TITLES = ['마킹 무시', '마킹 있음', '파랑', '빨강']
 
+type Types = [string, string][]
+
+/** The filters that sit behind the sheet on a phone: how many are on. */
+function filterCount(view: View): number {
+  return (
+    Number(view.task) +
+    Number(view.shiny) +
+    Number(view.type !== '') +
+    view.marks.filter((m) => m !== null).length
+  )
+}
+
+/** The filters past search, kind and sort: in a row on a wide screen, in the sheet on a phone. */
+function Filters({
+  view,
+  update,
+  types,
+  filtered,
+  large = false,
+}: {
+  view: View
+  update: (change: Partial<View>) => void
+  types: Types
+  filtered: boolean
+  /** In the sheet, under a thumb: every button a little bigger. */
+  large?: boolean
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-pressed={view.task}
+        onClick={() => update({ task: !view.task })}
+        className={`${toggle} flex items-center gap-1.5`}
+      >
+        <i className="bg-accent size-1.5 rounded-full" />할 일 있음
+      </button>
+      <button
+        type="button"
+        aria-pressed={view.shiny}
+        onClick={() => update({ shiny: !view.shiny })}
+        className={toggle}
+      >
+        ✨ 색이 다른
+      </button>
+      <label className="text-muted flex items-center gap-2 text-[13px]">
+        타입
+        <select
+          value={view.type}
+          onChange={(e) => update({ type: e.target.value })}
+          className={control}
+        >
+          <option value="">모두</option>
+          {types.map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span role="group" aria-label="마킹" className="flex items-center gap-1">
+        <span className="text-muted mr-1 text-[13px]">마킹</span>
+        {MARKS.map((mark, i) => {
+          const want = view.marks[i]
+          const states: MarkFilter[] = [null, 'any', 1, 2]
+          const state = states.indexOf(want)
+          return (
+            <button
+              key={mark}
+              type="button"
+              aria-label={`${mark} ${MARK_TITLES[state]}`}
+              title={MARK_TITLES[state]}
+              aria-pressed={want !== null}
+              onClick={() =>
+                update({
+                  marks: view.marks.map((m, j) =>
+                    j === i ? states[(states.indexOf(m) + 1) % states.length] : m,
+                  ),
+                })
+              }
+              className={`${toggle} ${large ? 'size-10' : 'size-8'} px-0 ${want === 1 ? 'text-mark-blue' : want === 2 ? 'text-mark-red' : want === null ? 'text-muted' : ''}`}
+            >
+              {mark}
+            </button>
+          )
+        })}
+      </span>
+      {filtered && (
+        <button
+          type="button"
+          onClick={() => update({ ...initial, sort: view.sort })}
+          className="text-accent text-[13px]"
+        >
+          필터 지우기
+        </button>
+      )}
+    </>
+  )
+}
+
+/** The filters as a sheet from the bottom of a phone's screen. */
+function FilterSheet({
+  view,
+  update,
+  types,
+  filtered,
+  shown,
+  close,
+}: {
+  view: View
+  update: (change: Partial<View>) => void
+  types: Types
+  filtered: boolean
+  shown: number
+  close: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [close])
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden">
+      <div className="bg-ink/30 absolute inset-0" onClick={close} />
+      <div
+        role="dialog"
+        aria-label="필터"
+        className="bg-surface border-line absolute inset-x-0 bottom-0 flex flex-col gap-5 rounded-t-2xl border-t px-4 pt-2.5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+      >
+        <span className="bg-line-strong mx-auto h-1 w-9 rounded-full" />
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">필터</h2>
+          {filtered && (
+            <button
+              type="button"
+              onClick={() =>
+                update({ ...initial, sort: view.sort, kind: view.kind, query: view.query })
+              }
+              className="text-accent text-[13px]"
+            >
+              모두 지우기
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Filters view={view} update={update} types={types} filtered={false} large />
+        </div>
+        <button
+          type="button"
+          onClick={close}
+          className="bg-accent text-surface rounded-md px-4 py-2.5 text-sm font-medium"
+        >
+          {shown}마리 보기
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function BoxView() {
   const { box, failure } = useGame()
   const [view, update] = useView()
+  const [sheet, setSheet] = useState(false)
 
   if (failure) {
     return <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
@@ -196,16 +358,32 @@ export function BoxView() {
         </span>
       </div>
 
-      <div className="border-line flex flex-col gap-3 border-b pb-4">
+      <div className="border-line flex flex-col gap-3 sm:border-b sm:pb-4">
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="search"
-            aria-label="이름으로 찾기"
-            placeholder="이름으로 찾기"
-            value={view.query}
-            onChange={(e) => update({ query: e.target.value })}
-            className={`${control} w-56`}
-          />
+          <div className="flex w-full gap-2 sm:w-auto">
+            <input
+              type="search"
+              aria-label="이름으로 찾기"
+              placeholder="이름으로 찾기"
+              value={view.query}
+              onChange={(e) => update({ query: e.target.value })}
+              className={`${control} min-w-0 flex-1 sm:w-56 sm:flex-none`}
+            />
+            {/* On a phone the filters wait in a sheet, so the box is what fills the screen. */}
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setSheet(true)}
+              className={`${control} flex items-center gap-1.5 sm:hidden`}
+            >
+              필터
+              {filterCount(view) > 0 && (
+                <span className="bg-accent text-surface grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 font-mono text-[11px]">
+                  {filterCount(view)}
+                </span>
+              )}
+            </button>
+          </div>
           <div
             role="group"
             aria-label="종류"
@@ -243,76 +421,21 @@ export function BoxView() {
             </select>
           </label>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            aria-pressed={view.task}
-            onClick={() => update({ task: !view.task })}
-            className={`${toggle} flex items-center gap-1.5`}
-          >
-            <i className="bg-accent size-1.5 rounded-full" />할 일 있음
-          </button>
-          <button
-            type="button"
-            aria-pressed={view.shiny}
-            onClick={() => update({ shiny: !view.shiny })}
-            className={toggle}
-          >
-            ✨ 색이 다른
-          </button>
-          <label className="text-muted flex items-center gap-2 text-[13px]">
-            타입
-            <select
-              value={view.type}
-              onChange={(e) => update({ type: e.target.value })}
-              className={control}
-            >
-              <option value="">모두</option>
-              {types.map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <span role="group" aria-label="마킹" className="flex items-center gap-1">
-            <span className="text-muted mr-1 text-[13px]">마킹</span>
-            {MARKS.map((mark, i) => {
-              const want = view.marks[i]
-              const states: MarkFilter[] = [null, 'any', 1, 2]
-              const state = states.indexOf(want)
-              return (
-                <button
-                  key={mark}
-                  type="button"
-                  aria-label={`${mark} ${MARK_TITLES[state]}`}
-                  title={MARK_TITLES[state]}
-                  aria-pressed={want !== null}
-                  onClick={() =>
-                    update({
-                      marks: view.marks.map((m, j) =>
-                        j === i ? states[(states.indexOf(m) + 1) % states.length] : m,
-                      ),
-                    })
-                  }
-                  className={`${toggle} size-8 px-0 ${want === 1 ? 'text-mark-blue' : want === 2 ? 'text-mark-red' : want === null ? 'text-muted' : ''}`}
-                >
-                  {mark}
-                </button>
-              )
-            })}
-          </span>
-          {filtered && (
-            <button
-              type="button"
-              onClick={() => update({ ...initial, sort: view.sort })}
-              className="text-accent text-[13px]"
-            >
-              필터 지우기
-            </button>
-          )}
+        <div className="hidden flex-wrap items-center gap-3 sm:flex">
+          <Filters view={view} update={update} types={types} filtered={filtered} />
         </div>
       </div>
+
+      {sheet && (
+        <FilterSheet
+          view={view}
+          update={update}
+          types={types}
+          filtered={filtered}
+          shown={shown.length}
+          close={() => setSheet(false)}
+        />
+      )}
 
       {shown.length > 0 ? (
         <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">

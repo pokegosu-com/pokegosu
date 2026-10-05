@@ -61,7 +61,7 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
   if (!kind.data) notFound()
 
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-5 px-6 py-8">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-5 px-4 sm:px-6 py-8">
       <h1 className="sr-only">{ko(kind.data)}</h1>
       <DexGrid
         dex={dex}

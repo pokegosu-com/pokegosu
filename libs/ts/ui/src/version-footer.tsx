@@ -6,5 +6,9 @@ const version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev'
 
 /** The build's version, small and out of the way at the foot of every page. */
 export function VersionFooter() {
-  return <footer className="text-muted px-6 py-4 text-center font-mono text-xs">{version}</footer>
+  return (
+    <footer className="text-muted px-4 sm:px-6 py-4 text-center font-mono text-xs">
+      {version}
+    </footer>
+  )
 }

@@ -26,7 +26,7 @@ export default async function OnboardingPage({ searchParams }: PageProps<'/onboa
   if (profile?.username) redirect(returnTo ?? '/')
 
   return (
-    <main className="mx-auto flex w-full max-w-task flex-1 flex-col justify-center gap-6 px-6 py-24">
+    <main className="mx-auto flex w-full max-w-task flex-1 flex-col gap-6 px-4 pt-10 pb-16 sm:justify-center sm:px-6 sm:py-24">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">계정 설정</h1>
         <p className="text-muted text-sm">{user.email}</p>

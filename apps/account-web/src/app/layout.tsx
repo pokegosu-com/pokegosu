@@ -27,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
             { label: '프로필', href: '/' },
             { label: '기기', href: '/devices' },
           ]}
+          bareOn={['/login', '/onboarding']}
         />
         {children}
         <VersionFooter />
