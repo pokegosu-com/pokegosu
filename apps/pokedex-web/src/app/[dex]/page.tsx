@@ -46,7 +46,7 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
       db
         .from('pokedex_entries')
         .select(
-          'number, species:pokedex_species(id, ko_name, en_name, type1, type2, front:sprites->>front)',
+          'number, species:pokedex_species(id, form_of, ko_name, en_name, type1, type2, front:sprites->>front, front_shiny:sprites->>front_shiny)',
         )
         .eq('dex', dex)
         .eq('is_default', true)
@@ -67,10 +67,12 @@ export default async function Pokedex({ params }: PageProps<'/[dex]'>) {
         dex={dex}
         rows={data.map(({ number, species: s }) => ({
           id: s.id,
+          speciesId: s.form_of ?? s.id,
           number,
           name: ko(s),
           types: [s.type1, s.type2].filter((t): t is string => !!t),
           sprite: s.front ?? undefined,
+          shinySprite: s.front_shiny ?? undefined,
         }))}
         types={types.data.sort((a, b) => typeRank(a.id) - typeRank(b.id)).map((t) => [t.id, ko(t)])}
       />

@@ -6,8 +6,19 @@ import { PokemonTile } from '@pokegosu/ui/pokemon'
 
 import { useMyDex } from '@/lib/my-dex'
 
-/** id is the species' default form. */
-export type Row = { id: number; number: number; name: string; types: string[]; sprite?: string }
+/**
+ * id is the form the pokedex shows, which may be a regional one, as Alolan
+ * Raichu is in Alola's; speciesId is the species' default form.
+ */
+export type Row = {
+  id: number
+  speciesId: number
+  number: number
+  name: string
+  types: string[]
+  sprite?: string
+  shinySprite?: string
+}
 
 /** A pokedex's tiles, narrowed by name or number and by type, all in the browser. */
 export function DexGrid({
@@ -67,14 +78,19 @@ export function DexGrid({
       {shown.length > 0 ? (
         <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">
           {shown.map((r) => {
-            const had = mine?.species.get(r.id)
+            const had = mine?.species.get(r.speciesId)
+            // The shown form's own shiny where that is the one had, else any.
+            const shiny =
+              mine?.forms.get(r.id) === 'shiny'
+                ? (r.shinySprite ?? had?.shinyFront)
+                : had?.shinyFront
             return (
               <li key={r.number} className="grid">
                 <PokemonTile
                   href={`/${dex}/${r.number}`}
                   name={r.name}
                   caption={`No.${String(r.number).padStart(3, '0')}`}
-                  sprite={had?.shinyFront ?? r.sprite}
+                  sprite={shiny ?? r.sprite}
                   caught={had?.caught}
                 />
               </li>

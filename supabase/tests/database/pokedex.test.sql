@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(72);
+select plan(73);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -80,8 +80,17 @@ select is(
   (select string_agg(s.slug || ':' || e.number, ' ' order by e.number)
      from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
     where e.dex = 'galar' and e.is_default and e.number in (1, 400, 401, 584)),
-  'grookey:1 eternatus:400 slowpoke:401 calyrex:584',
+  'grookey:1 eternatus:400 slowpoke-galar:401 calyrex:584',
   'Galar''s 400, then those the Isle of Armor and the Crown Tundra add, each once');
+select is(
+  (select string_agg(e.dex || ':' || s.slug, ' ' order by e.dex, s.id)
+     from public.pokedex_entries e join public.pokedex_species s on s.id = e.species_id
+    where e.is_default and s.slug in ('raichu', 'raichu-alola', 'qwilfish', 'qwilfish-hisui',
+      'darmanitan-galar-standard', 'darmanitan-galar-zen', 'tauros-paldea-combat-breed',
+      'tauros-paldea-blaze-breed')
+      and e.dex in ('kanto', 'alola', 'galar', 'hisui', 'paldea')),
+  'alola:raichu-alola galar:raichu galar:qwilfish galar:darmanitan-galar-standard hisui:raichu hisui:qwilfish-hisui kanto:raichu paldea:raichu paldea:qwilfish paldea:tauros-paldea-combat-breed',
+  'a pokedex lists its region''s form where there is one, the first of several');
 select is((select count(*)::int from public.pokedex_entries where dex = 'hisui' and is_default), 242,
   'and Legends: Arceus''s 242');
 select is(
