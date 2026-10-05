@@ -13,7 +13,7 @@
     "./icon": "./src/icon.tsx",
     "./theme.css": "./theme.css",
     "./toast": "./src/toast.tsx",
-    "./version-footer": "./src/version-footer.tsx"
+    "./footer": "./src/footer.tsx"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.11",
