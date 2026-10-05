@@ -63,6 +63,8 @@ const REGION_GENERATIONS: Record<string, number> = { hisui: 8 }
  * are Greninja and Zygarde with another ability, and look the same; Complete
  * Zygarde, which Zygarde becomes, stays, as later games have it too, but
  * Ash-Greninja is only Sun and Moon's and Ultra Sun and Ultra Moon's.
+ * Pikachu in Ash's caps came to several games, but only as event gifts, and is
+ * Pikachu in a costume, as Cosplay Pikachu is.
  * Minior's shell is the same whatever its core, so one Meteor Form stands for
  * the seven, beside the seven cores.
  * Eternamax Eternatus is met in one battle and never caught. An Antique Form
@@ -86,6 +88,14 @@ const LEFT_OUT_FORMS = new Set([
   'pikachu-cosplay',
   'pikachu-starter',
   'eevee-starter',
+  'pikachu-original-cap',
+  'pikachu-hoenn-cap',
+  'pikachu-sinnoh-cap',
+  'pikachu-unova-cap',
+  'pikachu-kalos-cap',
+  'pikachu-alola-cap',
+  'pikachu-partner-cap',
+  'pikachu-world-cap',
   'raticate-totem-alola',
   'marowak-totem',
   'gumshoos-totem',
@@ -138,22 +148,6 @@ const ONE_FORM_ONLY = new Set(['scatterbug', 'spewpa', 'mothim'])
  * Alcremie's 63 creams and sweets from Milcery.
  */
 const ONLY_DEFAULT_EVOLVES = new Set(['vivillon', 'alcremie'])
-
-/**
- * Forms no game lets be shiny, so Pokémon HOME has no shiny render of them:
- * their shiny is their plain look. Pikachu in a cap came to events only,
- * never shiny.
- */
-const NEVER_SHINY = new Set([
-  'pikachu-original-cap',
-  'pikachu-hoenn-cap',
-  'pikachu-sinnoh-cap',
-  'pikachu-unova-cap',
-  'pikachu-kalos-cap',
-  'pikachu-alola-cap',
-  'pikachu-partner-cap',
-  'pikachu-world-cap',
-])
 
 /**
  * Default forms PokéAPI names that are better unnamed. It names Pyroar's
@@ -397,7 +391,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261003160000_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261005120000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -1598,16 +1592,15 @@ async function main() {
   for (const row of rows) {
     const n = row.id
     const k = row.spriteKey
-    const shiny = NEVER_SHINY.has(row.slug) ? '' : 'shiny/'
     const pixel = NO_PIXEL_SPRITE.has(row.slug) ? home : SPRITES_BASE
     add(`sprites/pokemon/${n}.png`, `${pixel}/${k}.png`)
-    add(`sprites/pokemon/shiny/${n}.png`, `${pixel}/${shiny}${k}.png`)
+    add(`sprites/pokemon/shiny/${n}.png`, `${pixel}/shiny/${k}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/female/${n}.png`, `${SPRITES_BASE}/female/${k}.png`)
       add(`sprites/pokemon/shiny/female/${n}.png`, `${SPRITES_BASE}/shiny/female/${k}.png`)
     }
     add(`sprites/pokemon/artwork/${n}.png`, `${home}/${k}.png`)
-    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${home}/${shiny}${k}.png`)
+    add(`sprites/pokemon/artwork/shiny/${n}.png`, `${home}/shiny/${k}.png`)
     if (row.femaleDiffers) {
       add(`sprites/pokemon/artwork/female/${n}.png`, `${home}/female/${k}.png`)
       add(`sprites/pokemon/artwork/shiny/female/${n}.png`, `${home}/shiny/female/${k}.png`)

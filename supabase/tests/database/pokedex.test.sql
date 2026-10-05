@@ -26,7 +26,7 @@ select is((select count(*)::int from public.pokedex_species where generation = 8
 select is((select count(*)::int from public.pokedex_species where generation = 9 and form_of is null), 120,
   'and every Generation IX species');
 
-select is((select count(*)::int from public.pokedex_species where form_of is not null), 466,
+select is((select count(*)::int from public.pokedex_species where form_of is not null), 458,
   'and every other form those games had, Mega Evolutions, Legends: Z-A''s too, Alolan, Galarian, Hisuian and Paldean forms and Gigantamax, but Arceus''s ??? type');
 select is_empty(
   $$ select slug from public.pokedex_species
@@ -41,9 +41,9 @@ select is(
       and evolution_method not in (select 'mega-evolution-holding-' || id from public.pokedex_items
                                     where sprite like '/sprites/%')),
   49, 'Legends: Z-A''s and Mega Dimension''s 49 Mega Evolutions are in, each on a drawn stone');
-select is(
-  (select count(*)::int from public.pokedex_species where slug like 'pikachu-%-cap'),
-  8, 'Pikachu''s caps are in, as they came to more than one game');
+select is_empty(
+  $$ select slug from public.pokedex_species where slug like 'pikachu-%-cap' $$,
+  'and no Pikachu in a cap, an event gift in a costume');
 
 select is((select count(*)::int from public.pokedex_entries where dex = 'national' and is_default), 1025, 'the national pokedex lists them');
 select is((select count(*)::int from public.pokedex_entries where dex = 'kanto' and is_default), 151, 'Kanto''s the first 151');
