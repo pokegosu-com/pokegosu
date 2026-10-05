@@ -50,11 +50,16 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Layout
 
-- Every app page, its top bar included, is `max-w-wide` (64rem) with a 24px side gutter, so the left edge stays put between sections. Single-task pages, such as sign-in and device approval, are `max-w-task` (24rem) and centred.
+- Every app page, its top bar included, is `max-w-wide` (64rem) with a 24px side gutter (16px on a phone), so the left edge stays put between sections. Single-task pages, such as sign-in and device approval, are `max-w-task` (24rem) and centred; on a phone they sit at the top, so the field stays put as the keyboard comes up.
 - Sections are 32 to 40px apart; cards in a grid 8 to 12px.
 - A list of Pokémon is a grid of small tiles with the 96px pixel sprite at its own size, never scaled up, shrinking only where the grid is too narrow for it: 8 across, in the box as in a pokedex. One Pokémon on its own page gets its large render, from Pokémon HOME, in a 192px slot.
 - Running text inside a wide page stays under about 40rem.
-- Mobile layouts come later; nothing is designed for them yet beyond grids that wrap.
+- On a phone, below Tailwind's `sm` (640px):
+  - What sits side by side stacks: a Pokémon's artwork goes above its name, and the rest of the card spans the page.
+  - The game's primary button spans its card, under the thumb.
+  - Filters past search, kind and sort wait in a sheet from the bottom, behind a 필터 button that counts the ones on. A long run of type chips is one line that scrolls sideways.
+  - A pokedex's evolutions read top to bottom, one stage to a line.
+  - Grids keep their four tiles across; the sprite shrinks to fit.
 
 ## Shape
 
@@ -70,25 +75,25 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←, and ▾ marks a button that opens a menu. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, and beside PokeGosu at the top of the app drawer. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←, and ▾ marks a button that opens a menu. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, beside PokeGosu at the top of the app drawer, and beside PokeGosu on the landing page. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 
 Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thing again.
 
-| Import                   | What it is                                                                                                                                                                                                                                     |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections (or, with `picker`, a menu of them), and the app drawer it opens. Each app's layout places it once.                                                        |
-| `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                                                                                                                 |
-| `@pokegosu/ui/artwork`   | `Artwork`: a Pokémon's large render in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still.                                                                   |
-| `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in). |
-| `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                                                                                       |
-| `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; `faviconUrl`, the same drawing for each layout's `metadata.icons`; and `CaughtIcon`, the ball alone, thin, for `CaughtMarks`.                           |
-| `@pokegosu/ui/toast`     | `Toast`: what just happened, for four seconds just under the top bar, in `surface` on an `ink` fill, so nothing on the page moves. Two at once stack, and each goes four seconds after it came.                                                |
+| Import                   | What it is                                                                                                                                                                                                                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@pokegosu/ui/app-shell` | `AppHeader`: the top bar with the menu button, the app's full name and its sections (or, with `picker`, a menu of them; more than two fold into that menu on a phone), and the app drawer it opens. `bareOn` names paths, such as sign-in, that show no sections. Each app's layout places it once. |
+| `@pokegosu/ui/apps`      | Where each app lives, and the order the drawer and the landing page list them.                                                                                                                                                                                                                      |
+| `@pokegosu/ui/artwork`   | `Artwork`: a Pokémon's large render in the 192px slot. It idles, hops when it appears, is pointed at or pressed, and sparkles if shiny; with reduced motion it stands still.                                                                                                                        |
+| `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in).                                                      |
+| `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                                                                                                                                            |
+| `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; `faviconUrl`, the same drawing for each layout's `metadata.icons`; and `CaughtIcon`, the ball alone, thin, for `CaughtMarks`.                                                                                |
+| `@pokegosu/ui/toast`     | `Toast`: what just happened, for four seconds just under the top bar, in `surface` on an `ink` fill, so nothing on the page moves. Two at once stack, and each goes four seconds after it came.                                                                                                     |
 
 ## Behaviour
 
-**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. An app with too many sections for the bar, as PokeGosu Pokédex has pokedexes, shows only the current one with ▾, which opens a menu of every section under it, home set apart by a line. The name is not a link: the first section is home. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
+**Moving around.** Each app has a top bar: a menu button, the app's full name, and its sections, the current one in `ink`. An app with too many sections for the bar, as PokeGosu Pokédex has pokedexes, shows only the current one with ▾ right after its name, which opens a menu of every section under it, home set apart by a line. On a phone, an app with more than two sections does the same. Before sign-in the bar shows no sections, since each would only lead back to it. The name is not a link: the first section is home. The menu button opens a drawer from the left listing PokeGosu Pokédex, then PokeGosu Coder, and 계정 at the bottom. The drawer is the only way between apps and to the account; top bars link to neither. A page below a list starts with ← and that list's name.
 
 **Every screen has four states.** Design each before it ships.
 

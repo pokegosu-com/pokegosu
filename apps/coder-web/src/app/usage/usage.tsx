@@ -93,8 +93,9 @@ export function UsageView() {
         <Legend providers={recent.providers} colors={colors} />
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        <Figure label="오늘" tokens={sum(days[TODAY])} />
+      {/* On a phone, today across the top and the longer two side by side under it. */}
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
+        <Figure label="오늘" tokens={sum(days[TODAY])} className="col-span-2 sm:col-span-1" />
         <Figure label="최근 7일" tokens={BigInt(recent.total)} />
         <Figure label="최근 30일" tokens={BigInt(long.total)} />
       </section>

@@ -38,20 +38,26 @@ export function DexGrid({
           placeholder="이름이나 번호로 찾기"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="border-line-strong bg-surface w-60 rounded-md border px-2.5 py-1.5 text-[13px]"
+          className="border-line-strong bg-surface min-w-0 flex-1 rounded-md border px-2.5 py-1.5 text-[13px] sm:w-60 sm:flex-none"
         />
-        <span className="text-muted ml-auto font-mono text-xs tabular-nums">
+        <span className="text-muted ml-auto flex-none font-mono text-xs tabular-nums">
           {shown.length === rows.length ? `${rows.length}마리` : `${shown.length} / ${rows.length}`}
         </span>
       </div>
-      <div role="group" aria-label="타입" className="flex flex-wrap gap-1.5">
+      {/* Eighteen types wrap to four lines on a phone; there they run in one
+          line that scrolls sideways, edge to edge. */}
+      <div
+        role="group"
+        aria-label="타입"
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      >
         {types.map(([id, name]) => (
           <button
             key={id}
             type="button"
             aria-pressed={type === id}
             onClick={() => setType(type === id ? null : id)}
-            className="border-line aria-pressed:border-ink aria-pressed:bg-surface-raised inline-flex items-center gap-1.5 rounded border py-1 pr-2 pl-1.5 text-xs"
+            className="border-line aria-pressed:border-ink aria-pressed:bg-surface-raised inline-flex flex-none items-center gap-1.5 rounded border py-1 pr-2 pl-1.5 text-xs"
           >
             <i className="size-2 rounded-full" style={{ background: `var(--type-${id})` }} />
             {name}

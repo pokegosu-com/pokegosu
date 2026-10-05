@@ -38,6 +38,7 @@ export function AppHeader({
   name,
   sections = [],
   picker = false,
+  bareOn = [],
 }: {
   /** Which app this is, marked in the drawer; the account is none of them. */
   app: AppId | 'account'
@@ -46,6 +47,8 @@ export function AppHeader({
   sections?: Section[]
   /** Shows the current section alone, the rest in a menu under it, for an app with too many to fit in the bar. */
   picker?: boolean
+  /** Paths that show no sections, such as sign-in, where every section would only lead back to it. */
+  bareOn?: string[]
 }) {
   const pathname = usePathname()
   // Remembers the page it was opened over, so following a link inside it
@@ -66,7 +69,7 @@ export function AppHeader({
   return (
     <>
       <header className="border-line bg-surface border-b">
-        <nav className="max-w-wide mx-auto flex w-full items-center gap-6 px-6 py-3 text-sm">
+        <nav className="max-w-wide mx-auto flex w-full items-center gap-6 px-4 sm:px-6 py-3 text-sm">
           <span className="-ml-2 flex items-center gap-1">
             <button
               type="button"
@@ -80,19 +83,32 @@ export function AppHeader({
             {/* Not a link: the first section is already the way home. */}
             <span className="font-semibold tracking-tight">{name}</span>
           </span>
-          {picker ? (
+          {bareOn.includes(pathname) ? null : picker ? (
             <SectionPicker sections={sections} pathname={pathname} />
           ) : (
-            sections.map((s) => (
-              <Link
-                key={s.href}
-                href={s.href}
-                aria-current={isCurrent(pathname, s.href) ? 'page' : undefined}
-                className="text-muted hover:text-ink aria-[current=page]:text-ink"
+            <>
+              {/* More than two sections don't fit beside the name on a phone,
+                  so there they fold into the picker. */}
+              <span
+                className={`items-center gap-6 ${sections.length > 2 ? 'hidden sm:flex' : 'flex'}`}
               >
-                {s.label}
-              </Link>
-            ))
+                {sections.map((s) => (
+                  <Link
+                    key={s.href}
+                    href={s.href}
+                    aria-current={isCurrent(pathname, s.href) ? 'page' : undefined}
+                    className="text-muted hover:text-ink aria-[current=page]:text-ink"
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </span>
+              {sections.length > 2 && (
+                <span className="sm:hidden">
+                  <SectionPicker sections={sections} pathname={pathname} />
+                </span>
+              )}
+            </>
           )}
         </nav>
       </header>

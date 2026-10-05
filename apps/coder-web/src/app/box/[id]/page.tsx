@@ -3,7 +3,7 @@ import { Detail } from './detail'
 export default async function CompanionPage({ params }: PageProps<'/box/[id]'>) {
   const { id } = await params
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-8">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 sm:px-6 py-8">
       <Detail id={id} />
     </main>
   )

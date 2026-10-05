@@ -18,13 +18,17 @@ export default async function DevicesPage() {
     .order('created_at')
 
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-6 px-6 py-10">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-6 px-4 sm:px-6 py-10">
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">기기</h1>
           <p className="text-muted text-sm">CLI 로 로그인한 기기입니다.</p>
         </div>
-        <Link href="/devices/add" className="text-accent hover:text-ink flex-none text-sm">
+        {/* What this page is for, so a button rather than a link. */}
+        <Link
+          href="/devices/add"
+          className="border-line-strong hover:border-ink flex-none rounded-md border px-4 py-2 text-sm font-medium"
+        >
           기기 추가
         </Link>
       </div>

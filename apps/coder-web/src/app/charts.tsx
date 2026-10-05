@@ -126,9 +126,17 @@ export function SplitBar({
 }
 
 /** One headline number, its label, and the exact count beneath. */
-export function Figure({ label, tokens }: { label: string; tokens: number | bigint }) {
+export function Figure({
+  label,
+  tokens,
+  className = '',
+}: {
+  label: string
+  tokens: number | bigint
+  className?: string
+}) {
   return (
-    <div className="border-line grid gap-1 rounded-lg border px-4 py-3">
+    <div className={`border-line grid gap-1 rounded-lg border px-4 py-3 ${className}`}>
       <p className="text-muted text-sm">{label}</p>
       <p className="font-mono text-3xl font-medium tracking-tight tabular-nums">
         {compactTokens(tokens)}

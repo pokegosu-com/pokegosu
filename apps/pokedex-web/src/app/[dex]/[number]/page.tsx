@@ -302,7 +302,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const slugs = forms.data.map(({ species: f }) => f.slug)
 
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-6 py-8">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 sm:px-6 py-8">
       <nav className="text-muted flex justify-between gap-4 text-sm">
         <Link href={`/${dex}`} className="hover:text-ink">
           ← {dexName}
@@ -339,13 +339,13 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           const genders = sprites.artwork_female ? [false, true] : [null]
           return genders.map((female) => (
             <Shown key={`${p.id}-${female}`} forms={slugs} form={p.slug} female={female}>
-              <header className="flex items-center gap-8">
+              <header className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
                 <Sprite
                   name={ko(p)}
                   normal={female ? sprites.artwork_female : sprites.artwork}
                   shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
                 />
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 self-stretch sm:self-auto">
                   <p className="text-muted font-mono text-xs tabular-nums">
                     {dexName} {dexNo(n)}
                   </p>
@@ -376,7 +376,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
               {looks.length > 1 && (
                 <section className="space-y-3">
                   <h2 className="text-muted text-sm font-medium">모습</h2>
-                  <ul className="flex flex-wrap gap-2">
+                  <ul className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
                     {looks.map((look) => (
                       <li key={look.key}>
                         <LookLink
@@ -384,7 +384,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           aria-current={
                             look.id === p.id && look.female === !!female ? 'page' : undefined
                           }
-                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex w-26 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px]"
+                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex h-full flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px] sm:w-26"
                         >
                           <span className="absolute top-1 right-1">
                             <FormMarks id={look.id} />
@@ -442,23 +442,26 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
               {family.length > 1 && (
                 <section className="space-y-3">
                   <h2 className="text-muted text-sm font-medium">진화</h2>
-                  <ol className="flex flex-wrap items-center gap-3">
+                  <ol className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                     {family.map((f, i) => (
-                      <li key={f.id} className="flex items-center gap-3">
+                      <li key={f.id} className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
                         {/* The first stage shown has nothing before it here, even
                           where it evolves from one this pokedex leaves out. */}
                         {i > 0 && f.method && (
-                          <span className="text-muted text-xs">→ {takes(f.method)}</span>
+                          <span className="text-muted py-1.5 pl-7 text-xs sm:p-0">
+                            <span className="sm:hidden">↓</span>
+                            <span className="hidden sm:inline">→</span> {takes(f.method)}
+                          </span>
                         )}
                         <StageLink
                           href={hrefOf(f.number, f)}
                           aria-current={f.id === p.id ? 'page' : undefined}
-                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-[13px]"
+                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex items-center gap-3 rounded-lg border px-3 py-1.5 text-[13px] sm:flex-col sm:gap-1 sm:py-2"
                         >
                           <span className="absolute top-1 right-1">
                             <FormMarks id={f.id} />
                           </span>
-                          <span className="grid size-24 place-items-center rounded-md">
+                          <span className="grid size-14 place-items-center rounded-md sm:size-24">
                             <FormSprite
                               src={f.front ?? undefined}
                               shiny={f.front_shiny ?? undefined}
@@ -469,7 +472,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           {f.form_of !== null && !isStage(f) && (
                             <span className="text-muted text-[11px]">{formName(f)}</span>
                           )}
-                          <span className="text-muted font-mono text-[11px]">
+                          <span className="text-muted ml-auto pr-5 font-mono text-[11px] sm:ml-0 sm:pr-0">
                             {dexNo(f.number)}
                           </span>
                         </StageLink>

@@ -13,7 +13,7 @@ export function Marks({
   disabled: boolean
 }) {
   return (
-    <span className="flex gap-1 text-sm leading-none">
+    <span className="-ml-2 flex text-base leading-none sm:ml-0 sm:gap-1 sm:text-sm">
       {MARKS.map((mark, i) => {
         const color = markOf(markings, i)
         return (
@@ -22,7 +22,7 @@ export function Marks({
             type="button"
             disabled={disabled}
             onClick={() => onChange(cycleMark(markings, i))}
-            className={`p-0.5 ${color === 1 ? 'text-mark-blue' : color === 2 ? 'text-mark-red' : 'text-muted/40'}`}
+            className={`grid size-9 place-items-center sm:size-auto sm:p-0.5 ${color === 1 ? 'text-mark-blue' : color === 2 ? 'text-mark-red' : 'text-muted/40'}`}
             aria-label={`${mark} ${['끔', '파랑', '빨강'][color]}`}
           >
             {mark}
