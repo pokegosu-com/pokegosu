@@ -65,6 +65,31 @@ function say({ action, outcome: o, before }: WorkLast): string | null {
   }
 }
 
+/**
+ * The client's gift to a Pokémon of its own line, said apart after the pay.
+ * Nothing on the board tells of it beforehand.
+ */
+function sayGift({ action, outcome: o, before }: WorkLast): string | null {
+  const gift = Number(o.family ?? 0)
+  if (action.fn !== 'settle' || o.outcome !== 'settled' || gift <= 0) return null
+  const started = before?.started ? before : null
+  const place = started?.workplaces.find((w) => w.id === action.workplace_id)
+  const worker = started?.pokemon.find((p) => p.id === place?.worker?.companion_id)
+  const client = josa(place?.client ? ko(place.client) : '의뢰인', '이')
+  const to = worker ? ko(worker) : '포켓몬'
+  const amount = `${exactTokens(gift)} 포인트`
+  // As family: a later stage gives to an earlier one as to a child, an
+  // earlier one to a later as to one it looks up to.
+  switch (o.line) {
+    case 'before':
+      return `${client} 대견해하며 ${to}에게 ${amount}를 용돈으로 줬다!`
+    case 'after':
+      return `${client} 신이 나서 ${to}에게 ${amount}를 더 줬다!`
+    default:
+      return `${client} ${to}에게 반갑게 인사하며 ${amount}를 더 줬다!`
+  }
+}
+
 function Sprite({ src, size }: { src: string | undefined; size: 40 | 56 }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
@@ -489,6 +514,7 @@ export function RequestsView() {
   const { work, failure, busy, last, act } = useWork()
   const sinceSync = useHoursSinceSync()
   const message = last ? say(last) : null
+  const gift = last ? sayGift(last) : null
 
   if (!work) {
     return failure ? (
@@ -535,6 +561,7 @@ export function RequestsView() {
         <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
       )}
       <Toast id={last}>{message}</Toast>
+      <Toast id={gift ? last : null}>{gift}</Toast>
 
       <ul className="grid gap-3 sm:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />

@@ -546,6 +546,7 @@ export type Database = {
         Row: {
           bonus_every_hours: number
           bonus_points: number
+          family_points: number
           friendship_needed: number
           friendship_per_level: number
           friendship_per_partner_hour: number
@@ -561,6 +562,7 @@ export type Database = {
         Insert: {
           bonus_every_hours: number
           bonus_points: number
+          family_points: number
           friendship_needed: number
           friendship_per_level: number
           friendship_per_partner_hour: number
@@ -576,6 +578,7 @@ export type Database = {
         Update: {
           bonus_every_hours?: number
           bonus_points?: number
+          family_points?: number
           friendship_needed?: number
           friendship_per_level?: number
           friendship_per_partner_hour?: number
@@ -1553,6 +1556,10 @@ export type Database = {
           spin: boolean
           upside_down: boolean
         }[]
+      }
+      line_of: {
+        Args: { client_id: number; species_id: number }
+        Returns: string
       }
       local_hour: { Args: { time_zone: string }; Returns: number }
       lock_companion: {
