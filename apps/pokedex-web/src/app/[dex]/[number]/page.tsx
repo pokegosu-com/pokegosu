@@ -355,7 +355,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
         <span className="flex gap-5">
           {previous && (
             <Link href={`/${dex}/${previous.number}`} className="hover:text-ink">
-              <span className="font-mono text-xs">{dexNo(previous.number)}</span>{' '}
+              ← <span className="font-mono text-xs">{dexNo(previous.number)}</span>{' '}
               {ko(previous.species)}
             </Link>
           )}
