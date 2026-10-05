@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(73);
+select plan(75);
 
 select is((select count(*)::int from public.pokedex_species where generation = 1 and form_of is null), 151,
   'every Generation I species has its default form');
@@ -347,6 +347,21 @@ select is(
      from public.pokedex_species where slug in ('pikachu', 'nidoran-f', 'combee')),
   'pikachu:true nidoran-f:false combee:true',
   'a female that looks different has a sprite of her own');
+
+select is(
+  (select string_agg(s.slug || ':' || s.evolution_method || '>' || l.evolution_method, ' ' order by s.id)
+     from public.pokedex_latest_evolutions l join public.pokedex_species s on s.id = l.species_id
+    where s.slug in ('magnezone', 'leafeon', 'sylveon', 'overqwil', 'milotic')),
+  'milotic:level-up-beauty-170>trade-holding-prism-scale'
+    || ' magnezone:level-up-at-mt-coronet>use-item-thunder-stone'
+    || ' leafeon:level-up-at-eterna-forest>use-item-leaf-stone'
+    || ' sylveon:level-up-knowing-fairy-move-affection-2>level-up-happiness-160-knowing-fairy-move'
+    || ' overqwil:level-up-knowing-barb-barrage>use-move-using-barb-barrage-20-times',
+  'the newest games'' way stands beside the oldest''s, where the two differ');
+select is((select count(*)::int from public.pokedex_latest_evolutions l
+             join public.pokedex_species s on s.id = l.species_id
+            where l.evolution_method = s.evolution_method), 0,
+  'a form whose newest way is its oldest has no row');
 
 select is((select category from public.pokedex_species where slug = 'mewtwo'), 'legendary', 'a category is one of three, or none');
 

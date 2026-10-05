@@ -119,6 +119,22 @@ function takes(method: Method): string {
   return parts.join(' · ') || ko(method.trigger)
 }
 
+/** What takes() reads of an evolution method, each name it says by its own. */
+const METHOD = `level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
+  min_affection, needs_overworld_rain, turn_upside_down, natures, min_damage_taken,
+  min_move_count, min_steps, needs_multiplayer, used_move:pokedex_moves!used_move(ko_name, en_name),
+  trigger:pokedex_evolution_triggers(id, ko_name, en_name),
+  item:pokedex_items!item(ko_name, en_name),
+  held_item:pokedex_items!held_item(ko_name, en_name),
+  known_move:pokedex_moves!known_move(ko_name, en_name),
+  location:pokedex_locations(ko_name, en_name),
+  party:pokedex_species!party_species_id(ko_name, en_name),
+  trade_species:pokedex_species!trade_species_id(ko_name, en_name),
+  party_type:pokedex_types!party_type(ko_name, en_name),
+  known_move_type:pokedex_types!known_move_type(ko_name, en_name),
+  region:pokedex_regions(ko_name, en_name),
+  version:pokedex_versions(ko_name, en_name)`
+
 function genderRatio(rate: number): string {
   if (rate < 0) return '성별 없음'
   const female = (rate / 8) * 100
@@ -231,22 +247,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     .select(
       `id, slug, ko_name, en_name, ko_form_name, en_form_name, form_of, evolves_from_id,
       front:sprites->>front, front_shiny:sprites->>front_shiny,
-      method:pokedex_evolution_methods!evolution_method(
-        level, min_happiness, time_of_day, relative_physical_stats, min_beauty, chance, gender,
-        min_affection, needs_overworld_rain, turn_upside_down, natures, min_damage_taken,
-        min_move_count, min_steps, needs_multiplayer, used_move:pokedex_moves!used_move(ko_name, en_name),
-        trigger:pokedex_evolution_triggers(id, ko_name, en_name),
-        item:pokedex_items!item(ko_name, en_name),
-        held_item:pokedex_items!held_item(ko_name, en_name),
-        known_move:pokedex_moves!known_move(ko_name, en_name),
-        location:pokedex_locations(ko_name, en_name),
-        party:pokedex_species!party_species_id(ko_name, en_name),
-        trade_species:pokedex_species!trade_species_id(ko_name, en_name),
-        party_type:pokedex_types!party_type(ko_name, en_name),
-        known_move_type:pokedex_types!known_move_type(ko_name, en_name),
-        region:pokedex_regions(ko_name, en_name),
-        version:pokedex_versions(ko_name, en_name)
-      )`,
+      method:pokedex_evolution_methods!evolution_method(${METHOD}),
+      latest:pokedex_latest_evolutions(method:pokedex_evolution_methods(${METHOD}))`,
     )
     .in('id', familyIds)
   if (members.error) throw members.error
@@ -270,6 +272,11 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     form.form_of !== null &&
     form.evolves_from_id !== null &&
     speciesOf.get(form.evolves_from_id) === form.form_of
+
+  // The national pokedex shows the newest games' way, a Thunder Stone for
+  // Magnezone; a regional one, the oldest's, Mt. Coronet.
+  const methodOf = (f: (typeof everyMember)[number]) =>
+    (dex === 'national' ? f.latest?.method : null) ?? f.method
 
   // A form's page links by its number, by its name unless it is the default,
   // and with ?gender=female for a female that looks different.
@@ -302,7 +309,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           number: f.number,
           front: f.front ?? undefined,
           shiny: f.front_shiny ?? undefined,
-          method: parent !== null && f.method ? takes(f.method) : null,
+          method: parent !== null && methodOf(f) ? takes(methodOf(f)!) : null,
           next: from(f.id),
         }))
     const holds = (s: Stage): boolean => s.id === id || s.next.some(holds)
