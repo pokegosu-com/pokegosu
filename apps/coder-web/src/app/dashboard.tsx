@@ -28,7 +28,7 @@ import { UseItemLabel } from './game/item-label'
 import { ActionToasts } from './game/action-toasts'
 import { cameFrom } from './game/came-from'
 import { Gender } from './game/gender'
-import { LevelGoals } from './game/level-goals'
+import { TokensLeft } from './game/tokens-left'
 import { useGame } from './game/use-game'
 
 type Game = ReturnType<typeof useGame>
@@ -133,7 +133,6 @@ function PokemonPartner({
     from: p.level_tokens,
     to: p.next_level_tokens,
   }
-  const toNext = at.to === null ? null : Math.ceil(at.to - shown)
   const sprite = spriteUrl(p, 'large')
 
   return (
@@ -163,9 +162,13 @@ function PokemonPartner({
         <div className="space-y-1.5">
           <p className="flex items-baseline justify-between font-mono text-xs tabular-nums">
             <span className="text-base font-medium">Lv.{at.level}</span>
-            <span className="text-muted">
-              {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 토큰`}
-            </span>
+            <TokensLeft
+              curve={curve}
+              growthRate={p.growth_rate}
+              level={at.level}
+              to={at.to}
+              tokens={shown}
+            />
           </p>
           <ProgressBar
             value={shown - at.from}
@@ -174,7 +177,6 @@ function PokemonPartner({
             animated
             size="lg"
           />
-          <LevelGoals curve={curve} growthRate={p.growth_rate} level={at.level} tokens={shown} />
         </div>
         <Tasks href={`/box/${p.id}`} climbing={climbing}>
           {p.can_evolve && p.evolves_to && (
