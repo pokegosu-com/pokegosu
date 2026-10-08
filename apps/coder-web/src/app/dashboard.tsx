@@ -28,6 +28,7 @@ import { UseItemLabel } from './game/item-label'
 import { ActionToasts } from './game/action-toasts'
 import { cameFrom } from './game/came-from'
 import { Gender } from './game/gender'
+import { LevelGoals } from './game/level-goals'
 import { useGame } from './game/use-game'
 
 type Game = ReturnType<typeof useGame>
@@ -173,6 +174,7 @@ function PokemonPartner({
             animated
             size="lg"
           />
+          <LevelGoals curve={curve} growthRate={p.growth_rate} level={at.level} tokens={shown} />
         </div>
         <Tasks href={`/box/${p.id}`} climbing={climbing}>
           {p.can_evolve && p.evolves_to && (

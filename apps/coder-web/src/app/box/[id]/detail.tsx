@@ -29,6 +29,7 @@ import { UseItemLabel } from '../../game/item-label'
 import { ActionToasts } from '../../game/action-toasts'
 import { cameFrom } from '../../game/came-from'
 import { Gender } from '../../game/gender'
+import { LevelGoals } from '../../game/level-goals'
 import { Marks } from '../../game/marks'
 import { useGame } from '../../game/use-game'
 
@@ -294,6 +295,7 @@ function PokemonDetail({
           animated
           size="lg"
         />
+        <LevelGoals curve={curve} growthRate={p.growth_rate} level={at.level} tokens={shown} />
       </section>
 
       <Records history={history} tokens={p.tokens} ribbons={p.ribbons} />
