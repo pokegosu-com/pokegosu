@@ -12,7 +12,15 @@ import { Toast } from '@pokegosu/ui/toast'
 import { env } from '@/env'
 import { exactTokens, points } from '@/lib/format'
 import { josa } from '@/lib/josa'
-import { aptitudeLine, ko, spriteUrl, type Named, type Work, type Workplace } from '@/lib/game'
+import {
+  aptitudeLine,
+  ko,
+  spriteUrl,
+  type Named,
+  type Sprites,
+  type Work,
+  type Workplace,
+} from '@/lib/game'
 
 import { useWork, type WorkAction, type WorkLast } from '../game/use-work'
 
@@ -105,6 +113,41 @@ function Sprite({ src, size }: { src: string | undefined; size: 40 | 56 }) {
   )
 }
 
+/** Where a shiny client's sparkles come and go, one after another. */
+const TWINKLES = [
+  { top: '2%', left: '4%', size: 12, delay: 0 },
+  { top: '10%', left: '74%', size: 9, delay: 800 },
+  { top: '64%', left: '80%', size: 11, delay: 1600 },
+]
+
+/** The client's sprite; a shiny one in its shiny colours, twinkling now and then. */
+function ClientSprite({ client, shiny }: { client: { sprites: Sprites }; shiny: boolean }) {
+  const src = spriteUrl({ sprites: client.sprites, is_shiny: shiny, gender: null }, 'small')
+  if (!shiny) return <Sprite src={src} size={56} />
+  return (
+    <span className="relative flex-none">
+      <Sprite src={src} size={56} />
+      {TWINKLES.map((t) => (
+        <svg
+          key={`${t.top}-${t.left}`}
+          viewBox="0 0 16 16"
+          aria-hidden
+          className="text-sparkle motion-safe:animate-twinkle absolute hidden motion-safe:block"
+          style={{
+            top: t.top,
+            left: t.left,
+            width: t.size,
+            height: t.size,
+            animationDelay: `${t.delay}ms`,
+          }}
+        >
+          <path d="M8 0 9.6 6.4 16 8 9.6 9.6 8 16 6.4 9.6 0 8 6.4 6.4Z" fill="currentColor" />
+        </svg>
+      ))}
+    </span>
+  )
+}
+
 /** A number in the mono face, beside words in the sans. */
 function N({ children }: { children: React.ReactNode }) {
   return <span className="font-mono tabular-nums">{children}</span>
@@ -113,6 +156,7 @@ function N({ children }: { children: React.ReactNode }) {
 /** A request as a notice: who asks, for what, what it pays, and who is on it. */
 function Notice({
   dashed,
+  shiny = false,
   who,
   title,
   art,
@@ -123,6 +167,8 @@ function Notice({
   footer,
 }: {
   dashed: boolean
+  /** From a shiny client: the notice takes the sparkle's gold. */
+  shiny?: boolean
   who: React.ReactNode
   title: string
   art: React.ReactNode
@@ -134,7 +180,7 @@ function Notice({
 }) {
   return (
     <li
-      className={`flex flex-col gap-3.5 rounded-lg border p-5 ${dashed ? 'border-line-strong border-dashed' : 'border-line'}`}
+      className={`flex flex-col gap-3.5 rounded-lg border p-5 ${dashed ? 'border-line-strong border-dashed' : 'border-line'} ${shiny ? 'bg-shiny-surface' : ''}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
@@ -395,16 +441,19 @@ function RequestNotice({
   busy: boolean
   act: Act
 }) {
-  const shift = work.rules.shift_hours
   const [offered, setOffered] = useState(0)
-  if (!place.arrived) return <Waiting hours={place.hours_to_arrive} shift={shift} />
-  const client = place.client
+  if (!place.arrived) {
+    return <Waiting hours={place.hours_to_arrive} shift={work.rules.shift_hours} />
+  }
+  const { client, is_shiny: shiny } = place
+  const shift = place.shift_hours
   const worker = place.worker
     ? work.pokemon.find((p) => p.id === place.worker!.companion_id)
     : undefined
 
   const who = (
     <>
+      {shiny && <span title="색이 다른 포켓몬">✨</span>}
       <a
         href={`${env.NEXT_PUBLIC_POKEDEX_URL}/national/${client.species_id}`}
         className="text-muted hover:text-ink"
@@ -414,12 +463,7 @@ function RequestNotice({
       의 의뢰 · <N>No.{String(client.species_id).padStart(3, '0')}</N>
     </>
   )
-  const art = (
-    <Sprite
-      src={spriteUrl({ sprites: client.sprites, is_shiny: false, gender: null }, 'small')}
-      size={56}
-    />
-  )
+  const art = <ClientSprite client={client} shiny={shiny} />
   const wanted = (
     <>
       구함 <Chips types={place.types} /> 에 강한 포켓몬
@@ -431,6 +475,7 @@ function RequestNotice({
     return (
       <Notice
         dashed={false}
+        shiny={shiny}
         who={who}
         title={ko(place.task)}
         art={art}
@@ -486,6 +531,7 @@ function RequestNotice({
   return (
     <Notice
       dashed
+      shiny={shiny}
       who={who}
       title={ko(place.task)}
       art={art}
@@ -495,6 +541,11 @@ function RequestNotice({
       status={
         <p className="text-muted text-xs">
           도와줄 포켓몬을 기다리고 있다 ·{' '}
+          {shiny && (
+            <>
+              <N>{shift}</N>시간이면 끝난다 ·{' '}
+            </>
+          )}
           <button
             type="button"
             className="text-accent hover:text-ink"
