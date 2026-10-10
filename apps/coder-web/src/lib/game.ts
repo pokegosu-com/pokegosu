@@ -241,7 +241,7 @@ export type Workplace = {
   can_reroll: boolean
   worker: {
     companion_id: string
-    /** Active hours of its shift so far, up to the shift's length. */
+    /** Active hours of its shift so far, up to the request's shift length. */
     hours: number
     aptitude: number
     /** What settling will pay. */
@@ -256,8 +256,19 @@ export type Workplace = {
       /** What it asks help with: 터널 파기, 디버깅. */
       task: { id: string } & Named
       types: ({ id: string } & Named)[]
+      /** A shiny client, one time in as many as a shiny egg. */
+      is_shiny: boolean
+      /** Active hours its shift lasts: half the usual for a shiny client. */
+      shift_hours: number
     }
-  | { arrived: false; client: null; task: null; types: null }
+  | {
+      arrived: false
+      client: null
+      task: null
+      types: null
+      is_shiny: null
+      shift_hours: null
+    }
 )
 
 /** A Pokémon that may work, and what each workplace would pay it for a shift. */

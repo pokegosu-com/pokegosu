@@ -28,6 +28,9 @@
   --mark-red: oklch(0.645 0.246 16.439);
   --ribbon-surface: oklch(0.769 0.188 70.08 / 0.15);
   --sparkle: oklch(0.86 0.17 90);
+  /* Behind a shiny client's request: the sparkle's gold, faint enough that
+     text keeps its contrast in either theme. */
+  --shiny-surface: oklch(0.86 0.17 90 / 0.12);
   /* A render turned to its outline in ink, as it evolves or hatches. */
   --silhouette: brightness(0);
 
@@ -104,6 +107,7 @@
   --color-mark-red: var(--mark-red);
   --color-ribbon-surface: var(--ribbon-surface);
   --color-sparkle: var(--sparkle);
+  --color-shiny-surface: var(--shiny-surface);
   --color-provider-claude-code: var(--provider-claude-code);
   --color-provider-2: var(--provider-2);
   --color-provider-3: var(--provider-3);
@@ -121,12 +125,15 @@
    floats while its shadow narrows beneath it, and hops when it is touched.
    A shiny one sparkles as it hops. One that has just evolved flickers
    between its old and new outlines, faster and faster, then takes its
-   colour; one just hatched shakes out of its egg the same way. */
+   colour; one just hatched shakes out of its egg the same way. A shiny
+   client's sprite on a request twinkles on and off, as a shiny Pokémon
+   glints in the games. */
 @theme {
   --animate-idle: idle 2.5s ease-in-out infinite;
   --animate-idle-shadow: idle-shadow 2.5s ease-in-out infinite;
   --animate-hop: hop 0.5s cubic-bezier(0.3, 0, 0.3, 1);
   --animate-sparkle: sparkle 0.7s ease-out both;
+  --animate-twinkle: twinkle 2.4s ease-out infinite both;
   --animate-evolve-out: evolve-out 2.4s linear both;
   --animate-evolve-in: evolve-in 2.4s linear both;
   --animate-hatch-out: hatch-out 2.2s ease-in-out both;
@@ -161,6 +168,22 @@
       transform: scale(1) rotate(45deg);
       opacity: 1;
     }
+    100% {
+      transform: scale(0) rotate(90deg);
+      opacity: 0;
+    }
+  }
+  /* A sparkle, then a rest, so a board of them does not flicker. */
+  @keyframes twinkle {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    12% {
+      transform: scale(1) rotate(45deg);
+      opacity: 1;
+    }
+    30%,
     100% {
       transform: scale(0) rotate(90deg);
       opacity: 0;

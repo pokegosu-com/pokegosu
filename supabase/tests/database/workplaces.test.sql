@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(97);
+select plan(107);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -117,8 +117,9 @@ select throws_ok($$ select * from public.coder_workplaces $$, '42501', null,
   'a person reads their workplaces through work() only');
 
 reset role;
--- Every workplace for Rattata, which is Normal.
-update public.coder_workplaces set client_id = 19, task_id = 'errands'
+-- Every workplace for Rattata, which is Normal, and none shiny, so every
+-- shift is a whole one.
+update public.coder_workplaces set client_id = 19, task_id = 'errands', is_shiny = false
  where user_id = '00000000-0000-0000-0000-00000000000a';
 create temporary table mon as
 select pg_temp.pokemon(66, 49) as machop, pg_temp.pokemon(19, 50) as rattata;
@@ -182,7 +183,8 @@ select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "rerolled"}'::jsonb,
   'a request can be turned down as soon as it is up');
 select is(public.work() -> 'workplaces' -> 1,
   jsonb_build_object('id', pg_temp.workplace(2), 'slot', 2, 'arrived', false, 'hours_to_arrive', 8,
-                     'client', null, 'task', null, 'types', null, 'can_reroll', false, 'worker', null),
+                     'client', null, 'is_shiny', null, 'shift_hours', null, 'task', null, 'types', null,
+                     'can_reroll', false, 'worker', null),
   'and the next one is 8 hours away, saying nothing of who it is from');
 select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"outcome": "not_arrived"}'::jsonb,
   'nobody can be sent to it before it arrives');
@@ -358,7 +360,7 @@ select ok(public.line_of(133, 134) = 'after' and public.line_of(133, 136) = 'aft
 select ok(public.line_of(134, 133) = 'before' and public.line_of(134, 135) is null, 'Vaporeon''s holds Eevee alone');
 
 update public.coder_workplaces
-   set client_id = 26, emptied_at = null,
+   set client_id = 26, emptied_at = null, is_shiny = false,
        companion_id = pg_temp.pokemon(25, 50), assigned_at = now() - interval '40 hours'
  where id = pg_temp.workplace(5);
 select pg_temp.as_person();
@@ -367,6 +369,38 @@ select is(public.settle(pg_temp.workplace(5)), '{"outcome": "settled", "points":
 reset role;
 select is((select points from public.coder_point_entries where reason = 'family'), 320,
   'kept apart from the pay');
+
+
+-- ------------------------------------------------------------
+-- A shiny client
+--
+-- Usage runs through hour 30, 10 hours ago, so a shift started 12 hours ago
+-- has 3 hours in it and one started 13 hours ago 4.
+-- ------------------------------------------------------------
+select is(public.shift_length(false), 8::smallint, 'a shift is 8 hours');
+select is(public.shift_length(true), 4::smallint, 'and half that for a shiny client');
+select is((select count(*)::int from generate_series(1, 6400) where public.roll_shiny()) between 50 and 160, true,
+  'a client is shiny about one time in 64, as an egg');
+
+update public.coder_workplaces
+   set client_id = 19, task_id = 'errands', emptied_at = null, is_shiny = true,
+       companion_id = pg_temp.pokemon(66, 50), assigned_at = now() - interval '12 hours'
+ where id = pg_temp.workplace(4);
+select pg_temp.as_person();
+select ok((public.work() -> 'workplaces' -> 3 ->> 'is_shiny')::boolean, 'work() says the client is shiny');
+select is(public.work() -> 'workplaces' -> 3 -> 'shift_hours', '4'::jsonb, 'and its shift is 4 hours');
+select is(public.work() -> 'workplaces' -> 3 -> 'worker' -> 'points', '160'::jsonb, 'paying a whole shift');
+select is(public.settle(pg_temp.workplace(4)), '{"outcome": "not_ready"}'::jsonb, 'three hours are not enough');
+
+reset role;
+update public.coder_workplaces set assigned_at = assigned_at - interval '1 hour'
+ where id = pg_temp.workplace(4);
+select pg_temp.as_person();
+select ok((public.work() -> 'workplaces' -> 3 -> 'worker' ->> 'can_settle')::boolean, 'four are');
+select is(public.work() -> 'workplaces' -> 3 -> 'worker' -> 'hours', '4'::jsonb, 'and the hours stop there');
+select is(public.settle(pg_temp.workplace(4)), '{"outcome": "settled", "points": 160, "family": 0, "line": null}'::jsonb,
+  'which pays what 8 hours would');
+reset role;
 
 -- ------------------------------------------------------------
 -- The Shiny Charm
