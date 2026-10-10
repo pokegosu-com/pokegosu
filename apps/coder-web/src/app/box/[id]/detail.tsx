@@ -29,6 +29,7 @@ import { UseItemLabel } from '../../game/item-label'
 import { ActionToasts } from '../../game/action-toasts'
 import { cameFrom } from '../../game/came-from'
 import { Gender } from '../../game/gender'
+import { TokensLeft } from '../../game/tokens-left'
 import { Marks } from '../../game/marks'
 import { useGame } from '../../game/use-game'
 
@@ -153,7 +154,6 @@ function PokemonDetail({
     from: p.level_tokens,
     to: p.next_level_tokens,
   }
-  const toNext = at.to === null ? null : Math.ceil(at.to - shown)
   const sprite = spriteUrl(p, 'large')
   // One out on a request is left alone until it is back: the server refuses
   // every button here for it.
@@ -283,9 +283,13 @@ function PokemonDetail({
       <section className="space-y-2">
         <p className="flex items-baseline justify-between font-mono text-xs tabular-nums">
           <span className="text-base font-medium">Lv.{at.level}</span>
-          <span className="text-muted">
-            {toNext === null ? '최고 레벨' : `다음 레벨까지 ${exactTokens(toNext)} 토큰`}
-          </span>
+          <TokensLeft
+            curve={curve}
+            growthRate={p.growth_rate}
+            level={at.level}
+            to={at.to}
+            tokens={shown}
+          />
         </p>
         <ProgressBar
           value={shown - at.from}
