@@ -35,7 +35,8 @@ The apps are in Korean. Write the way the games talk to a trainer: plainly and b
 | `danger`, `danger-surface` | An error, as text alone or in a notice on its fill.                                                   |
 | `mark-blue`, `mark-red`    | The six box marks, and nothing else.                                                                  |
 | `ribbon-surface`           | Behind a ribbon's name.                                                                               |
-| `sparkle`                  | The sparkles around a shiny Pokémon's artwork as it hops.                                             |
+| `sparkle`                  | The sparkles around a shiny Pokémon's artwork as it hops, and around a shiny client's sprite.         |
+| `shiny-surface`            | Behind a request from a shiny client.                                                                 |
 | `provider-*`               | Each coding agent in usage charts, always with a legend naming it.                                    |
 | `type-*`                   | A type's colour, only ever as the dot beside its name.                                                |
 
@@ -72,11 +73,11 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
 - Hover: a clickable card's outline goes from `line` to `line-strong`; a link from `muted` to `ink`.
 - Focus: a 2px `accent` outline, offset 2px, on everything interactive.
 - Disabled: 50% opacity. A button waiting on the server is disabled and keeps its label.
-- Motion: numbers count up as tokens land, and bars ease their width. A Pokémon that has just evolved flickers between its old and new outlines, then takes its colour; one just hatched rocks its egg until it bursts. Either takes a little over two seconds, starts once the server has answered, keeps nothing else waiting, and ends at a press. Under `prefers-reduced-motion` everything jumps to where it ends.
+- Motion: numbers count up as tokens land, and bars ease their width. A Pokémon that has just evolved flickers between its old and new outlines, then takes its colour; one just hatched rocks its egg until it bursts. Either takes a little over two seconds, starts once the server has answered, keeps nothing else waiting, and ends at a press. A shiny client's sprite on a request twinkles now and then, one sparkle at a time. Under `prefers-reduced-motion` everything jumps to where it ends.
 
 ## Icons
 
-There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←, and ▾ marks a button that opens a menu. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, beside PokeGosu at the top of the app drawer, and beside PokeGosu on the landing page. An icon-only button has an `aria-label` and a `title`.
+There is no icon set. Sprites come from pokedex-web: in a list, the 96px pixel front sprite, and the egg, both with `image-rendering: pixelated`; on a Pokémon's own page, its Pokémon HOME render, through `Artwork`. HOME's is the one large style with every Pokémon, its shiny and, where she looks different, its female; a form HOME never held takes the official artwork instead. The marks are the glyphs ● ▲ ■ ♥ ★ ◆, arrows are → and ←, and ▾ marks a button that opens a menu. The only drawn icons are the menu (three lines), the pencil that edits a value in place, and the Poké Ball that marks a pokedex entry the trainer has caught, all in `currentColor` with 1.5px strokes, and the four-pointed sparkle around a shiny Pokémon's artwork or a shiny client's sprite. PokeGosu's own icon is a Poké Ball in a trainer's cap. It is drawn in `ink`, light and dark, from `@pokegosu/ui/icon`: as the favicon, beside PokeGosu at the top of the app drawer, and beside PokeGosu on the landing page. An icon-only button has an `aria-label` and a `title`.
 
 ## Components
 

@@ -701,6 +701,7 @@ export type Database = {
           companion_id: string | null
           emptied_at: string | null
           id: string
+          is_shiny: boolean
           slot: number
           task_id: string
           user_id: string
@@ -711,6 +712,7 @@ export type Database = {
           companion_id?: string | null
           emptied_at?: string | null
           id?: string
+          is_shiny?: boolean
           slot: number
           task_id: string
           user_id: string
@@ -721,6 +723,7 @@ export type Database = {
           companion_id?: string | null
           emptied_at?: string | null
           id?: string
+          is_shiny?: boolean
           slot?: number
           task_id?: string
           user_id?: string
@@ -1665,6 +1668,7 @@ export type Database = {
       retire_device: { Args: { api_key_hash: string }; Returns: Json }
       roll_client: { Args: never; Returns: number }
       roll_egg: { Args: { egg_kind: string; owner: string }; Returns: string }
+      roll_shiny: { Args: never; Returns: boolean }
       roll_task: { Args: { client_id: number }; Returns: string }
       set_main: { Args: { companion_id: string }; Returns: Json }
       set_markings: {
@@ -1679,6 +1683,7 @@ export type Database = {
         }
         Returns: string
       }
+      shift_length: { Args: { is_shiny: boolean }; Returns: number }
       shift_pay: {
         Args: {
           level: number
