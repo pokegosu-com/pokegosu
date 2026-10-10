@@ -65,6 +65,8 @@ export function say(
     }
     case 'buy:not_enough_points':
       return '포인트가 모자랍니다.'
+    case 'buy:already_held':
+      return '이미 가지고 있다.'
     case 'start_game:started':
       return '알을 받았다! 토큰을 쓰면 알이 자란다.'
     default:

@@ -15,6 +15,8 @@ import { useGame } from '../game/use-game'
 type ShopItem = {
   id: string
   price: number
+  /** Held rather than used, so sold once. */
+  kept: boolean
   item: Item | null
   egg: ({ id: string } & Named) | null
 }
@@ -22,29 +24,42 @@ type ShopItem = {
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-1.5 text-sm font-medium disabled:opacity-50'
 
+/** One time in how many an egg is shiny, and for someone who holds the Shiny Charm. */
+type ShinyOdds = { shiny_odds: number; charm_shiny_odds: number }
+
 function useShop() {
   const [items, setItems] = useState<ShopItem[] | null>(null)
+  const [odds, setOdds] = useState<ShinyOdds | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   useEffect(() => {
-    createClient()
+    const supabase = createClient()
+    supabase
       .from('coder_shop_items')
       .select(
-        'id, price, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(id, ko_name, en_name)',
+        'id, price, kept, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(id, ko_name, en_name)',
       )
       .order('position')
       .then(({ data, error }) => {
         if (error) setFailure(error.message)
         else setItems(data as unknown as ShopItem[])
       })
+    supabase
+      .from('coder_settings')
+      .select('shiny_odds, charm_shiny_odds')
+      .single()
+      .then(({ data, error }) => {
+        if (error) setFailure(error.message)
+        else setOdds(data)
+      })
   }, [])
-  return { items, failure }
+  return { items, odds, failure }
 }
 
 /**
  * One thing for sale: its sprite, its name, a line about it, the
  * price and the button. An item's sprite is 30px and drawn at twice that, a
  * whole number of pixels, so it stays crisp; the egg is 96px, like a
- * Pokémon's.
+ * Pokémon's. `held` is for what is sold once and has been bought.
  */
 function Ware({
   sprite,
@@ -53,6 +68,7 @@ function Ware({
   note,
   price,
   disabled,
+  held = false,
   onBuy,
 }: {
   sprite: string | undefined
@@ -61,6 +77,7 @@ function Ware({
   note: React.ReactNode
   price: number
   disabled: boolean
+  held?: boolean
   onBuy: () => void
 }) {
   return (
@@ -78,8 +95,8 @@ function Ware({
       <span className="text-sm font-medium">{name}</span>
       <span className="text-muted text-xs">{note}</span>
       <span className="mt-auto font-mono text-sm tabular-nums">{points(price)}</span>
-      <button type="button" className={quiet} disabled={disabled} onClick={onBuy}>
-        구매
+      <button type="button" className={quiet} disabled={disabled || held} onClick={onBuy}>
+        {held ? '보유 중' : '구매'}
       </button>
     </li>
   )
@@ -100,13 +117,24 @@ function RegionNote({ egg }: { egg: { id: string } & Named }) {
   )
 }
 
+/** What the Shiny Charm does, in the odds themselves. */
+function CharmNote({ odds }: { odds: ShinyOdds }) {
+  return (
+    <>
+      받는 알이 색이 다를 확률
+      <br />
+      1/{odds.shiny_odds} → 1/{odds.charm_shiny_odds}
+    </>
+  )
+}
+
 export function ShopView() {
   const game = useGame()
   const { box, busy, act } = game
   const shop = useShop()
   const failure = game.failure ?? shop.failure
 
-  if (!box || !shop.items) {
+  if (!box || !shop.items || !shop.odds) {
     return failure ? (
       <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
     ) : (
@@ -125,7 +153,8 @@ export function ShopView() {
   }
 
   const held = (id: string) => box.bag.find((b) => b.id === id)?.quantity ?? 0
-  const tools = shop.items.filter((s) => s.item)
+  const tools = shop.items.filter((s) => s.item && !s.kept)
+  const kept = shop.items.filter((s) => s.item && s.kept)
   const eggs = shop.items.filter((s) => s.egg)
 
   return (
@@ -157,6 +186,25 @@ export function ShopView() {
               note={`${held(s.item!.id)}개 보유`}
               price={s.price}
               disabled={busy || box.points < s.price}
+              onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
+            />
+          ))}
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-muted text-sm font-medium">중요한 물건</h2>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {kept.map((s) => (
+            <Ware
+              key={s.id}
+              sprite={itemSpriteUrl(s.item!)}
+              large={false}
+              name={ko(s.item!)}
+              note={<CharmNote odds={shop.odds!} />}
+              price={s.price}
+              disabled={busy || box.points < s.price}
+              held={held(s.item!.id) > 0}
               onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
             />
           ))}
