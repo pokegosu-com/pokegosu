@@ -546,6 +546,7 @@ export type Database = {
         Row: {
           bonus_every_hours: number
           bonus_points: number
+          charm_shiny_odds: number
           family_points: number
           friendship_needed: number
           friendship_per_level: number
@@ -562,6 +563,7 @@ export type Database = {
         Insert: {
           bonus_every_hours: number
           bonus_points: number
+          charm_shiny_odds: number
           family_points: number
           friendship_needed: number
           friendship_per_level: number
@@ -578,6 +580,7 @@ export type Database = {
         Update: {
           bonus_every_hours?: number
           bonus_points?: number
+          charm_shiny_odds?: number
           family_points?: number
           friendship_needed?: number
           friendship_per_level?: number
@@ -598,6 +601,7 @@ export type Database = {
           egg_kind: string | null
           id: string
           item_id: string | null
+          kept: boolean
           position: number
           price: number
         }
@@ -605,6 +609,7 @@ export type Database = {
           egg_kind?: string | null
           id: string
           item_id?: string | null
+          kept?: boolean
           position: number
           price: number
         }
@@ -612,6 +617,7 @@ export type Database = {
           egg_kind?: string | null
           id?: string
           item_id?: string | null
+          kept?: boolean
           position?: number
           price?: number
         }
@@ -1535,6 +1541,7 @@ export type Database = {
         Returns: boolean
       }
       draw_gender: { Args: { species_id: number }; Returns: string }
+      egg_shiny_odds: { Args: { owner: string }; Returns: number }
       eligible_ribbons: {
         Args: {
           pokemon: Database['public']['Tables']['coder_companions']['Row']

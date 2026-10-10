@@ -338,6 +338,11 @@
       "sha256": "b7728c7720222dd09ac4f46072665fd36b03266bf0a8eba3be0319d67c453dc1"
     },
     {
+      "path": "sprites/items/shiny-charm.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/shiny-charm.png",
+      "sha256": "dad28a37f454ec14588c809945c985d8e4b72c108781a29f7ec09cbe828b2aa8"
+    },
+    {
       "path": "sprites/items/shiny-stone.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/shiny-stone.png",
       "sha256": "5013cd61e7f9eb724b45fd3e4eb6bc28fd180a56a2f462eaecfb20da94cd9876"

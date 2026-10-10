@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(89);
+select plan(97);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -367,6 +367,37 @@ select is(public.settle(pg_temp.workplace(5)), '{"outcome": "settled", "points":
 reset role;
 select is((select points from public.coder_point_entries where reason = 'family'), 320,
   'kept apart from the pay');
+
+-- ------------------------------------------------------------
+-- The Shiny Charm
+-- ------------------------------------------------------------
+select is(public.egg_shiny_odds('00000000-0000-0000-0000-00000000000a'), 64, 'an egg is shiny one time in 64');
+insert into public.coder_point_entries (user_id, points, reason)
+select '00000000-0000-0000-0000-00000000000a',
+       (199999 - public.point_balance('00000000-0000-0000-0000-00000000000a'))::integer, 'shift';
+select pg_temp.as_person();
+select is(public.buy('shiny-charm'), '{"outcome": "not_enough_points"}'::jsonb, 'the Shiny Charm costs 200,000');
+
+reset role;
+insert into public.coder_point_entries (user_id, points, reason)
+values ('00000000-0000-0000-0000-00000000000a', 25001, 'shift');
+select pg_temp.as_person();
+select is(public.buy('shiny-charm'), '{"outcome": "bought", "points": 25000}'::jsonb, 'and is bought with points');
+select is(public.box() -> 'bag' -> -1, '{"id": "shiny-charm", "ko_name": "빛나는부적", "en_name": "Shiny Charm",
+                                         "sprite": "/sprites/items/shiny-charm.png", "quantity": 1}'::jsonb,
+  'it goes in the bag, after the stones');
+select is(public.buy('shiny-charm'), '{"outcome": "already_held"}'::jsonb, 'once: a second is not sold');
+
+reset role;
+select is(public.egg_shiny_odds('00000000-0000-0000-0000-00000000000a'), 32, 'its holder''s eggs are shiny one time in 32');
+update public.coder_settings set charm_shiny_odds = 1;
+update public.coder_companions set is_shiny = false where user_id = '00000000-0000-0000-0000-00000000000a';
+select pg_temp.as_person();
+select is(public.buy('kanto-egg') ->> 'outcome', 'bought', 'an egg bought while holding it');
+reset role;
+select is((select count(*) from public.coder_companions
+            where user_id = '00000000-0000-0000-0000-00000000000a' and is_shiny), 1::bigint,
+  'is drawn at the charm''s odds, and the eggs from before it are as they were');
 
 select lives_ok($$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,
   'closing an account takes its workplaces, points and bag with it');
