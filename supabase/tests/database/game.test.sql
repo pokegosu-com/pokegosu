@@ -256,15 +256,15 @@ select is(
     || ' ' || coalesce(pg_temp.next(pg_temp.mon('greavard', 'male', 30), 12), '-'),
   'oinkologne-female houndstone -', 'a female Lechonk becomes a female Oinkologne, and Greavard evolves only at night');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 50),
-  400000000::bigint, 'Medium Fast reaches Lv.50 on 400M tokens');
+  360000000::bigint, 'Medium Fast reaches Lv.50 on 360M tokens');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 100),
-  1000000000::bigint, 'and Lv.100 on 1B, Lv.50 being 40% of it');
+  900000000::bigint, 'and Lv.100 on 900M, Lv.50 being 40% of it');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'slow' and level = 100),
-  1250000000::bigint, 'a slow one needs a quarter more, as in the games');
+  1125000000::bigint, 'a slow one needs a quarter more, as in the games');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'slow-then-very-fast' and level = 100),
-  600000000::bigint, 'an Erratic one needs 60% of Medium Fast at Lv.100, as in the games');
+  540000000::bigint, 'an Erratic one needs 60% of Medium Fast at Lv.100, as in the games');
 select is((select tokens from public.coder_experience_levels where growth_rate = 'fast-then-very-slow' and level = 100),
-  1640000000::bigint, 'and a Fluctuating one 164%');
+  1476000000::bigint, 'and a Fluctuating one 164%');
 select ok((select tokens from public.coder_experience_levels where growth_rate = 'slow-then-very-fast' and level = 10)
         > (select tokens from public.coder_experience_levels where growth_rate = 'medium' and level = 10),
   'Erratic is slower than Medium Fast early on');
@@ -306,27 +306,27 @@ select is(public.claim(pg_temp.main(), 1), '{"outcome": "nothing", "balance": "0
   'with nothing used there is nothing to claim');
 
 reset role;
-select pg_temp.use(60000000, '2026-09-23T10:00:00Z');
+select pg_temp.use(120000000, '2026-09-23T10:00:00Z');
 select pg_temp.use(999, '2026-09-23T11:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select is(public.claim(pg_temp.main(), 0), '{"outcome": "invalid_amount"}'::jsonb, 'an amount is positive');
-select is((public.box() ->> 'balance'), '60000999', 'and a refused one spends nothing');
+select is((public.box() ->> 'balance'), '120000999', 'and a refused one spends nothing');
 
 -- An egg counts tokens as a Pokémon counts experience, whole cycles or not.
 select is(public.claim(pg_temp.main(), 1500000),
-  '{"outcome": "claimed", "tokens": 1500000, "level_before": null, "level_after": null, "balance": "58500999"}'::jsonb,
+  '{"outcome": "claimed", "tokens": 1500000, "level_before": null, "level_after": null, "balance": "118500999"}'::jsonb,
   'an egg takes tokens, not cycles');
 
-select is(public.claim(pg_temp.main(), 90000000),
-  '{"outcome": "claimed", "tokens": 38500000, "level_before": null, "level_after": null, "balance": "20000999"}'::jsonb,
+select is(public.claim(pg_temp.main(), 150000000),
+  '{"outcome": "claimed", "tokens": 98500000, "level_before": null, "level_after": null, "balance": "20000999"}'::jsonb,
   'more than an egg needs is cut to what it needs');
 
 select is(public.claim(pg_temp.main(), 1000000), '{"outcome": "nothing", "balance": "20000999"}'::jsonb,
   'a full egg takes nothing until it hatches');
 
-select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '40000000'::jsonb,
-  'the box says how far it has to go, in tokens: 20 cycles at 2,000,000 each');
+select is(public.box() -> 'eggs' -> 0 -> 'tokens_needed', '100000000'::jsonb,
+  'the box says how far it has to go, in tokens: 20 cycles at 5,000,000 each');
 
 
 -- ------------------------------------------------------------
@@ -348,23 +348,23 @@ reset role;
 select pg_temp.use(60000999, '2026-09-23T09:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
--- The 80,001,998 there is now, to the token, is Lv.14 on the game's Medium Slow curve.
+-- The 80,001,998 there is now, to the token, is Lv.15 on the game's Medium Slow curve.
 select is(public.claim(pg_temp.main(), 999999999),
-  '{"outcome": "claimed", "tokens": 80001998, "level_before": 1, "level_after": 14, "balance": "0"}'::jsonb,
+  '{"outcome": "claimed", "tokens": 80001998, "level_before": 1, "level_after": 15, "balance": "0"}'::jsonb,
   'more than is left is cut to what is left, and a token is a point of experience');
 
-select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 75255832::bigint,
+select is((public.box() -> 'pokemon' -> 0 ->> 'level_tokens')::bigint, 74595794::bigint,
   'the box gives where this level starts, from the game''s own curve');
-select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 82884216::bigint, 'and where the next one does');
+select is((public.box() -> 'pokemon' -> 0 ->> 'next_level_tokens')::bigint, 81611582::bigint, 'and where the next one does');
 select is((public.box() -> 'pokemon' -> 0 ->> 'tokens')::bigint, 80001998::bigint, 'and where it stands');
 select is(public.box() -> 'pokemon' -> 0 ->> 'growth_rate', 'medium-slow', 'and on which curve, for the screen to count along');
-select is((public.box() -> 'pokemon' -> 0 ->> 'max_tokens')::bigint, 1059860000::bigint, 'and what Lv.100 takes');
+select is((public.box() -> 'pokemon' -> 0 ->> 'max_tokens')::bigint, 953874000::bigint, 'and what Lv.100 takes');
 select ok(not (public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'Charmander waits for Lv.16');
 
 reset role;
 select pg_temp.use(40000000, '2026-09-23T12:00:00Z');
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
-select is(public.claim(pg_temp.main(), 40000000) ->> 'level_after', '19', 'the next day''s tokens take it to Lv.19');
+select is(public.claim(pg_temp.main(), 40000000) ->> 'level_after', '21', 'the next day''s tokens take it to Lv.21');
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_evolve')::boolean, 'past Lv.16 it can evolve');
 
 
@@ -385,7 +385,7 @@ select is(public.box() -> 'pokemon' -> 0 -> 'evolves_to',
 select is(public.receive_egg(pg_temp.main()), '{"outcome": "not_ready"}'::jsonb, 'no egg before Lv.50');
 
 reset role;
-update public.coder_companions set level = 50, exp = 423944000 where id = pg_temp.main();
+update public.coder_companions set level = 50, exp = 381549600 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 select ok((public.box() -> 'pokemon' -> 0 ->> 'can_receive_egg')::boolean, 'at Lv.50 the egg is waiting');
@@ -457,7 +457,7 @@ select is(public.receive_ribbon(pg_temp.main(), 'level-100'), '{"outcome": "not_
   'the Lv.100 ribbon waits for Lv.100');
 
 reset role;
-update public.coder_companions set level = 100, exp = 1059860000 where id = pg_temp.main();
+update public.coder_companions set level = 100, exp = 953874000 where id = pg_temp.main();
 select pg_temp.as_person('00000000-0000-0000-0000-00000000000a');
 
 reset role;
