@@ -62,6 +62,7 @@ Every colour has a dark value, chosen by `prefers-color-scheme`. Text holds 4.5:
   - Filters past search, kind and sort wait in a sheet from the bottom, behind a 필터 button that counts the ones on. A long run of type chips is one line that scrolls sideways.
   - A pokedex's evolutions read top to bottom, one stage to a line, each set in under the one it comes from.
   - Grids keep their four tiles across; the sprite shrinks to fit.
+- Between `sm` and `lg` (1024px), as on an unfolded foldable or a small tablet, what needs the full width keeps its phone layout: a pokedex's evolutions read top to bottom, and the dashboard's partner card spans the page with the token and point cards under it.
 
 ## Shape
 

@@ -399,13 +399,15 @@ export function Dashboard() {
           </button>
         </section>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+        // Side by side only from lg: on an unfolded foldable the partner's
+        // details, beside its artwork, have no room to share with a column.
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem]">
           {partnerIsPokemon ? (
             <PokemonPartner box={box} curve={curve} game={game} />
           ) : (
             <EggPartner box={box} game={game} />
           )}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
             <Leftover balance={box.balance} />
             <Points points={box.points} />
           </div>
