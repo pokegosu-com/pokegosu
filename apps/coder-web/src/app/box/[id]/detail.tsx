@@ -47,7 +47,7 @@ type History = {
 // either holds the same height.
 // On a phone the game's next step spans the page, under the thumb.
 const primary =
-  'bg-accent text-surface w-full rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50 sm:w-auto'
+  'bg-accent text-surface w-full rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50 lg:w-auto'
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50'
 
@@ -79,7 +79,7 @@ function Records({
   ribbons: Pokemon['ribbons']
 }) {
   return (
-    <section className="grid gap-8 sm:grid-cols-2">
+    <section className="grid gap-8 lg:grid-cols-2">
       <div className="space-y-3">
         <h2 className="text-muted text-sm font-medium">기록</h2>
         {history ? (
@@ -174,7 +174,7 @@ function PokemonDetail({
     <>
       {/* The partner's own bar is climbing here, so its level waits for it. */}
       {p.is_main && <ActionToasts game={game} level={at.level} />}
-      <header className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
+      <header className="flex flex-col items-center gap-4 lg:flex-row lg:gap-8">
         <span
           {...holdToFlip}
           {...tapToSpin}
@@ -186,7 +186,7 @@ function PokemonDetail({
           {p.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
           <p className="flex items-baseline gap-2">
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
-            <span className="text-2xl font-semibold tracking-tight sm:text-3xl">{ko(p)}</span>
+            <span className="text-2xl font-semibold tracking-tight lg:text-3xl">{ko(p)}</span>
             <Gender gender={p.gender} />
             <span className="text-muted font-mono text-xs">
               No.{String(p.dex_no).padStart(3, '0')}
@@ -201,7 +201,7 @@ function PokemonDetail({
               buttons beside them, so the page does not move as they come
               and go. */}
           <div className="flex min-h-9.5 flex-wrap items-center gap-2">
-            <span className="w-full sm:mr-4 sm:w-auto">
+            <span className="w-full lg:mr-4 lg:w-auto">
               <Marks
                 markings={p.markings}
                 disabled={busy || working}
@@ -393,17 +393,17 @@ function EggDetail({ egg, game, history }: { egg: Egg; game: Game; history: Hist
   const ready = !climbing && egg.tokens >= egg.tokens_needed
   return (
     <>
-      <header className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
+      <header className="flex flex-col items-center gap-4 lg:flex-row lg:gap-8">
         <span className="grid size-48 flex-none place-items-center rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}
           <img src={eggSpriteUrl} alt="알" className="size-24 [image-rendering:pixelated]" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3 self-stretch">
           {egg.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
-          <p className="text-2xl font-semibold tracking-tight sm:text-3xl">알</p>
+          <p className="text-2xl font-semibold tracking-tight lg:text-3xl">알</p>
           <p className="text-muted text-sm">{eggHint(egg)}</p>
           <div className="flex min-h-9.5 flex-wrap items-center gap-2">
-            <span className="w-full sm:mr-4 sm:w-auto">
+            <span className="w-full lg:mr-4 lg:w-auto">
               <Marks
                 markings={egg.markings}
                 disabled={busy}

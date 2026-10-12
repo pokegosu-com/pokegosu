@@ -94,8 +94,8 @@ export function UsageView() {
       </div>
 
       {/* On a phone, today across the top and the longer two side by side under it. */}
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
-        <Figure label="오늘" tokens={sum(days[TODAY])} className="col-span-2 sm:col-span-1" />
+      <section className="grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-4">
+        <Figure label="오늘" tokens={sum(days[TODAY])} className="col-span-2 lg:col-span-1" />
         <Figure label="최근 7일" tokens={BigInt(recent.total)} />
         <Figure label="최근 30일" tokens={BigInt(long.total)} />
       </section>
@@ -130,7 +130,7 @@ export function UsageView() {
         />
       </section>
 
-      <section className="grid gap-10 sm:grid-cols-2">
+      <section className="grid gap-10 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           <h2 className="text-muted text-sm font-medium">일별 · 최근 7일</h2>
           <ol className="flex flex-col gap-3">

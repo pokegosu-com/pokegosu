@@ -20,7 +20,7 @@ export type Stage = {
 
 /**
  * A family's evolutions as a tree. On a phone it reads top to bottom, each
- * stage set in under the one it comes from. From sm it runs left to right,
+ * stage set in under the one it comes from. From lg it runs left to right,
  * branches stacked, each stage's top level with its first evolution's, so
  * Eevee sits beside Vaporeon rather than halfway down eight.
  *
@@ -42,11 +42,11 @@ export function Family({ stages, current }: { stages: Stage[]; current: number }
 
 function Node({ stage: s, current }: { stage: Stage; current: number }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start">
+    <div className="flex flex-col lg:flex-row lg:items-start">
       <StageLink
         href={s.href}
         aria-current={s.id === current ? 'page' : undefined}
-        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex min-h-[70px] w-full max-w-68 items-center gap-2 rounded-lg border px-2 py-1.5 text-[13px] sm:w-40 sm:shrink-0"
+        className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex min-h-[70px] w-full max-w-68 items-center gap-2 rounded-lg border px-2 py-1.5 text-[13px] lg:w-40 lg:shrink-0"
       >
         <span className="absolute top-1 right-1">
           <FormMarks id={s.id} />
@@ -61,21 +61,21 @@ function Node({ stage: s, current }: { stage: Stage; current: number }) {
         </span>
       </StageLink>
       {s.next.length > 0 && (
-        // From sm the branches share one grid, so every arrow out of a stage
+        // From lg the branches share one grid, so every arrow out of a stage
         // is as wide as its longest label and the cards after them line up.
-        <ul className="sm:before:border-line-strong relative pl-7 sm:grid sm:grid-cols-[auto_auto] sm:gap-y-2 sm:pl-3 sm:before:absolute sm:before:top-[35px] sm:before:left-0 sm:before:w-3 sm:before:border-t">
+        <ul className="lg:before:border-line-strong relative pl-7 lg:grid lg:grid-cols-[auto_auto] lg:gap-y-2 lg:pl-3 lg:before:absolute lg:before:top-[35px] lg:before:left-0 lg:before:w-3 lg:before:border-t">
           {s.next.map((n) => (
             // The rail down the left and the elbow into each: on a phone to
-            // the line that says what it takes, from sm to the card's middle.
+            // the line that says what it takes, from lg to the card's middle.
             <li
               key={n.id}
-              className="before:border-line-strong after:border-line-strong relative pt-2 pl-5 before:absolute before:inset-y-0 before:left-0 before:border-l after:absolute after:top-[18px] after:left-0 after:w-3.5 after:border-t last:before:bottom-auto last:before:h-[18px] sm:col-span-2 sm:grid sm:grid-cols-subgrid sm:items-start sm:pt-0 sm:pl-0 sm:before:-inset-y-1 sm:after:hidden sm:first:before:top-[35px] sm:last:before:bottom-auto sm:last:before:h-[39px] sm:only:before:hidden"
+              className="before:border-line-strong after:border-line-strong relative pt-2 pl-5 before:absolute before:inset-y-0 before:left-0 before:border-l after:absolute after:top-[18px] after:left-0 after:w-3.5 after:border-t last:before:bottom-auto last:before:h-[18px] lg:col-span-2 lg:grid lg:grid-cols-subgrid lg:items-start lg:pt-0 lg:pl-0 lg:before:-inset-y-1 lg:after:hidden lg:first:before:top-[35px] lg:last:before:bottom-auto lg:last:before:h-[39px] lg:only:before:hidden"
             >
-              {/* Drawn even with nothing to say, for the arrow from sm. The
+              {/* Drawn even with nothing to say, for the arrow from lg. The
                   label sits above the arrow rather than on it, so a long one,
                   as a Mega Evolution's, never hides it. */}
-              <span className="text-muted mb-1 block text-xs leading-5 sm:before:border-line-strong sm:after:border-l-line-strong sm:relative sm:mb-0 sm:flex sm:h-[70px] sm:max-w-40 sm:min-w-24 sm:flex-col sm:justify-end sm:pr-2.5 sm:pb-[39px] sm:pl-1 sm:leading-[1.3] sm:before:absolute sm:before:top-[35px] sm:before:right-1 sm:before:left-0 sm:before:border-t sm:after:absolute sm:after:top-[31px] sm:after:right-0.5 sm:after:border-y-4 sm:after:border-l-6 sm:after:border-y-transparent">
-                <span className="break-keep wrap-anywhere sm:text-center">{n.method}</span>
+              <span className="text-muted mb-1 block text-xs leading-5 lg:before:border-line-strong lg:after:border-l-line-strong lg:relative lg:mb-0 lg:flex lg:h-[70px] lg:max-w-40 lg:min-w-24 lg:flex-col lg:justify-end lg:pr-2.5 lg:pb-[39px] lg:pl-1 lg:leading-[1.3] lg:before:absolute lg:before:top-[35px] lg:before:right-1 lg:before:left-0 lg:before:border-t lg:after:absolute lg:after:top-[31px] lg:after:right-0.5 lg:after:border-y-4 lg:after:border-l-6 lg:after:border-y-transparent">
+                <span className="break-keep wrap-anywhere lg:text-center">{n.method}</span>
               </span>
               <Node stage={n} current={current} />
             </li>

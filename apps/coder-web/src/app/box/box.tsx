@@ -258,7 +258,7 @@ function FilterSheet({
     return () => window.removeEventListener('keydown', onKey)
   }, [close])
   return (
-    <div className="fixed inset-0 z-50 sm:hidden">
+    <div className="fixed inset-0 z-50 lg:hidden">
       <div className="bg-ink/30 absolute inset-0" onClick={close} />
       <div
         role="dialog"
@@ -358,23 +358,23 @@ export function BoxView() {
         </span>
       </div>
 
-      <div className="border-line flex flex-col gap-3 sm:border-b sm:pb-4">
+      <div className="border-line flex flex-col gap-3 lg:border-b lg:pb-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex w-full gap-2 sm:w-auto">
+          <div className="flex w-full gap-2 lg:w-auto">
             <input
               type="search"
               aria-label="이름으로 찾기"
               placeholder="이름으로 찾기"
               value={view.query}
               onChange={(e) => update({ query: e.target.value })}
-              className={`${control} min-w-0 flex-1 sm:w-56 sm:flex-none`}
+              className={`${control} min-w-0 flex-1 lg:w-56 lg:flex-none`}
             />
             {/* On a phone the filters wait in a sheet, so the box is what fills the screen. */}
             <button
               type="button"
               aria-haspopup="dialog"
               onClick={() => setSheet(true)}
-              className={`${control} flex items-center gap-1.5 sm:hidden`}
+              className={`${control} flex items-center gap-1.5 lg:hidden`}
             >
               필터
               {filterCount(view) > 0 && (
@@ -421,7 +421,7 @@ export function BoxView() {
             </select>
           </label>
         </div>
-        <div className="hidden flex-wrap items-center gap-3 sm:flex">
+        <div className="hidden flex-wrap items-center gap-3 lg:flex">
           <Filters view={view} update={update} types={types} filtered={filtered} />
         </div>
       </div>
@@ -438,7 +438,7 @@ export function BoxView() {
       )}
 
       {shown.length > 0 ? (
-        <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+        <ol className="grid grid-cols-4 gap-2 lg:grid-cols-8">
           {shown.map((item) => (
             <li key={item.id} className="grid">
               {item.kind === 'pokemon' ? (

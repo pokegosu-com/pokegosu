@@ -49,7 +49,7 @@ export function DexGrid({
           placeholder="이름이나 번호로 찾기"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="border-line-strong bg-surface min-w-0 flex-1 rounded-md border px-2.5 py-1.5 text-[13px] sm:w-60 sm:flex-none"
+          className="border-line-strong bg-surface min-w-0 flex-1 rounded-md border px-2.5 py-1.5 text-[13px] lg:w-60 lg:flex-none"
         />
         <span className="text-muted ml-auto flex-none font-mono text-xs tabular-nums">
           {shown.length === rows.length ? `${rows.length}마리` : `${shown.length} / ${rows.length}`}
@@ -60,7 +60,7 @@ export function DexGrid({
       <div
         role="group"
         aria-label="타입"
-        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
       >
         {types.map(([id, name]) => (
           <button
@@ -76,7 +76,7 @@ export function DexGrid({
         ))}
       </div>
       {shown.length > 0 ? (
-        <ol className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+        <ol className="grid grid-cols-4 gap-2 lg:grid-cols-8">
           {shown.map((r) => {
             const had = mine?.species.get(r.speciesId)
             // The shown form's own shiny where that is the one had, else any.
