@@ -7,23 +7,24 @@
 -- together come to the 1B the curve alone took. Every growth rate keeps its
 -- shape and its distance from Medium Fast.
 --
--- An egg not yet hatched keeps how far it is from hatching, as it did when
--- the curve was doubled: its tokens are multiplied with the cycle, and what
--- was invested in it with them, which can take the balance below zero until
--- usage makes it up.
+-- An egg not yet hatched keeps the tokens it has taken, so it is as much
+-- further from hatching as the cycle is longer. Keeping how far along it was
+-- would take tokens from the balance for an egg the person has yet to see.
 --
 -- A Pokémon keeps its level and how far it is through it. Its experience is
--- a tenth less, and what was invested in it less by the same tokens, which
--- go back to the balance. What its egg took stays what it took: that egg
--- hatched at the old price, and charging for it again would take from the
--- balance for nothing the person can see.
+-- a tenth less, and those tokens go back to the balance. What its egg took
+-- is multiplied with the cycle and taken from the balance, so a Pokémon
+-- hatched before today has cost what one hatched after it will: the usual
+-- one at Lv.100 on Medium Fast has 1B invested either way. The balance can
+-- go below zero until usage makes it up. What was invested moves with both,
+-- as a token stays a point of experience.
 
 update public.coder_settings set tokens_per_cycle = 5000000;
 
 update public.coder_companions
    set egg_tokens = egg_tokens * 5 / 2,
        invested_tokens = invested_tokens + egg_tokens * 5 / 2 - egg_tokens
- where hatched_at is null;
+ where hatched_at is not null;
 
 update public.coder_experience_levels set tokens = round(tokens * 0.9);
 
