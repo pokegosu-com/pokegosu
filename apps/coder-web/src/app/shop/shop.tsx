@@ -104,13 +104,15 @@ function Ware({
 
 /**
  * "관동 지방의 포켓몬", from an egg named 관동 알, with "관동 지방" linked to
- * that region's pokedex, which shares the egg's id.
+ * that region's pokedex, which shares the egg's id. Lumiose is a city of
+ * Kalos, not a region, so its egg reads "미르시티의 포켓몬".
  */
 function RegionNote({ egg }: { egg: { id: string } & Named }) {
   return (
     <>
       <a href={`${env.NEXT_PUBLIC_POKEDEX_URL}/${egg.id}`} className="text-accent hover:text-ink">
-        {ko(egg).replace(/ 알$/, '')} 지방
+        {ko(egg).replace(/ 알$/, '')}
+        {egg.id === 'lumiose' ? '시티' : ' 지방'}
       </a>
       의 포켓몬
     </>
