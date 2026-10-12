@@ -36,7 +36,7 @@ type Game = ReturnType<typeof useGame>
 // The clear border makes a primary button as tall as a quiet one, so a row of
 // either holds the same height. On a phone it spans the card, under the thumb.
 const primary =
-  'bg-accent text-surface w-full rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50 sm:w-auto'
+  'bg-accent text-surface w-full rounded-md border border-transparent px-4 py-2 text-sm font-medium disabled:opacity-50 lg:w-auto'
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
@@ -82,12 +82,12 @@ function Leftover({ balance }: { balance: string }) {
   return (
     <section
       aria-labelledby="leftover"
-      className="border-line flex flex-col justify-center gap-1 rounded-lg border p-4 sm:gap-2 sm:p-6"
+      className="border-line flex flex-col justify-center gap-1 rounded-lg border p-4 lg:gap-2 lg:p-6"
     >
       <h2 id="leftover" className="text-muted text-sm font-medium">
         남은 토큰
       </h2>
-      <p className="text-xl font-medium sm:text-2xl" title={`${exactTokens(balance)} 토큰`}>
+      <p className="text-xl font-medium lg:text-2xl" title={`${exactTokens(balance)} 토큰`}>
         <span className="font-mono tabular-nums">{compactTokens(BigInt(balance))}</span> 토큰
       </p>
     </section>
@@ -99,12 +99,12 @@ function Points({ points: amount }: { points: number }) {
   return (
     <section
       aria-labelledby="points"
-      className="border-line flex flex-col justify-center gap-1 rounded-lg border p-4 sm:gap-2 sm:p-6"
+      className="border-line flex flex-col justify-center gap-1 rounded-lg border p-4 lg:gap-2 lg:p-6"
     >
       <h2 id="points" className="text-muted text-sm font-medium">
         포인트
       </h2>
-      <p className="text-xl font-medium sm:text-2xl" title={points(amount)}>
+      <p className="text-xl font-medium lg:text-2xl" title={points(amount)}>
         <span className="font-mono tabular-nums">{compactTokens(amount)}</span> P
       </p>
     </section>
@@ -138,7 +138,7 @@ function PokemonPartner({
   return (
     <section
       aria-label="파트너"
-      className="border-accent flex flex-col items-center gap-4 rounded-lg border p-5 sm:flex-row sm:gap-8 sm:p-6"
+      className="border-accent flex flex-col items-center gap-4 rounded-lg border p-5 lg:flex-row lg:gap-8 lg:p-6"
     >
       <ActionToasts game={game} level={at.level} />
       <Artwork src={sprite} alt={ko(p)} shiny={p.is_shiny} from={cameFrom(game.last, p.id)} />
@@ -147,7 +147,7 @@ function PokemonPartner({
           <p className="text-accent text-xs font-medium">파트너</p>
           <p className="flex items-baseline gap-2">
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
-            <span className="text-2xl font-semibold tracking-tight sm:text-3xl">{ko(p)}</span>
+            <span className="text-2xl font-semibold tracking-tight lg:text-3xl">{ko(p)}</span>
             <Gender gender={p.gender} />
             <span className="text-muted font-mono text-xs">
               No.{String(p.dex_no).padStart(3, '0')}
@@ -235,7 +235,7 @@ function EggPartner({ box, game }: { box: Extract<Box, { started: true }>; game:
   return (
     <section
       aria-label="파트너"
-      className="border-accent flex flex-col items-center gap-4 rounded-lg border p-5 sm:flex-row sm:gap-8 sm:p-6"
+      className="border-accent flex flex-col items-center gap-4 rounded-lg border p-5 lg:flex-row lg:gap-8 lg:p-6"
     >
       <span className="grid size-48 flex-none place-items-center rounded-lg">
         {/* eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web */}
@@ -244,7 +244,7 @@ function EggPartner({ box, game }: { box: Extract<Box, { started: true }>; game:
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 self-stretch">
         <div className="space-y-1">
           <p className="text-accent text-xs font-medium">파트너</p>
-          <p className="text-2xl font-semibold tracking-tight sm:text-3xl">알</p>
+          <p className="text-2xl font-semibold tracking-tight lg:text-3xl">알</p>
           <p className="text-muted text-sm">{eggHint(egg)}</p>
         </div>
         <div className="space-y-1.5">
@@ -399,8 +399,6 @@ export function Dashboard() {
           </button>
         </section>
       ) : (
-        // Side by side only from lg: on an unfolded foldable the partner's
-        // details, beside its artwork, have no room to share with a column.
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem]">
           {partnerIsPokemon ? (
             <PokemonPartner box={box} curve={curve} game={game} />

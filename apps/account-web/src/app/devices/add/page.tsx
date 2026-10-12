@@ -17,7 +17,7 @@ const STEPS = [
 
 export default function AddMachinePage() {
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 sm:px-6 py-10">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 lg:px-6 py-10">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">기기 추가</h1>
         <p className="text-muted">추가할 기기의 터미널에서 차례로 실행하세요.</p>
@@ -27,7 +27,7 @@ export default function AddMachinePage() {
         {STEPS.map((s, i) => (
           <li
             key={s.command}
-            className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2.5 p-3.5 sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-3 sm:p-4"
+            className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2.5 p-3.5 lg:grid-cols-[2rem_minmax(0,1fr)] lg:gap-3 lg:p-4"
           >
             <span className="text-muted font-mono text-sm leading-6 font-medium">{i + 1}</span>
             <div className="space-y-2">
@@ -37,7 +37,7 @@ export default function AddMachinePage() {
             </div>
           </li>
         ))}
-        <li className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2.5 p-3.5 sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-3 sm:p-4">
+        <li className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2.5 p-3.5 lg:grid-cols-[2rem_minmax(0,1fr)] lg:gap-3 lg:p-4">
           <span className="text-muted font-mono text-sm leading-6 font-medium">
             {STEPS.length + 1}
           </span>

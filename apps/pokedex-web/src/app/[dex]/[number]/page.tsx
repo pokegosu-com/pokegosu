@@ -354,7 +354,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const slugs = forms.data.map(({ species: f }) => f.slug)
 
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 sm:px-6 py-8">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-8 px-4 lg:px-6 py-8">
       <nav className="text-muted flex justify-between gap-4 text-sm">
         <Link href={`/${dex}`} className="hover:text-ink">
           ← {dexName}
@@ -391,13 +391,13 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
           const genders = sprites.artwork_female ? [false, true] : [null]
           return genders.map((female) => (
             <Shown key={`${p.id}-${female}`} forms={slugs} form={p.slug} female={female}>
-              <header className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
+              <header className="flex flex-col items-center gap-4 lg:flex-row lg:gap-8">
                 <Sprite
                   name={ko(p)}
                   normal={female ? sprites.artwork_female : sprites.artwork}
                   shiny={female ? sprites.artwork_shiny_female : sprites.artwork_shiny}
                 />
-                <div className="flex flex-col gap-2 self-stretch sm:self-auto">
+                <div className="flex flex-col gap-2 self-stretch lg:self-auto">
                   <p className="text-muted font-mono text-xs tabular-nums">
                     {dexName} {dexNo(n)}
                   </p>
@@ -428,7 +428,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
               {looks.length > 1 && (
                 <section className="space-y-3">
                   <h2 className="text-muted text-sm font-medium">모습</h2>
-                  <ul className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                  <ul className="grid grid-cols-3 gap-2 lg:flex lg:flex-wrap">
                     {looks.map((look) => (
                       <li key={look.key}>
                         <LookLink
@@ -436,7 +436,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                           aria-current={
                             look.id === p.id && look.female === !!female ? 'page' : undefined
                           }
-                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex h-full flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px] sm:w-26"
+                          className="border-line hover:border-line-strong aria-[current=page]:border-accent relative flex h-full flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[13px] lg:w-26"
                         >
                           <span className="absolute top-1 right-1">
                             <FormMarks id={look.id} />
@@ -452,7 +452,7 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
                 </section>
               )}
 
-              <section className="grid gap-10 sm:grid-cols-2">
+              <section className="grid gap-10 lg:grid-cols-2">
                 <div className="space-y-3">
                   <h2 className="text-muted text-sm font-medium">정보</h2>
                   <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-y-2 text-sm">

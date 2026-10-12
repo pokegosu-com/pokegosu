@@ -178,7 +178,7 @@ export function ShopView() {
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">진화 도구</h2>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {tools.map((s) => (
             <Ware
               key={s.id}
@@ -196,7 +196,7 @@ export function ShopView() {
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">중요한 물건</h2>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {kept.map((s) => (
             <Ware
               key={s.id}
@@ -215,7 +215,7 @@ export function ShopView() {
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">알</h2>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           {eggs.map((s) => (
             <Ware
               key={s.id}

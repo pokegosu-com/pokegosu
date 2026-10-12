@@ -22,9 +22,7 @@ export type Stage = {
  * A family's evolutions as a tree. On a phone it reads top to bottom, each
  * stage set in under the one it comes from. From lg it runs left to right,
  * branches stacked, each stage's top level with its first evolution's, so
- * Eevee sits beside Vaporeon rather than halfway down eight. Not from sm: a
- * line of three stages is wider than an unfolded foldable, which would cut
- * off the very Pokémon the page is about.
+ * Eevee sits beside Vaporeon rather than halfway down eight.
  *
  * Every connector meets a card 35px below its top, half the card's 70px.
  */

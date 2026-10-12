@@ -614,7 +614,7 @@ export function RequestsView() {
       <Toast id={last}>{message}</Toast>
       <Toast id={gift ? last : null}>{gift}</Toast>
 
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <ul className="grid gap-3 lg:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />
         {work.workplaces.map((place) => (
           <RequestNotice key={place.id} place={place} work={work} busy={busy} act={act} />

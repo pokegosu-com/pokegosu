@@ -18,7 +18,7 @@ export default async function DevicesPage() {
     .order('created_at')
 
   return (
-    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-6 px-4 sm:px-6 py-10">
+    <main className="max-w-wide mx-auto flex w-full flex-1 flex-col gap-6 px-4 lg:px-6 py-10">
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">기기</h1>

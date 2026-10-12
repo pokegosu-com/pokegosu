@@ -69,7 +69,7 @@ export function AppHeader({
   return (
     <>
       <header className="border-line bg-surface border-b">
-        <nav className="max-w-wide mx-auto flex w-full items-center gap-6 px-4 sm:px-6 py-3 text-sm">
+        <nav className="max-w-wide mx-auto flex w-full items-center gap-6 px-4 lg:px-6 py-3 text-sm">
           <span className="-ml-2 flex items-center gap-1">
             <button
               type="button"
@@ -90,7 +90,7 @@ export function AppHeader({
               {/* More than two sections don't fit beside the name on a phone,
                   so there they fold into the picker. */}
               <span
-                className={`items-center gap-6 ${sections.length > 2 ? 'hidden sm:flex' : 'flex'}`}
+                className={`items-center gap-6 ${sections.length > 2 ? 'hidden lg:flex' : 'flex'}`}
               >
                 {sections.map((s) => (
                   <Link
@@ -104,7 +104,7 @@ export function AppHeader({
                 ))}
               </span>
               {sections.length > 2 && (
-                <span className="sm:hidden">
+                <span className="lg:hidden">
                   <SectionPicker sections={sections} pathname={pathname} />
                 </span>
               )}

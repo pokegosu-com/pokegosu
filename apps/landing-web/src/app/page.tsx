@@ -15,7 +15,7 @@ const blurbs: Record<(typeof apps)[number]['id'], string> = {
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-2xl flex w-full flex-1 flex-col gap-10 px-4 pt-10 pb-16 sm:justify-center sm:px-6 sm:py-24">
+    <main className="mx-auto max-w-2xl flex w-full flex-1 flex-col gap-10 px-4 pt-10 pb-16 lg:justify-center lg:px-6 lg:py-24">
       <div className="space-y-3">
         <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight">
           <PokeGosuIcon size={40} />
@@ -24,7 +24,7 @@ export default function Home() {
         <p className="text-muted text-lg">트레이너를 위한 포켓몬 앱 모음.</p>
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid gap-3 lg:grid-cols-2">
         {apps.map((app) => (
           <li key={app.id} className="grid">
             <a
@@ -42,7 +42,7 @@ export default function Home() {
       <div>
         <a
           href={`${accountUrl}/login`}
-          className="bg-accent text-surface block rounded-md px-4 py-2.5 text-center text-sm font-medium sm:inline-block"
+          className="bg-accent text-surface block rounded-md px-4 py-2.5 text-center text-sm font-medium lg:inline-block"
         >
           로그인
         </a>
