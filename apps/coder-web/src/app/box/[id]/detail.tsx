@@ -51,34 +51,25 @@ const primary =
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50'
 
-function minute(at: string): string {
-  return new Date(at).toLocaleString('ko-KR', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+function day(at: string): string {
+  return new Date(at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
 }
 
-/**
- * "09. 24. 14:05 – 09. 26. 15:10" and "49시간", or from a minute up to now for
- * the one still going. The two are apart so a phone breaks the line between
- * them, not inside either.
- */
-function period({ started_at, ended_at }: History['main_periods'][number]): [string, string] {
-  // Whole hours only: an hour is counted once it has been spent, so a spell
-  // just begun says 0.
+/** "09. 24. – 09. 26. · 2일", or from a day up to now for the one still going. */
+function period({ started_at, ended_at }: History['main_periods'][number]): string {
+  // In the largest unit it fills, rounded down: hours up to a day, days up to
+  // a year. A unit is counted once it has been spent, so a spell just begun
+  // says 0시간.
   const hours = Math.floor(
     ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
       3_600_000,
-  ).toLocaleString('ko-KR')
-  return [
-    ended_at
-      ? `${minute(started_at)} – ${minute(ended_at)}`
-      : `${minute(started_at)} 부터 지금까지`,
-    `${hours}시간`,
-  ]
+  )
+  const days = Math.floor(hours / 24)
+  const length =
+    days >= 365 ? `${Math.floor(days / 365)}년` : days >= 1 ? `${days}일` : `${hours}시간`
+  return ended_at
+    ? `${day(started_at)} – ${day(ended_at)} · ${length}`
+    : `${day(started_at)} 부터 지금까지 · ${length}`
 }
 
 function Records({
@@ -117,15 +108,7 @@ function Records({
               {history.main_periods.length === 0 ? (
                 <span className="text-muted font-sans">아직 없음</span>
               ) : (
-                history.main_periods.map((p) => {
-                  const [span, hours] = period(p)
-                  return (
-                    <p key={p.started_at} className="flex flex-wrap gap-x-[1ch]">
-                      <span className="whitespace-nowrap">{span}</span>
-                      <span className="whitespace-nowrap">· {hours}</span>
-                    </p>
-                  )
-                })
+                history.main_periods.map((p) => <p key={p.started_at}>{period(p)}</p>)
               )}
             </dd>
           </dl>
