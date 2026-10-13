@@ -51,11 +51,17 @@ const primary =
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-2 text-sm font-medium disabled:opacity-50'
 
-function day(at: string): string {
-  return new Date(at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
+function minute(at: string): string {
+  return new Date(at).toLocaleString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 }
 
-/** "09. 24. – 09. 26. · 49시간", or from a day up to now for the one still going. */
+/** "09. 24. 14:05 – 09. 26. 15:10 · 49시간", or from a minute up to now for the one still going. */
 function period({ started_at, ended_at }: History['main_periods'][number]): string {
   // Days read as 1 for anything from a minute to a day and a half, which hid
   // how long a short spell really was.
@@ -67,8 +73,8 @@ function period({ started_at, ended_at }: History['main_periods'][number]): stri
     ),
   ).toLocaleString('ko-KR')
   return ended_at
-    ? `${day(started_at)} – ${day(ended_at)} · ${hours}시간`
-    : `${day(started_at)} 부터 지금까지 · ${hours}시간`
+    ? `${minute(started_at)} – ${minute(ended_at)} · ${hours}시간`
+    : `${minute(started_at)} 부터 지금까지 · ${hours}시간`
 }
 
 function Records({
