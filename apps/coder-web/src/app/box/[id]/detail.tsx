@@ -61,17 +61,24 @@ function minute(at: string): string {
   })
 }
 
-/** "09. 24. 14:05 – 09. 26. 15:10 · 49시간", or from a minute up to now for the one still going. */
-function period({ started_at, ended_at }: History['main_periods'][number]): string {
+/**
+ * "09. 24. 14:05 – 09. 26. 15:10" and "49시간", or from a minute up to now for
+ * the one still going. The two are apart so a phone breaks the line between
+ * them, not inside either.
+ */
+function period({ started_at, ended_at }: History['main_periods'][number]): [string, string] {
   // Whole hours only: an hour is counted once it has been spent, so a spell
   // just begun says 0.
   const hours = Math.floor(
     ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
       3_600_000,
   ).toLocaleString('ko-KR')
-  return ended_at
-    ? `${minute(started_at)} – ${minute(ended_at)} · ${hours}시간`
-    : `${minute(started_at)} 부터 지금까지 · ${hours}시간`
+  return [
+    ended_at
+      ? `${minute(started_at)} – ${minute(ended_at)}`
+      : `${minute(started_at)} 부터 지금까지`,
+    `${hours}시간`,
+  ]
 }
 
 function Records({
@@ -105,12 +112,20 @@ function Records({
             )}
             <dt className="text-muted">받은 토큰</dt>
             <dd className="font-mono text-[13px]">{exactTokens(tokens)}</dd>
-            <dt className="text-muted">함께 코딩한 시간</dt>
+            <dt className="text-muted">함께 지낸 시간</dt>
             <dd className="space-y-0.5 font-mono text-[13px]">
               {history.main_periods.length === 0 ? (
                 <span className="text-muted font-sans">아직 없음</span>
               ) : (
-                history.main_periods.map((p) => <p key={p.started_at}>{period(p)}</p>)
+                history.main_periods.map((p) => {
+                  const [span, hours] = period(p)
+                  return (
+                    <p key={p.started_at} className="flex flex-wrap gap-x-[1ch]">
+                      <span className="whitespace-nowrap">{span}</span>
+                      <span className="whitespace-nowrap">· {hours}</span>
+                    </p>
+                  )
+                })
               )}
             </dd>
           </dl>
