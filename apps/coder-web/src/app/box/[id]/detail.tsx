@@ -63,14 +63,11 @@ function minute(at: string): string {
 
 /** "09. 24. 14:05 – 09. 26. 15:10 · 49시간", or from a minute up to now for the one still going. */
 function period({ started_at, ended_at }: History['main_periods'][number]): string {
-  // Days read as 1 for anything from a minute to a day and a half, which hid
-  // how long a short spell really was.
-  const hours = Math.max(
-    1,
-    Math.round(
-      ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
-        3_600_000,
-    ),
+  // Whole hours only: an hour is counted once it has been spent, so a spell
+  // just begun says 0.
+  const hours = Math.floor(
+    ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
+      3_600_000,
   ).toLocaleString('ko-KR')
   return ended_at
     ? `${minute(started_at)} – ${minute(ended_at)} · ${hours}시간`
