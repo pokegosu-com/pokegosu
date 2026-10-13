@@ -379,8 +379,8 @@ select is((select points from public.coder_point_entries where reason = 'family'
 -- ------------------------------------------------------------
 select is(public.shift_length(false), 8::smallint, 'a shift is 8 hours');
 select is(public.shift_length(true), 4::smallint, 'and half that for a shiny client');
-select is((select count(*)::int from generate_series(1, 12800) where public.roll_shiny()) between 50 and 160, true,
-  'a client is shiny about one time in 128, as an egg');
+select is((select count(*)::int from generate_series(1, 6400) where public.roll_shiny()) between 50 and 160, true,
+  'a client is shiny about one time in 64');
 
 update public.coder_workplaces
    set client_id = 19, task_id = 'errands', emptied_at = null, is_shiny = true,

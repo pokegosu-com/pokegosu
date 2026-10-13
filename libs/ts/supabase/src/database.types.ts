@@ -547,6 +547,7 @@ export type Database = {
           bonus_every_hours: number
           bonus_points: number
           charm_shiny_odds: number
+          client_shiny_odds: number
           family_points: number
           friendship_needed: number
           friendship_per_level: number
@@ -564,6 +565,7 @@ export type Database = {
           bonus_every_hours: number
           bonus_points: number
           charm_shiny_odds: number
+          client_shiny_odds: number
           family_points: number
           friendship_needed: number
           friendship_per_level: number
@@ -581,6 +583,7 @@ export type Database = {
           bonus_every_hours?: number
           bonus_points?: number
           charm_shiny_odds?: number
+          client_shiny_odds?: number
           family_points?: number
           friendship_needed?: number
           friendship_per_level?: number

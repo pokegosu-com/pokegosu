@@ -81,7 +81,7 @@ function Ware({
         )}
       </span>
       <span className="text-sm font-medium">{name}</span>
-      <span className="text-muted text-xs">{note}</span>
+      <span className="text-muted text-xs break-keep">{note}</span>
       <span className="mt-auto font-mono text-sm tabular-nums">{points(price)}</span>
       <button type="button" className={quiet} disabled={disabled || held} onClick={onBuy}>
         {held ? '보유 중' : '구매'}
@@ -111,7 +111,7 @@ function RegionNote({ egg }: { egg: { id: string } & Named }) {
  * What the Shiny Charm does, as the games put it: the odds themselves are
  * left for the trainer to find out.
  */
-const charmNote = '알에서 색이 다른 포켓몬을 만나기 쉬워진다'
+const charmNote = '색이 다른 포켓몬을 만나기 쉬워진다'
 
 export function ShopView() {
   const game = useGame()
