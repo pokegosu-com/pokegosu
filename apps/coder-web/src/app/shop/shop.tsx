@@ -24,12 +24,8 @@ type ShopItem = {
 const quiet =
   'border-line-strong hover:border-ink rounded-md border px-4 py-1.5 text-sm font-medium disabled:opacity-50'
 
-/** One time in how many an egg is shiny, and for someone who holds the Shiny Charm. */
-type ShinyOdds = { shiny_odds: number; charm_shiny_odds: number }
-
 function useShop() {
   const [items, setItems] = useState<ShopItem[] | null>(null)
-  const [odds, setOdds] = useState<ShinyOdds | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   useEffect(() => {
     const supabase = createClient()
@@ -43,16 +39,8 @@ function useShop() {
         if (error) setFailure(error.message)
         else setItems(data as unknown as ShopItem[])
       })
-    supabase
-      .from('coder_settings')
-      .select('shiny_odds, charm_shiny_odds')
-      .single()
-      .then(({ data, error }) => {
-        if (error) setFailure(error.message)
-        else setOdds(data)
-      })
   }, [])
-  return { items, odds, failure }
+  return { items, failure }
 }
 
 /**
@@ -93,7 +81,7 @@ function Ware({
         )}
       </span>
       <span className="text-sm font-medium">{name}</span>
-      <span className="text-muted text-xs">{note}</span>
+      <span className="text-muted text-xs break-keep">{note}</span>
       <span className="mt-auto font-mono text-sm tabular-nums">{points(price)}</span>
       <button type="button" className={quiet} disabled={disabled || held} onClick={onBuy}>
         {held ? '보유 중' : '구매'}
@@ -119,16 +107,11 @@ function RegionNote({ egg }: { egg: { id: string } & Named }) {
   )
 }
 
-/** What the Shiny Charm does, in the odds themselves. */
-function CharmNote({ odds }: { odds: ShinyOdds }) {
-  return (
-    <>
-      받는 알이 색이 다를 확률
-      <br />
-      1/{odds.shiny_odds} → 1/{odds.charm_shiny_odds}
-    </>
-  )
-}
+/**
+ * What the Shiny Charm does, as the games put it: the odds themselves are
+ * left for the trainer to find out.
+ */
+const charmNote = '색이 다른 포켓몬을 만나기 쉬워진다'
 
 export function ShopView() {
   const game = useGame()
@@ -136,7 +119,7 @@ export function ShopView() {
   const shop = useShop()
   const failure = game.failure ?? shop.failure
 
-  if (!box || !shop.items || !shop.odds) {
+  if (!box || !shop.items) {
     return failure ? (
       <p className="bg-danger-surface text-danger rounded-md px-3 py-2 text-sm">{failure}</p>
     ) : (
@@ -203,7 +186,7 @@ export function ShopView() {
               sprite={itemSpriteUrl(s.item!)}
               large={false}
               name={ko(s.item!)}
-              note={<CharmNote odds={shop.odds!} />}
+              note={charmNote}
               price={s.price}
               disabled={busy || box.points < s.price}
               held={held(s.item!.id) > 0}
