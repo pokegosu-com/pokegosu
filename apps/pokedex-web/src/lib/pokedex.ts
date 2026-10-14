@@ -29,11 +29,33 @@ export function dexNo(n: number): string {
 }
 
 /**
+ * A build reads the database some twenty thousand times, and one answer of
+ * a server's error failed a whole deploy; supabase-js asks again only after
+ * a 503 or 520. A read changes nothing, so it is asked again after any 5xx,
+ * a 429 or a dropped connection, waiting longer each time.
+ */
+async function patientFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const tries = method === 'GET' || method === 'HEAD' ? 5 : 1
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(input, init)
+      const transient = response.status >= 500 || response.status === 429
+      if (!transient || attempt === tries) return response
+      await response.body?.cancel()
+    } catch (error) {
+      if (init?.signal?.aborted || attempt === tries) throw error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt))
+  }
+}
+
+/**
  * The pokedex_ tables are readable by anyone, so these pages read them as a
  * visitor: no session, and no cookies to keep.
  */
 export function pokedex() {
-  return createClient({ getAll: () => [], setAll: () => {} })
+  return createClient({ getAll: () => [], setAll: () => {} }, patientFetch)
 }
 
 /**
