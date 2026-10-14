@@ -480,10 +480,6 @@ export function BoxView() {
           )}
         </div>
       )}
-      <p className="text-muted text-xs">
-        파트너는 정렬과 관계없이 맨 앞에 옵니다. 파란 점은 진화, 부화, 알, 리본, 가방의 돌처럼
-        기다리는 일이 있다는 뜻입니다.
-      </p>
     </>
   )
 }
