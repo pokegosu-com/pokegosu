@@ -57,16 +57,19 @@ function day(at: string): string {
 
 /** "09. 24. – 09. 26. · 2일", or from a day up to now for the one still going. */
 function period({ started_at, ended_at }: History['main_periods'][number]): string {
-  const days = Math.max(
-    1,
-    Math.round(
-      ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
-        86_400_000,
-    ),
+  // In the largest unit it fills, rounded down: hours up to a day, days up to
+  // a year. A unit is counted once it has been spent, so a spell just begun
+  // says 0시간.
+  const hours = Math.floor(
+    ((ended_at ? new Date(ended_at) : new Date()).getTime() - new Date(started_at).getTime()) /
+      3_600_000,
   )
+  const days = Math.floor(hours / 24)
+  const length =
+    days >= 365 ? `${Math.floor(days / 365)}년` : days >= 1 ? `${days}일` : `${hours}시간`
   return ended_at
-    ? `${day(started_at)} – ${day(ended_at)} · ${days}일`
-    : `${day(started_at)} 부터 지금까지 · ${days}일`
+    ? `${day(started_at)} – ${day(ended_at)} · ${length}`
+    : `${day(started_at)} 부터 지금까지 · ${length}`
 }
 
 function Records({
@@ -100,7 +103,7 @@ function Records({
             )}
             <dt className="text-muted">받은 토큰</dt>
             <dd className="font-mono text-[13px]">{exactTokens(tokens)}</dd>
-            <dt className="text-muted">파트너였던 때</dt>
+            <dt className="text-muted">함께 지낸 시간</dt>
             <dd className="space-y-0.5 font-mono text-[13px]">
               {history.main_periods.length === 0 ? (
                 <span className="text-muted font-sans">아직 없음</span>
