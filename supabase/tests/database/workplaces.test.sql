@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(107);
+select plan(109);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -154,7 +154,12 @@ reset role;
 create temporary table egg as
 select main_companion_id as id from public.coder_trainers where user_id = '00000000-0000-0000-0000-00000000000a';
 grant select on egg to authenticated;
+insert into public.coder_companion_ribbons (companion_id, ribbon_id) select rattata, 'helper' from mon;
 select pg_temp.as_person();
+
+select is(pg_temp.working((select rattata from mon)) -> 'ribbons', '["helper"]'::jsonb,
+  'work() says which ribbons a Pokémon has received');
+select is(pg_temp.working((select machop from mon)) -> 'ribbons', '[]'::jsonb, 'and none for one without');
 
 select is(public.set_main((select machop from mon)), '{"outcome": "working"}'::jsonb,
   'a Pokémon out on a request cannot become the partner');

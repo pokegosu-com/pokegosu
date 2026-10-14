@@ -286,6 +286,8 @@ export type Worker = Pick<
 > & {
   workplace_id: string | null
   is_main: boolean
+  /** The ids of the ribbons it has received: the picker marks a helper. */
+  ribbons: string[]
   offers: { workplace_id: string; aptitude: number; points: number }[]
 }
 

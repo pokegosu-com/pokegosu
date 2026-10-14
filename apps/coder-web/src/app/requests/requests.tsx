@@ -397,6 +397,7 @@ function Picker({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-medium">
                     {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
+                    {p.ribbons.includes('helper') && <span title="도우미 리본">🎀</span>}
                     {ko(p)} <span className="text-muted font-mono text-xs">Lv.{p.level}</span>
                   </span>
                   <span className="text-muted block text-xs">{aptitudeLine(offer.aptitude)}</span>
