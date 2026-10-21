@@ -10,7 +10,8 @@ import type { Outcome } from './use-game'
 
 export type WorkAction =
   | { fn: 'assign'; workplace_id: string; companion_id: string }
-  | { fn: 'settle' | 'reroll'; workplace_id: string }
+  | { fn: 'settle' | 'reroll' | 'use_milk'; workplace_id: string }
+  | { fn: 'give_ball'; workplace_id: string; item_id: string }
   | { fn: 'settle_trainer' }
 
 /** The last action, what it answered, and the workplaces as they were before it, for who it was. */

@@ -137,9 +137,10 @@ select n, public.give_ball(pg_temp.workplace(2), 'ultra-ball') ->> 'outcome' as 
   from generate_series(1, 100) n;
 
 select is((select count(*)::int from tries where outcome = 'egg'), 1, 'a client gives one egg');
-select ok((select bool_and(outcome = 'hesitated') from tries
+-- Either side of the egg may hold no tries at all, which is true too.
+select ok((select coalesce(bool_and(outcome = 'hesitated'), true) from tries
             where n < (select n from tries where outcome = 'egg')), 'hesitating until it does');
-select ok((select bool_and(outcome = 'already_gave') from tries
+select ok((select coalesce(bool_and(outcome = 'already_gave'), true) from tries
             where n > (select n from tries where outcome = 'egg')), 'and gives no more after');
 select is(pg_temp.bag('ultra-ball'), 100 - (select n::int from tries where outcome = 'egg'),
   'every ball handed over is spent, whatever came of it');

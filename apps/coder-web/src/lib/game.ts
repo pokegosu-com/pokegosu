@@ -51,6 +51,8 @@ export type Pokemon = {
   is_shiny: boolean
   /** Null for a genderless species. */
   gender: 'female' | 'male' | null
+  /** The ball it is in: a Poké Ball, or the one its client's egg came in. */
+  ball: Item
   level: number
   /** Its experience in tokens, at today's rate, and where its level starts and ends. */
   tokens: number
@@ -213,7 +215,11 @@ export type Work =
         min_work_level: number
         bonus_every_hours: number
         bonus_points: number
+        /** The active hours one Moomoo Milk takes off a shift. */
+        milk_hours: number
       }
+      /** What the bag holds to use up on requests; every ball, held or not. */
+      tools: { milk: BagItem; balls: BagItem[] }
       /** The person's own workplace: active hours since it opened, and how many are paid. */
       trainer: {
         /** Their display name, which a trainer with a handle always has. */
@@ -241,7 +247,7 @@ export type Workplace = {
   can_reroll: boolean
   worker: {
     companion_id: string
-    /** Active hours of its shift so far, up to the request's shift length. */
+    /** Active hours it has worked; with the milk's, up to the request's shift length. */
     hours: number
     aptitude: number
     /** What settling will pay. */
@@ -260,6 +266,10 @@ export type Workplace = {
       is_shiny: boolean
       /** Active hours its shift lasts: half the usual for a shiny client. */
       shift_hours: number
+      /** The hours Moomoo Milk has taken off the shift. */
+      milk_hours: number
+      /** Whether the client has given its egg, for a ball handed over. */
+      gave_egg: boolean
     }
   | {
       arrived: false
@@ -268,6 +278,8 @@ export type Workplace = {
       types: null
       is_shiny: null
       shift_hours: null
+      milk_hours: null
+      gave_egg: null
     }
 )
 

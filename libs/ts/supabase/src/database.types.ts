@@ -54,6 +54,29 @@ export type Database = {
           },
         ]
       }
+      coder_balls: {
+        Row: {
+          catch_rate: number
+          item_id: string
+        }
+        Insert: {
+          catch_rate: number
+          item_id: string
+        }
+        Update: {
+          catch_rate?: number
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'coder_balls_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: true
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       coder_companion_ribbons: {
         Row: {
           companion_id: string
@@ -89,7 +112,9 @@ export type Database = {
       }
       coder_companions: {
         Row: {
+          ball: string
           created_at: string
+          egg_from: number | null
           egg_kind: string
           egg_received_at: string | null
           egg_tokens: number
@@ -105,7 +130,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ball?: string
           created_at?: string
+          egg_from?: number | null
           egg_kind: string
           egg_received_at?: string | null
           egg_tokens?: number
@@ -121,7 +148,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ball?: string
           created_at?: string
+          egg_from?: number | null
           egg_kind?: string
           egg_received_at?: string | null
           egg_tokens?: number
@@ -137,6 +166,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'coder_companions_ball_fkey'
+            columns: ['ball']
+            isOneToOne: false
+            referencedRelation: 'pokedex_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'coder_companions_egg_from_fkey'
+            columns: ['egg_from']
+            isOneToOne: false
+            referencedRelation: 'pokedex_species'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'coder_companions_egg_kind_fkey'
             columns: ['egg_kind']
@@ -553,6 +596,7 @@ export type Database = {
           friendship_per_level: number
           friendship_per_partner_hour: number
           id: boolean
+          milk_hours: number
           min_work_level: number
           points_per_hour: number
           shift_hours: number
@@ -571,6 +615,7 @@ export type Database = {
           friendship_per_level: number
           friendship_per_partner_hour: number
           id?: boolean
+          milk_hours: number
           min_work_level: number
           points_per_hour: number
           shift_hours: number
@@ -589,6 +634,7 @@ export type Database = {
           friendship_per_level?: number
           friendship_per_partner_hour?: number
           id?: boolean
+          milk_hours?: number
           min_work_level?: number
           points_per_hour?: number
           shift_hours?: number
@@ -602,6 +648,7 @@ export type Database = {
       coder_shop_items: {
         Row: {
           egg_kind: string | null
+          for_requests: boolean
           id: string
           item_id: string | null
           kept: boolean
@@ -610,6 +657,7 @@ export type Database = {
         }
         Insert: {
           egg_kind?: string | null
+          for_requests?: boolean
           id: string
           item_id?: string | null
           kept?: boolean
@@ -618,6 +666,7 @@ export type Database = {
         }
         Update: {
           egg_kind?: string | null
+          for_requests?: boolean
           id?: string
           item_id?: string | null
           kept?: boolean
@@ -709,8 +758,10 @@ export type Database = {
           client_id: number
           companion_id: string | null
           emptied_at: string | null
+          gave_egg: boolean
           id: string
           is_shiny: boolean
+          milk_hours: number
           slot: number
           task_id: string
           user_id: string
@@ -720,8 +771,10 @@ export type Database = {
           client_id: number
           companion_id?: string | null
           emptied_at?: string | null
+          gave_egg?: boolean
           id?: string
           is_shiny?: boolean
+          milk_hours?: number
           slot: number
           task_id: string
           user_id: string
@@ -731,8 +784,10 @@ export type Database = {
           client_id?: number
           companion_id?: string | null
           emptied_at?: string | null
+          gave_egg?: boolean
           id?: string
           is_shiny?: boolean
+          milk_hours?: number
           slot?: number
           task_id?: string
           user_id?: string
@@ -1541,6 +1596,19 @@ export type Database = {
         Args: { api_key_hash: string; claim_hash: string }
         Returns: Json
       }
+      client_egg: {
+        Args: {
+          ball: string
+          client_id: number
+          is_shiny: boolean
+          owner: string
+        }
+        Returns: string
+      }
+      client_gives_egg: {
+        Args: { ball: string; client_id: number }
+        Returns: boolean
+      }
       companion_history: { Args: { companion_id: string }; Returns: Json }
       did_request: {
         Args: { companion_id: string; type: string }
@@ -1565,6 +1633,10 @@ export type Database = {
         Returns: boolean
       }
       full_moon: { Args: { at: string }; Returns: boolean }
+      give_ball: {
+        Args: { item_id: string; workplace_id: string }
+        Returns: Json
+      }
       hatch: { Args: { companion_id: string }; Returns: Json }
       in_box: {
         Args: {
@@ -1608,7 +1680,9 @@ export type Database = {
       lock_companion: {
         Args: { companion_id: string; owner: string }
         Returns: {
+          ball: string
           created_at: string
+          egg_from: number | null
           egg_kind: string
           egg_received_at: string | null
           egg_tokens: number
@@ -1719,6 +1793,7 @@ export type Database = {
         Args: { companion_id: string; item_id: string; time_zone?: string }
         Returns: Json
       }
+      use_milk: { Args: { workplace_id: string }; Returns: Json }
       whoami: { Args: { api_key_hash: string }; Returns: Json }
       work: { Args: never; Returns: Json }
     }

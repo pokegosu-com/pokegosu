@@ -17,6 +17,8 @@ type ShopItem = {
   price: number
   /** Held rather than used, so sold once. */
   kept: boolean
+  /** Used up on a request: a ball or Moomoo Milk. */
+  for_requests: boolean
   item: Item | null
   egg: ({ id: string } & Named) | null
 }
@@ -32,7 +34,7 @@ function useShop() {
     supabase
       .from('coder_shop_items')
       .select(
-        'id, price, kept, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(id, ko_name, en_name)',
+        'id, price, kept, for_requests, item:pokedex_items(id, ko_name, en_name, sprite), egg:coder_egg_kinds(id, ko_name, en_name)',
       )
       .order('position')
       .then(({ data, error }) => {
@@ -138,7 +140,9 @@ export function ShopView() {
   }
 
   const held = (id: string) => box.bag.find((b) => b.id === id)?.quantity ?? 0
-  const tools = shop.items.filter((s) => s.item && !s.kept)
+  // What is used up on requests comes first: it is what a trainer comes back for.
+  const forRequests = shop.items.filter((s) => s.item && s.for_requests)
+  const tools = shop.items.filter((s) => s.item && !s.kept && !s.for_requests)
   const kept = shop.items.filter((s) => s.item && s.kept)
   const eggs = shop.items.filter((s) => s.egg)
 
@@ -158,6 +162,24 @@ export function ShopView() {
           return s?.item ? ko(s.item) : s?.egg ? ko(s.egg) : undefined
         }}
       />
+
+      <section className="space-y-3">
+        <h2 className="text-muted text-sm font-medium">도구</h2>
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {forRequests.map((s) => (
+            <Ware
+              key={s.id}
+              sprite={itemSpriteUrl(s.item!)}
+              large={false}
+              name={ko(s.item!)}
+              note={`${held(s.item!.id)}개 보유`}
+              price={s.price}
+              disabled={busy || box.points < s.price}
+              onBuy={() => act({ fn: 'buy', shop_item_id: s.id })}
+            />
+          ))}
+        </ul>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-muted text-sm font-medium">진화 도구</h2>

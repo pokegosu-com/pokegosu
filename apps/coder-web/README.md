@@ -6,6 +6,8 @@ PokeGosu Coder counts the tokens your coding agent uses on every machine you wor
 
 The hours you code earn points too. You earn some yourself, and Pokémon of Lv.50 and up earn more on requests from other Pokémon, the more the better their types would hit the one asking. Now and then the one asking is shiny: its request is done in half the time and pays as much. Points buy evolution items and regional eggs in the shop, and, once, a Shiny Charm, which doubles the odds that the eggs you get from then on are shiny.
 
+Points also buy things to use up on requests. Moomoo Milk has the Pokémon on a request finish two hours sooner, for the same pay, so it is worth it where an hour pays well. A ball can be handed to the one asking whenever it is on the board: it may give back an egg in it, as often as the games would have it caught, holding the first Pokémon of its line, shiny if it is. The Pokémon that hatches keeps the ball.
+
 Pokémon evolve as in the games wherever the game can tell, at your own time of day. What it cannot see is asked another way: a trade is a Linking Cord or the item it would hold, a place is a stone, friendship grows with levels and time as your partner, a move known is a request done of its type, and the party is your box.
 
 ## Getting started

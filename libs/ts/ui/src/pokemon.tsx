@@ -23,10 +23,13 @@ export function ProgressBar({
   label,
   size = 'md',
   color = 'var(--accent)',
+  extra = 0,
   animated = false,
 }: {
   value: number
   max: number
+  /** More filled after value, in a fainter colour: what Moomoo Milk took off a shift. */
+  extra?: number
   /** Its name for screen readers: 다음 레벨까지, 부화까지. */
   label: string
   size?: 'md' | 'lg'
@@ -39,19 +42,27 @@ export function ProgressBar({
   animated?: boolean
 }) {
   const share = max > 0 ? Math.min(1, Math.max(0, value / max)) : 1
+  const more = max > 0 ? Math.min(1 - share, Math.max(0, extra / max)) : 0
+  const ease = animated ? '' : 'transition-[width] duration-200 motion-reduce:transition-none'
   return (
     <span
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={max}
-      aria-valuenow={value}
-      className={`bg-surface-raised ring-line block overflow-hidden rounded-full ring-1 ring-inset ${size === 'lg' ? 'h-2' : 'h-1.5'}`}
+      aria-valuenow={value + extra}
+      className={`bg-surface-raised ring-line flex overflow-hidden rounded-full ring-1 ring-inset ${size === 'lg' ? 'h-2' : 'h-1.5'}`}
     >
       <span
-        className={`block h-full rounded-full ${animated ? '' : 'transition-[width] duration-200 motion-reduce:transition-none'}`}
+        className={`block h-full ${more > 0 ? 'rounded-l-full' : 'rounded-full'} ${ease}`}
         style={{ width: `${share * 100}%`, background: color }}
       />
+      {more > 0 && (
+        <span
+          className={`bg-accent-faint block h-full rounded-r-full ${ease}`}
+          style={{ width: `${more * 100}%` }}
+        />
+      )}
     </span>
   )
 }
