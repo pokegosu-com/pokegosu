@@ -91,7 +91,7 @@ Shared pieces live in `@pokegosu/ui`. Reach for them before drawing the same thi
 | `@pokegosu/ui/pokemon`   | `TypeChip` (a type's name beside its dot), `ProgressBar`, `PokemonTile` (a small sprite, a name and one line of data, the whole tile a link), and `CaughtMarks` (✨ then the ball, at a pokedex entry's top right, for the trainer signed in).                                                      |
 | `@pokegosu/ui/fonts`     | `<Fonts />`, for each layout's `<head>`.                                                                                                                                                                                                                                                            |
 | `@pokegosu/ui/icon`      | `PokeGosuIcon`, the Poké Ball in a trainer's cap, in the colour of the text around it; `faviconUrl`, the same drawing for each layout's `metadata.icons`; and `CaughtIcon`, the ball alone, thin, for `CaughtMarks`.                                                                                |
-| `@pokegosu/ui/toast`     | `Toast`: what just happened, for four seconds just under the top bar, in `surface` on an `ink` fill, so nothing on the page moves. Two at once stack, and each goes four seconds after it came.                                                                                                     |
+| `@pokegosu/ui/toast`     | `Toast`: what just happened, for four seconds just under the top bar, in `surface` on an `ink` fill, so nothing on the page moves. Two at once, or one after another, stack, and each goes four seconds after it came.                                                                              |
 
 ## Behaviour
 
