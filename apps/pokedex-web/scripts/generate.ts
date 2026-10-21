@@ -401,7 +401,7 @@ const POKEDEXES: Record<
 
 const MANIFEST = fileURLToPath(new URL('../sprites.json', import.meta.url))
 const MIGRATION = fileURLToPath(
-  new URL('../../../supabase/migrations/20261010130000_pokedex_data.sql', import.meta.url),
+  new URL('../../../supabase/migrations/20261021120000_pokedex_data.sql', import.meta.url),
 )
 
 type Named = { name: string; url: string }
@@ -684,7 +684,7 @@ const VERSION_ONLY: Record<string, string> = { solgaleo: 'sun', lunala: 'moon' }
  * what it cannot ask for: a Linking Cord in place of a trade, as the games
  * since Legends: Arceus have it, a Prism Scale in place of Feebas's beauty, a
  * Damp Rock in place of Sliggoo's rain, and Meltan Candy in place of the
- * 400 Pokémon GO asks. And the one item its shop sells that evolves nothing.
+ * 400 Pokémon GO asks. And the items its shop sells that evolve nothing.
  */
 const GAME_ITEMS = [
   'linking-cord',
@@ -705,6 +705,13 @@ const GAME_ITEMS = [
   // Not for an evolution: the shop sells it, and its holder's eggs are shiny
   // more often.
   'shiny-charm',
+  // Nor these, sold to be used up on a request: a ball handed to its client,
+  // who may give back an egg in it, and Moomoo Milk, which has the Pokémon on
+  // it finish two hours sooner.
+  'poke-ball',
+  'great-ball',
+  'ultra-ball',
+  'moomoo-milk',
 ]
 
 /**

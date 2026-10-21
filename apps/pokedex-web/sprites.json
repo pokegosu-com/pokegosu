@@ -163,6 +163,11 @@
       "sha256": "3c2adb4503fea9481acc1b8fb2143889bf46ae3cb5a8a28c4724d5108bd1c7fd"
     },
     {
+      "path": "sprites/items/great-ball.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/great-ball.png",
+      "sha256": "4d0a614eebb4aef6b02a3620e4262f471b620cc8bc81cfeebeb3cbb995727ac6"
+    },
+    {
       "path": "sprites/items/gyaradosite.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/gyaradosite.png",
       "sha256": "35c5a85eeffff107caa731b855e13025646f485d70260a09710f2cba19e89b6b"
@@ -258,6 +263,11 @@
       "sha256": "a3d06934a54ffc3cbb5aa5dc9d841062ddc050e42824ea3a71b3ae269374b10a"
     },
     {
+      "path": "sprites/items/moomoo-milk.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/moomoo-milk.png",
+      "sha256": "4b5708299b748045d30feafdbecda063eb62dd248a43ad89ee249c8ca77948d4"
+    },
+    {
       "path": "sprites/items/moon-stone.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/moon-stone.png",
       "sha256": "44757f9cc107f23cc6775c93edc5b0eea429f2e08c5e547ee325c699d77c2742"
@@ -276,6 +286,11 @@
       "path": "sprites/items/pinsirite.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/pinsirite.png",
       "sha256": "31536834ac77dde6ff3b02023c68523f1320beba49f396dcfdafafd7a5dbe684"
+    },
+    {
+      "path": "sprites/items/poke-ball.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/poke-ball.png",
+      "sha256": "a4c7b9e8ff5727d10e6f679bcf16a963a95b2a36480d3bd9156d9808bdf54dff"
     },
     {
       "path": "sprites/items/prism-scale.png",
@@ -381,6 +396,11 @@
       "path": "sprites/items/tyranitarite.png",
       "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/tyranitarite.png",
       "sha256": "7e228618ac144db18472529c48bfb150bd1ca1768e9c725d1148b17bc5b851c7"
+    },
+    {
+      "path": "sprites/items/ultra-ball.png",
+      "source": "https://raw.githubusercontent.com/PokeAPI/sprites/a13b1f4ccd77f35fd1370d2db5f0051221e9683f/sprites/items/ultra-ball.png",
+      "sha256": "4dbf6751968bd3b96d3036da1a55e5a764c792e780a5fa5cd2391bc155224a10"
     },
     {
       "path": "sprites/items/ultranecrozium-z.png",
