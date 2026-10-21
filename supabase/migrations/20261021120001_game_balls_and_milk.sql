@@ -10,7 +10,7 @@
 --
 -- Moomoo Milk has the Pokémon on a request finish milk_hours sooner, as often
 -- as there is milk. The pay is a whole shift's, as it always was, so milk is
--- worth its price only where an hour pays well: a 1× request never makes it
+-- worth its price only where an hour pays well: only a 4× request makes it
 -- back.
 
 
@@ -42,9 +42,12 @@ insert into public.coder_balls (item_id, catch_rate) values
 
 -- ============================================================
 -- coder_shop_items.for_requests: used up on a request, so the shop shows it
--- apart from the evolution items. Sold for as many points as the hours they
--- are worth: milk saves two hours, which a 1× request pays 20 to 40 points
--- for, and a ball buys a chance at an egg.
+-- apart from the evolution items. Milk saves two hours, which pay 100 points
+-- only on a 4× request from about Lv.63 up, so it is for the best of them.
+-- About seven Poké Balls get an egg from half of all clients, and some 64
+-- from a legendary, so a usual client's egg costs a fifth of a regional egg
+-- and a legendary's more than one. The better balls take fewer tries but
+-- cost a little more for each egg.
 -- ============================================================
 alter table public.coder_shop_items
   add column for_requests boolean not null default false,
@@ -53,8 +56,8 @@ alter table public.coder_shop_items
 insert into public.coder_shop_items (id, item_id, egg_kind, price, position, kept, for_requests)
 select v.id, v.id, null, v.price, max(s.position) + v.n, false, true
   from public.coder_shop_items s,
-       (values ('poke-ball', 200, 1), ('great-ball', 600, 2), ('ultra-ball', 1200, 3),
-               ('moomoo-milk', 40, 4)) v (id, price, n)
+       (values ('poke-ball', 500, 1), ('great-ball', 750, 2), ('ultra-ball', 1000, 3),
+               ('moomoo-milk', 100, 4)) v (id, price, n)
  group by v.id, v.price, v.n;
 
 

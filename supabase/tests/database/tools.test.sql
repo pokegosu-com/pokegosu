@@ -11,7 +11,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(33);
+select plan(38);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -80,7 +80,7 @@ select pg_temp.as_person();
 -- ------------------------------------------------------------
 select set_eq(
   $$ select id || ' ' || price from public.coder_shop_items where for_requests $$,
-  array['poke-ball 200', 'great-ball 600', 'ultra-ball 1200', 'moomoo-milk 40'],
+  array['poke-ball 500', 'great-ball 750', 'ultra-ball 1000', 'moomoo-milk 100'],
   'the shop sells three balls and Moomoo Milk for requests');
 select is(public.work() -> 'tools' -> 'milk' ->> 'quantity', '0', 'work() says how much milk there is');
 select is((select jsonb_agg(b ->> 'id') from jsonb_array_elements(public.work() -> 'tools' -> 'balls') b),
@@ -160,6 +160,34 @@ select is(public.companion_history(pg_temp.request_egg()) -> 'egg_from' ->> 'ko_
 select is(
   (select p -> 'ball' ->> 'id' from jsonb_array_elements(public.box() -> 'pokemon') p where (p ->> 'species_id')::int = 66),
   'poke-ball', 'a Pokémon from before is in a Poké Ball');
+
+-- Hatched, the Pokémon keeps the ball and the shininess.
+reset role;
+update public.coder_companions c
+   set egg_tokens = p.hatch_counter::bigint * g.tokens_per_cycle,
+       invested_tokens = p.hatch_counter::bigint * g.tokens_per_cycle
+  from public.pokedex_species p, public.coder_settings g
+ where c.id = pg_temp.request_egg() and p.id = c.species_id;
+select pg_temp.as_person();
+select is(public.hatch(pg_temp.request_egg()) ->> 'outcome', 'hatched', 'the egg hatches as any other');
+select is(
+  (select p -> 'ball' ->> 'id' || ' ' || (p ->> 'is_shiny')
+     from jsonb_array_elements(public.box() -> 'pokemon') p where p ->> 'id' = pg_temp.request_egg()::text),
+  'ultra-ball true', 'into a shiny Magikarp in its Ultra Ball');
+
+select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "rerolled"}'::jsonb, 'turning the client away');
+reset role;
+select is((select gave_egg from public.coder_workplaces where id = pg_temp.workplace(2)), false,
+  'the next one has an egg to give');
+
+-- Another trainer can do nothing with these requests.
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000b', 'b@test.local');
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claims',
+                  json_build_object('sub', '00000000-0000-0000-0000-00000000000b', 'role', 'authenticated')::text, true);
+select is(public.use_milk(pg_temp.workplace(1)) || public.give_ball(pg_temp.workplace(1), 'poke-ball'),
+  '{"outcome": "not_found"}'::jsonb, 'nobody else can give milk or a ball at another''s request');
+select pg_temp.as_person();
 
 select public.reroll(pg_temp.workplace(3));
 select is(public.give_ball(pg_temp.workplace(3), 'ultra-ball'), '{"outcome": "not_arrived"}'::jsonb,
