@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/zstd"
+
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
@@ -135,6 +137,56 @@ func TestParseSkipsWhatAForkReplays(t *testing.T) {
 		})
 		if len(entries) != 2 {
 			t.Errorf("got %d entries, want 2", len(entries))
+		}
+	})
+}
+
+// zst compresses a log the way Codex does.
+func zst(t *testing.T, content string) string {
+	t.Helper()
+	w, err := zstd.NewWriter(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer w.Close()
+	return string(w.EncodeAll([]byte(content), nil))
+}
+
+func TestParseReadsCompressedLogs(t *testing.T) {
+	log := lines(meta, model, reply, first, again, second)
+
+	t.Run("a compressed log reads like the plain one", func(t *testing.T) {
+		entries, stats := parse(t, map[string]string{
+			"2026/09/12/rollout-a.jsonl.zst": zst(t, log),
+		})
+		if len(entries) != 2 || entries[0].Tokens != 1050 || entries[1].Tokens != 3150-1050 {
+			t.Errorf("got %+v, want the two turns of the plain log", entries)
+		}
+		if stats.Files != 1 || stats.Lines != 6 {
+			t.Errorf("stats = %+v, want 1 file and 6 lines", stats)
+		}
+	})
+
+	t.Run("the plain log wins over its compressed copy", func(t *testing.T) {
+		_, stats := parse(t, map[string]string{
+			"2026/09/12/rollout-a.jsonl":     log,
+			"2026/09/12/rollout-a.jsonl.zst": zst(t, log),
+		})
+		if stats.Files != 1 {
+			t.Errorf("read %d files, want only the plain one", stats.Files)
+		}
+	})
+
+	t.Run("a damaged compressed log is counted, not fatal", func(t *testing.T) {
+		entries, stats := parse(t, map[string]string{
+			"2026/09/12/rollout-a.jsonl.zst": "not zstd at all\n",
+			"2026/09/12/rollout-b.jsonl":     lines(meta, first),
+		})
+		if len(entries) != 1 {
+			t.Errorf("got %d entries, want the plain log's one", len(entries))
+		}
+		if stats.Unreadable != 1 {
+			t.Errorf("stats = %+v, want 1 unreadable file", stats)
 		}
 	})
 }

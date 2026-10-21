@@ -24,6 +24,10 @@
 // it spent: a copy of the same log, archived or resumed, lands on the same
 // turns and deduplicates away.
 //
+// Codex compresses a log nobody has touched for a week into
+// rollout-*.jsonl.zst and deletes the .jsonl. Those are read too: a log that
+// stops being read takes its hours' tokens off what the server holds.
+//
 // These rules follow ccusage's Codex adapter (rust/adapters/codex), checked
 // on 2026-09-27.
 package codex
@@ -41,6 +45,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
@@ -185,7 +191,7 @@ func (p Parser) Parse(root string, emit func(usage.Entry)) (provider.Stats, erro
 			}
 			return nil
 		}
-		if !d.IsDir() && strings.HasSuffix(path, ".jsonl") {
+		if !d.IsDir() && (strings.HasSuffix(path, ".jsonl") || strings.HasSuffix(path, compressed)) {
 			files = append(files, path)
 		}
 		return nil
@@ -193,6 +199,7 @@ func (p Parser) Parse(root string, emit func(usage.Entry)) (provider.Stats, erro
 	if err != nil {
 		return stats, err
 	}
+	files = plainFirst(files)
 	sort.Strings(files)
 
 	var sessions []*session
@@ -219,6 +226,33 @@ func (p Parser) Parse(root string, emit func(usage.Entry)) (provider.Stats, erro
 		}
 	}
 	return stats, nil
+}
+
+// compressed is what Codex appends to a log it has compressed.
+const compressed = ".jsonl.zst"
+
+// plainFirst drops a compressed log whose plain one is also there.
+//
+// Resuming a compressed session writes the .jsonl back before the .zst is
+// deleted, and from then on only the .jsonl grows. The turns they share would
+// deduplicate anyway; dropping the copy keeps it from being read for nothing
+// and from offering a fork two parents with the same id.
+func plainFirst(files []string) []string {
+	plain := make(map[string]bool, len(files))
+	for _, path := range files {
+		if strings.HasSuffix(path, ".jsonl") {
+			plain[path] = true
+		}
+	}
+
+	kept := files[:0]
+	for _, path := range files {
+		if strings.HasSuffix(path, compressed) && plain[strings.TrimSuffix(path, ".zst")] {
+			continue
+		}
+		kept = append(kept, path)
+	}
+	return kept
 }
 
 // parentOf finds the log a session was forked from, if it was and the log is
@@ -328,6 +362,21 @@ func parseFile(path string) (*session, provider.Stats, error) {
 		return nil, stats, nil
 	}
 	defer f.Close()
+
+	var src io.Reader = f
+	isCompressed := strings.HasSuffix(path, compressed)
+	if isCompressed {
+		// Decompressed as it is read, so nothing is written to disk and a
+		// large log never sits whole in memory. One goroutine is plenty for
+		// a stream read line by line.
+		d, err := zstd.NewReader(f, zstd.WithDecoderConcurrency(1))
+		if err != nil {
+			stats.Unreadable++
+			return nil, stats, nil
+		}
+		defer d.Close()
+		src = d
+	}
 	stats.Files++
 
 	s := &session{}
@@ -338,7 +387,7 @@ func parseFile(path string) (*session, provider.Stats, error) {
 	// can exceed any fixed buffer, and Scanner would abandon the rest of the
 	// file. It also hands back a final line with no newline, which is exactly
 	// what a log being written to right now looks like.
-	r := bufio.NewReaderSize(f, 64*1024)
+	r := bufio.NewReaderSize(src, 64*1024)
 	for {
 		line, readErr := r.ReadBytes('\n')
 
@@ -360,6 +409,13 @@ func parseFile(path string) (*session, provider.Stats, error) {
 
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
+				return s, stats, nil
+			}
+			if isCompressed {
+				// A damaged archive says nothing about the other logs, so
+				// it is counted, keeping what it held up to the damage,
+				// rather than failing the whole scan.
+				stats.Unreadable++
 				return s, stats, nil
 			}
 			return s, stats, readErr

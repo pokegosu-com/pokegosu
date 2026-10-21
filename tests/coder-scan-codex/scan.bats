@@ -73,6 +73,31 @@ assert_case() {
     assert_case subagent-replay
 }
 
+# --- logs Codex has compressed ----------------------------------------------
+#
+# Codex compresses a log idle for a week into rollout-*.jsonl.zst and
+# deletes the .jsonl. A parser that reads only .jsonl then loses those turns,
+# and a sync restates their hours smaller than the server already holds.
+
+@test "a compressed log counts like the plain one" {
+    assert_case compressed-session
+}
+
+@test "an hour holding a compressed log and a plain one counts both" {
+    # The hour that would shrink: the plain log alone is 110 of its 440.
+    assert_case compressed-beside-plain
+}
+
+@test "a resumed session is read from its plain log, turns since included" {
+    # Resuming writes the .jsonl back before the .zst is deleted, so for a
+    # while both are there, and only the plain one has the new turn.
+    assert_case resumed-compressed
+}
+
+@test "a damaged compressed log does not fail the scan" {
+    assert_case damaged-compressed
+}
+
 # --- which hour a turn belongs to -------------------------------------------
 
 @test "turns either side of an hour belong to their own hours" {
