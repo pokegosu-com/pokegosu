@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { ProgressBar, TypeChip } from '@pokegosu/ui/pokemon'
 
-import { dexNo, every, ko, type Named, pokedex, typeNames } from '@/lib/pokedex'
+import { dexKinds, dexNo, every, ko, type Named, once, pokedex, typeNames } from '@/lib/pokedex'
 
 import { Family, type Stage } from './family'
 import { FormMarks, FormSprite } from './marks'
@@ -168,6 +168,45 @@ function formName(form: { ko_form_name: string | null; en_form_name: string | nu
   return form.ko_form_name ?? form.en_form_name ?? '기본'
 }
 
+/**
+ * Every entry of a pokedex, with this pokedex's text on each: each pokedex
+ * writes its own. A build renders every page of a pokedex from these rows,
+ * read once, rather than asking the database again on each page.
+ */
+function dexEntries(dex: string) {
+  return once(`entries:${dex}`, () =>
+    every((from, to) =>
+      pokedex()
+        .from('pokedex_entries')
+        .select('number, is_default, ko_description, en_description, species:pokedex_species(*)')
+        .eq('dex', dex)
+        .order('species_id')
+        .range(from, to),
+    ),
+  )
+}
+
+/**
+ * What a family tree shows of each species: its names rather than every
+ * item, move and place. Read once for every pokedex.
+ */
+function familyMembers() {
+  return once('members', () =>
+    every((from, to) =>
+      pokedex()
+        .from('pokedex_species')
+        .select(
+          `id, slug, ko_name, en_name, ko_form_name, en_form_name, form_of, evolves_from_id,
+          front:sprites->>front, front_shiny:sprites->>front_shiny,
+          method:pokedex_evolution_methods!evolution_method(${METHOD}),
+          latest:pokedex_latest_evolutions(method:pokedex_evolution_methods(${METHOD}))`,
+        )
+        .order('id')
+        .range(from, to),
+    ),
+  )
+}
+
 /** Every number the pokedex lists, each built as a file. */
 export async function generateStaticParams({ params }: { params: { dex: string } }) {
   const rows = await every((from, to) =>
@@ -187,45 +226,32 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
   const n = Number(number)
   if (!Number.isInteger(n) || n < 0) notFound()
 
-  const db = pokedex()
-  const [forms, chain, around, kind, types] = await Promise.all([
-    // With this pokedex's text on each: each pokedex writes its own.
-    db
-      .from('pokedex_entries')
-      .select('is_default, ko_description, en_description, species:pokedex_species(*)')
-      .eq('dex', dex)
-      .eq('number', n)
-      .order('is_default', { ascending: false })
-      .order('species_id'),
-    // Every form in this pokedex, only as much as finds a family: follow
-    // evolves_from_id, and link each by its number here. A stage this pokedex
-    // does not list is left out: Kanto's has no Pichu.
-    every((from, to) =>
-      db
-        .from('pokedex_entries')
-        .select('number, is_default, species:pokedex_species(id, evolves_from_id)')
-        .eq('dex', dex)
-        .order('species_id')
-        .range(from, to),
-    ),
-    // The numbers either side, in the same pokedex.
-    db
-      .from('pokedex_entries')
-      .select('number, species:pokedex_species(ko_name, en_name)')
-      .eq('dex', dex)
-      .eq('is_default', true)
-      .in('number', [n - 1, n + 1])
-      .order('number'),
-    db.from('pokedex_kinds').select('ko_name, en_name').eq('id', dex).maybeSingle(),
+  const [chain, allMembers, kinds, types] = await Promise.all([
+    dexEntries(dex),
+    familyMembers(),
+    dexKinds(),
     typeNames(),
   ])
-  for (const result of [forms, around, kind]) {
-    if (result.error) throw result.error
+  const kind = kinds.find((k) => k.id === dex)
+  if (!kind) notFound()
+  const dexName = ko(kind)
+  // The default form first.
+  const forms = {
+    data: chain
+      .filter((e) => e.number === n)
+      .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.species.id - b.species.id),
   }
-  if (!kind.data) notFound()
-  const dexName = ko(kind.data)
-  if (!forms.data?.length) notFound()
+  if (!forms.data.length) notFound()
+  // The numbers either side, in the same pokedex.
+  const around = {
+    data: chain
+      .filter((e) => e.is_default && (e.number === n - 1 || e.number === n + 1))
+      .sort((a, b) => a.number - b.number),
+  }
 
+  // Every form in this pokedex, only as much as finds a family: follow
+  // evolves_from_id, and link each by its number here. A stage this pokedex
+  // does not list is left out: Kanto's has no Pichu.
   const entries = new Map(
     chain.map(({ number, is_default, species: s }) => [s.id, { number, is_default }]),
   )
@@ -239,19 +265,8 @@ export default async function Entry({ params }: PageProps<'/[dex]/[number]'>) {
     return parent ? stageOf(parent) + 1 : 0
   }
   const firsts = new Set(forms.data.map(({ species: p }) => firstOf(p.id)))
-  const familyIds = [...parents.keys()].filter((id) => firsts.has(firstOf(id)))
-
-  // Only the families' own names, rather than every item, move and place.
-  const members = await db
-    .from('pokedex_species')
-    .select(
-      `id, slug, ko_name, en_name, ko_form_name, en_form_name, form_of, evolves_from_id,
-      front:sprites->>front, front_shiny:sprites->>front_shiny,
-      method:pokedex_evolution_methods!evolution_method(${METHOD}),
-      latest:pokedex_latest_evolutions(method:pokedex_evolution_methods(${METHOD}))`,
-    )
-    .in('id', familyIds)
-  if (members.error) throw members.error
+  const familyIds = new Set([...parents.keys()].filter((id) => firsts.has(firstOf(id))))
+  const members = { data: allMembers.filter((f) => familyIds.has(f.id)) }
   // By stage before number: a baby came in a later generation, so Pichu's
   // number is higher than Raichu's, yet it comes first.
   const everyMember = members.data

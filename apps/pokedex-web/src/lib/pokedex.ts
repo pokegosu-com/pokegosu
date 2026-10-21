@@ -29,8 +29,7 @@ export function dexNo(n: number): string {
 }
 
 /**
- * A build reads the database some twenty thousand times, and one answer of
- * a server's error failed a whole deploy; supabase-js asks again only after
+ * One answer of a server's error in a build failed a whole deploy; supabase-js asks again only after
  * a 503 or 520. A read changes nothing, so it is asked again after any 5xx,
  * a 429 or a dropped connection, waiting longer each time.
  */
@@ -76,8 +75,41 @@ export async function every<T>(
   }
 }
 
-export async function typeNames(): Promise<Map<string, string>> {
-  const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
-  if (error) throw error
-  return new Map(data.map((t) => [t.id, ko(t)]))
+const kept = new Map<string, Promise<unknown>>()
+
+/**
+ * A build renders some five thousand pages in a handful of processes, and
+ * every page of a pokedex reads the same rows. Reading them once per process
+ * rather than once per page took a build from some forty thousand reads to
+ * some hundred and fifty, and its prerender from five minutes to half of
+ * one: it had spent them waiting on the database. "use cache" would be the
+ * convention, but vinext's prerender keeps nothing in it. The pokedex
+ * changes only with a deploy, so nothing kept goes stale; a failed read is
+ * forgotten, to be asked again.
+ */
+export function once<T>(key: string, read: () => Promise<T>): Promise<T> {
+  let promise = kept.get(key) as Promise<T> | undefined
+  if (!promise) {
+    promise = read()
+    kept.set(key, promise)
+    promise.catch(() => kept.delete(key))
+  }
+  return promise
+}
+
+/** Every pokedex's id and name. */
+export function dexKinds() {
+  return once('kinds', async () => {
+    const { data, error } = await pokedex().from('pokedex_kinds').select('id, ko_name, en_name')
+    if (error) throw error
+    return data
+  })
+}
+
+export function typeNames(): Promise<Map<string, string>> {
+  return once('types', async () => {
+    const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
+    if (error) throw error
+    return new Map(data.map((t) => [t.id, ko(t)]))
+  })
 }
