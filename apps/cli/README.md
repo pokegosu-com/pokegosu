@@ -12,7 +12,7 @@ On Linux or macOS, amd64 or arm64:
 curl -fsSL https://pokegosu.com/install-cli.sh | sh
 ```
 
-The script picks the build for this machine from the newest GitHub release, checks it against the release's `checksums.txt`, and puts it in `~/.local/bin`, so no sudo is needed. It says so when that directory is not on your `PATH`. `POKEGOSU_VERSION=v0.2.0` installs a given release instead, and `POKEGOSU_INSTALL_DIR` puts the binary somewhere else. Running it again updates `pokegosu` in place. [Read the script](https://pokegosu.com/install-cli.sh) before you pipe it to `sh`, if you like.
+The script asks which `pokegosu` is installed and which GitHub release is the newest, and downloads only when they differ. It picks the build for this machine, checks it against the release's `checksums.txt`, and puts it in `~/.local/bin`, so no sudo is needed. It says so when that directory is not on your `PATH`. `POKEGOSU_VERSION=v0.2.0` installs a given release instead, and `POKEGOSU_INSTALL_DIR` puts the binary somewhere else. Running it again updates `pokegosu` in place, or says it is already up to date. [Read the script](https://pokegosu.com/install-cli.sh) before you pipe it to `sh`, if you like.
 
 To do it by hand, download `pokegosu_<os>_<arch>.tar.gz` from a [release](https://github.com/pokegosu-com/pokegosu/releases), check it against `checksums.txt`, and put the `pokegosu` inside it on your `PATH`.
 

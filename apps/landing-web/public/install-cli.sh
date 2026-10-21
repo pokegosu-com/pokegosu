@@ -3,9 +3,10 @@
 #
 #   curl -fsSL https://pokegosu.com/install-cli.sh | sh
 #
-# It picks the build for this machine, checks it against the release's
-# checksums, and puts it in ~/.local/bin, so no sudo is needed. Running it
-# again installs the newest release over the old one.
+# It asks which pokegosu is installed and which release is the newest, and
+# downloads only when they differ. It picks the build for this machine, checks
+# it against the release's checksums, and puts it in ~/.local/bin, so no sudo
+# is needed. Running it again updates pokegosu in place.
 #
 #   POKEGOSU_VERSION      a release tag such as v0.2.0, instead of the newest
 #   POKEGOSU_INSTALL_DIR  where the binary goes, instead of ~/.local/bin
@@ -29,20 +30,38 @@ main() {
     *) fail "no build for $(uname -m); build from source instead" ;;
   esac
 
-  version="${POKEGOSU_VERSION:-}"
-  if [ -n "$version" ]; then
-    base="https://github.com/$repo/releases/download/$version"
-  else
-    base="https://github.com/$repo/releases/latest/download"
-  fi
-
   dir="${POKEGOSU_INSTALL_DIR:-$HOME/.local/bin}"
   name="pokegosu_${os}_${arch}.tar.gz"
+
+  # A binary that will not run, such as one for another machine, counts as
+  # none, so it is replaced.
+  current=''
+  if [ -x "$dir/pokegosu" ]; then
+    current="$("$dir/pokegosu" version 2> /dev/null)" || current=''
+  fi
+
+  version="${POKEGOSU_VERSION:-}"
+  if [ -z "$version" ]; then
+    version="$(latest)" || fail 'could not find the newest release on GitHub'
+  fi
+
+  if [ "$current" = "$version" ]; then
+    echo "pokegosu $version is already installed in $dir"
+    exit 0
+  fi
+
+  # Downloaded by tag rather than from releases/latest, so the binary and its
+  # checksums come from the same release even if a new one lands meanwhile.
+  base="https://github.com/$repo/releases/download/$version"
 
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
 
-  echo "downloading ${version:-the newest release} for $os/$arch"
+  if [ -n "$current" ]; then
+    echo "updating pokegosu from $current to $version for $os/$arch"
+  else
+    echo "installing pokegosu $version for $os/$arch"
+  fi
   curl -fsSL -o "$tmp/$name" "$base/$name"
   curl -fsSL -o "$tmp/checksums.txt" "$base/checksums.txt"
 
@@ -71,8 +90,20 @@ main() {
     *) echo "$dir is not on your PATH; add it in your shell's profile" ;;
   esac
 
-  echo
-  echo 'next: pokegosu auth login'
+  # An update keeps the machine's login, so only a new install needs one.
+  if [ -z "$current" ]; then
+    echo
+    echo 'next: pokegosu auth login'
+  fi
+}
+
+# The newest release's tag, from where github.com/<repo>/releases/latest
+# redirects. The API would say the same but limits calls without a token.
+latest() {
+  url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$repo/releases/latest")"
+  tag="${url##*/tag/}"
+  [ "$tag" != "$url" ] && [ -n "$tag" ] || return 1
+  echo "$tag"
 }
 
 fail() {
