@@ -13,6 +13,7 @@ import {
   eggHint,
   eggSpriteUrl,
   evolveLabel,
+  itemSpriteUrl,
   ko,
   levelAt,
   spriteUrl,
@@ -38,6 +39,8 @@ type Game = ReturnType<typeof useGame>
 /** What companion_history() answers with, when the companion is the caller's. */
 type History = {
   egg_kind: { id: string } & Named
+  /** The client who gave the egg, for one from a request. */
+  egg_from: ({ species_id: number } & Named) | null
   created_at: string
   hatched_at: string | null
   main_periods: { started_at: string; ended_at: string | null }[]
@@ -92,7 +95,9 @@ function Records({
               {new Date(history.created_at).toLocaleDateString('ko-KR')}
             </dd>
             <dt className="text-muted">받은 알</dt>
-            <dd>{ko(history.egg_kind)}</dd>
+            <dd>
+              {history.egg_from ? `${ko(history.egg_from)}에게 받은 알` : ko(history.egg_kind)}
+            </dd>
             {history.hatched_at && (
               <>
                 <dt className="text-muted">부화한 날</dt>
@@ -188,6 +193,18 @@ function PokemonDetail({
         <div className="flex min-w-0 flex-1 flex-col gap-3 self-stretch">
           {p.is_main && <p className="text-accent text-xs font-medium">파트너</p>}
           <p className="flex items-baseline gap-2">
+            {/* The ball it is in, before its name, as the games show it. */}
+            {itemSpriteUrl(p.ball) && (
+              // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
+              <img
+                src={itemSpriteUrl(p.ball)}
+                alt={ko(p.ball)}
+                title={ko(p.ball)}
+                width={30}
+                height={30}
+                className="-mx-1.5 self-center [image-rendering:pixelated]"
+              />
+            )}
             {p.is_shiny && <span title="색이 다른 포켓몬">✨</span>}
             <span className="text-2xl font-semibold tracking-tight lg:text-3xl">{ko(p)}</span>
             <Gender gender={p.gender} />

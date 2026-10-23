@@ -17,6 +17,9 @@
   --ink: oklch(0.21 0 0);
   --muted: oklch(0.55 0 0);
   --accent: oklch(0.55 0.2 264);
+  /* The accent let into its track: a bar's share that Moomoo Milk filled.
+     Made of the two, so it follows them into the dark. */
+  --accent-faint: color-mix(in oklab, var(--accent) 40%, var(--surface-raised));
   --line: oklch(0.91 0 0);
   /* 3:1 on surface, so it can be the only edge of a control. */
   --line-strong: oklch(0.64 0 0);
@@ -99,6 +102,7 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-faint: var(--accent-faint);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-danger: var(--danger);

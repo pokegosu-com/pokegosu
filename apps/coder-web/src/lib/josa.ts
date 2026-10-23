@@ -15,13 +15,13 @@ function finalOf(name: string): number | null {
 }
 
 /** A word with the particle its last sound takes, or both where that can't be told. */
-export function josa(word: string, after: '이' | '을' | '으로'): string {
+export function josa(word: string, after: '이' | '을' | '은' | '으로'): string {
   const final = finalOf(word)
   if (after === '으로') {
     if (final === null) return `${word}(으)로`
     return `${word}${final === 0 || final === 8 ? '로' : '으로'}`
   }
-  const without = after === '이' ? '가' : '를'
+  const without = { 이: '가', 을: '를', 은: '는' }[after]
   if (final === null) return `${word}${after}(${without})`
   return `${word}${final === 0 ? without : after}`
 }

@@ -14,8 +14,10 @@ import { exactTokens, points } from '@/lib/format'
 import { josa } from '@/lib/josa'
 import {
   aptitudeLine,
+  itemSpriteUrl,
   ko,
   spriteUrl,
+  type BagItem,
   type Named,
   type Sprites,
   type Work,
@@ -66,6 +68,21 @@ function say({ action, outcome: o, before }: WorkLast): string | null {
       return `${josa(started?.trainer.name ?? '트레이너', '이')} ${exactTokens(Number(o.points) + Number(o.bonus))} 포인트를 받았다!`
     case 'reroll:rerolled':
       return '의뢰를 거절했다.'
+    case 'use_milk:drunk': {
+      const place = started?.workplaces.find(
+        (w) => 'workplace_id' in action && w.id === action.workplace_id,
+      )
+      const milk = started ? ko(started.tools.milk) : '튼튼밀크'
+      return `${josa(pokemon(place?.worker?.companion_id), '이')} ${josa(milk, '을')} 마시고 힘이 났다!`
+    }
+    case 'give_ball:egg':
+      return `${ko(o.species as Named)}의 알을 받았다!`
+    case 'give_ball:hesitated': {
+      const place = started?.workplaces.find(
+        (w) => 'workplace_id' in action && w.id === action.workplace_id,
+      )
+      return `${josa(place?.client ? ko(place.client) : '의뢰인', '은')} 아직 망설이고 있다…`
+    }
     case 'assign:assigned':
       return `${josa(pokemon(action.fn === 'assign' ? action.companion_id : undefined), '이')} 의뢰를 하러 떠났다.`
     default:
@@ -163,6 +180,7 @@ function Notice({
   wanted,
   rewardLabel,
   reward,
+  tools,
   status,
   footer,
 }: {
@@ -175,6 +193,8 @@ function Notice({
   wanted: React.ReactNode
   rewardLabel: string
   reward: number
+  /** What can be used up on the request, beside its reward. */
+  tools?: React.ReactNode
   status: React.ReactNode
   footer: React.ReactNode
 }) {
@@ -190,10 +210,15 @@ function Notice({
         {art}
       </div>
       <p className="flex flex-wrap items-center gap-1 text-[13px]">{wanted}</p>
-      <p className="flex items-baseline gap-2">
-        <span className="text-muted text-xs">{rewardLabel}</span>
-        <span className="font-mono text-[22px] font-medium tabular-nums">{points(reward)}</span>
-      </p>
+      {/* As tall as the tools, so the bars below sit level across notices,
+          with tools or without. */}
+      <div className="flex min-h-11 items-center justify-between gap-2">
+        <p className="flex items-baseline gap-2">
+          <span className="text-muted text-xs">{rewardLabel}</span>
+          <span className="font-mono text-[22px] font-medium tabular-nums">{points(reward)}</span>
+        </p>
+        {tools}
+      </div>
       {status}
       {/* As tall as the picker's button, so the rule sits level across notices
           whatever the footer holds. */}
@@ -204,15 +229,21 @@ function Notice({
   )
 }
 
-/** Hours so far against the whole, with what the bar stands for above it. */
+/**
+ * Hours so far against the whole, with what the bar stands for above it.
+ * Hours Moomoo Milk took off come after those worked, fainter, and are
+ * counted apart: (3 + 2) / 8.
+ */
 function Progress({
   left,
   value,
+  extra = 0,
   max,
   label,
 }: {
   left: React.ReactNode
   value: number
+  extra?: number
   max: number
   label: string
 }) {
@@ -220,11 +251,19 @@ function Progress({
     <div className="space-y-1.5">
       <p className="text-muted flex justify-between text-xs">
         <span>{left}</span>
-        <N>
-          {value} / {max}
-        </N>
+        {extra > 0 ? (
+          <N>
+            <span title={`일한 ${value}시간 + 튼튼밀크 ${extra}시간`}>
+              ({value} + {extra}) / {max}
+            </span>
+          </N>
+        ) : (
+          <N>
+            {value} / {max}
+          </N>
+        )}
       </p>
-      <ProgressBar value={value} max={max} label={label} />
+      <ProgressBar value={value} extra={extra} max={max} label={label} />
     </div>
   )
 }
@@ -412,33 +451,204 @@ function Picker({
   )
 }
 
-/** The slot of a request turned down, until the next one arrives. */
+/**
+ * The slot of a request turned down, until the next one arrives. It keeps the
+ * lines of a notice, its title where theirs are and its bar on the rule where
+ * their footers sit, so a row of notices reads level.
+ */
 function Waiting({ hours, shift }: { hours: number; shift: number }) {
   return (
-    <li className="border-line text-muted flex flex-col justify-center gap-3.5 rounded-lg border border-dashed p-5">
-      <span className="text-ink text-lg font-semibold tracking-tight">새 의뢰를 기다리는 중</span>
-      <Progress
-        left={
-          <>
-            <N>{hours}</N>시간 남음
-          </>
-        }
-        value={shift - hours}
-        max={shift}
-        label="다음 의뢰까지"
-      />
+    <li className="border-line-strong text-muted flex flex-col gap-3.5 rounded-lg border border-dashed p-5">
+      <div className="flex min-h-14 flex-col gap-1">
+        <span className="text-xs">빈 자리</span>
+        <span className="text-ink text-lg font-semibold tracking-tight">새 의뢰를 기다리는 중</span>
+      </div>
+      <div className="border-line mt-auto flex min-h-[42px] flex-col justify-center border-t pt-3 [box-sizing:content-box]">
+        <Progress
+          left={
+            <>
+              <N>{hours}</N>시간 남음
+            </>
+          }
+          value={shift - hours}
+          max={shift}
+          label="다음 의뢰까지"
+        />
+      </div>
     </li>
+  )
+}
+
+/** One thing in the bag as a button: its sprite, and how many are left in the corner. */
+function ToolIcon({
+  item,
+  label,
+  why,
+  busy,
+  className = 'rounded-md',
+  onClick,
+}: {
+  item: BagItem
+  label: string
+  /** Why it cannot be used now, or null when it can. */
+  why: string | null
+  busy: boolean
+  className?: string
+  onClick: () => void
+}) {
+  const src = itemSpriteUrl(item)
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={why ?? label}
+      disabled={busy || why !== null}
+      onClick={onClick}
+      className={`border-line-strong enabled:hover:border-ink relative grid size-11 flex-none place-items-center border disabled:opacity-50 ${className}`}
+    >
+      {src && (
+        // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
+        <img src={src} alt="" width={30} height={30} className="[image-rendering:pixelated]" />
+      )}
+      <span className="bg-ink text-surface absolute -right-1.5 -bottom-1.5 min-w-[18px] rounded-full px-1 text-center font-mono text-[11px] leading-[18px] tabular-nums">
+        {item.quantity}
+      </span>
+    </button>
+  )
+}
+
+/**
+ * Moomoo Milk and a ball, beside a request's reward, on every request with a
+ * client. Milk is for the Pokémon at work, until it is done; a ball for the
+ * client, until it has given its egg. The ball is the one picked under ▾, the
+ * same on every request, and what is not usable now is dimmed with why.
+ */
+function Tools({
+  place,
+  work,
+  ball,
+  onBall,
+  busy,
+  act,
+}: {
+  place: Extract<Workplace, { arrived: true }>
+  work: Started
+  ball: BagItem
+  onBall: (id: string) => void
+  busy: boolean
+  act: Act
+}) {
+  const [open, setOpen] = useState(false)
+  const { milk, balls } = work.tools
+  const left = place.worker
+    ? place.shift_hours - place.milk_hours - place.worker.hours
+    : place.shift_hours
+  const milkWhy = !place.worker
+    ? '보낸 포켓몬이 없다'
+    : place.worker.can_settle
+      ? '의뢰를 마쳐서 줄 수 없다'
+      : milk.quantity <= 0
+        ? `${josa(ko(milk), '이')} 없다`
+        : null
+  const milkLabel =
+    left <= work.rules.milk_hours
+      ? `${josa(ko(milk), '을')} 준다 · 남은 시간이 바로 끝난다`
+      : `${josa(ko(milk), '을')} 준다 · ${work.rules.milk_hours}시간 빨리 끝난다`
+  const ballWhy = place.gave_egg
+    ? '이미 알을 받았다'
+    : ball.quantity <= 0
+      ? `${josa(ko(ball), '이')} 없다`
+      : null
+  return (
+    <span className="flex flex-none gap-2.5">
+      <ToolIcon
+        item={milk}
+        label={milkLabel}
+        why={milkWhy}
+        busy={busy}
+        onClick={() => act({ fn: 'use_milk', workplace_id: place.id })}
+      />
+      <span
+        className="relative flex"
+        // The list closes when focus leaves it, or on Escape, as a menu does.
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false)
+        }}
+      >
+        <ToolIcon
+          item={ball}
+          label={`${josa(ko(ball), '을')} 건넨다`}
+          why={ballWhy}
+          busy={busy}
+          className="rounded-l-md"
+          onClick={() => act({ fn: 'give_ball', workplace_id: place.id, item_id: ball.id })}
+        />
+        <button
+          type="button"
+          aria-label="건넬 볼"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className="border-line-strong text-muted hover:border-ink hover:text-ink h-11 w-[22px] rounded-r-md border border-l-0 text-xs"
+        >
+          ▾
+        </button>
+        {open && (
+          <ul
+            role="listbox"
+            aria-label="건넬 볼"
+            className="border-line bg-surface absolute top-full right-0 z-10 mt-2 w-56 rounded-lg border p-1"
+          >
+            {balls.map((b) => (
+              <li key={b.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={b.id === ball.id}
+                  onClick={() => {
+                    onBall(b.id)
+                    setOpen(false)
+                  }}
+                  className="aria-selected:bg-surface-raised hover:bg-surface-raised flex w-full items-center gap-2 rounded-md pr-2 text-left"
+                >
+                  <span className="grid size-10 flex-none place-items-center">
+                    {itemSpriteUrl(b) && (
+                      // eslint-disable-next-line @next/next/no-img-element -- served by pokedex-web
+                      <img
+                        src={itemSpriteUrl(b)}
+                        alt=""
+                        width={30}
+                        height={30}
+                        className="[image-rendering:pixelated]"
+                      />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{ko(b)}</span>
+                  <span className="font-mono text-[13px] tabular-nums">{b.quantity}개</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </span>
+    </span>
   )
 }
 
 function RequestNotice({
   place,
   work,
+  ball,
+  onBall,
   busy,
   act,
 }: {
   place: Workplace
   work: Started
+  ball: BagItem
+  onBall: (id: string) => void
   busy: boolean
   act: Act
 }) {
@@ -465,6 +675,9 @@ function RequestNotice({
     </>
   )
   const art = <ClientSprite client={client} shiny={shiny} />
+  const tools = (
+    <Tools place={place} work={work} ball={ball} onBall={onBall} busy={busy} act={act} />
+  )
   const wanted = (
     <>
       구함 <Chips types={place.types} /> 에 강한 포켓몬
@@ -483,6 +696,7 @@ function RequestNotice({
         wanted={wanted}
         rewardLabel="보상"
         reward={place.worker.points}
+        tools={tools}
         status={
           <Progress
             left={
@@ -490,11 +704,12 @@ function RequestNotice({
                 '의뢰를 마쳤다!'
               ) : (
                 <>
-                  <N>{shift - place.worker.hours}</N>시간 남음
+                  <N>{shift - place.milk_hours - place.worker.hours}</N>시간 남음
                 </>
               )
             }
             value={place.worker.hours}
+            extra={place.milk_hours}
             max={shift}
             label="의뢰를 마칠 때까지"
           />
@@ -539,6 +754,7 @@ function RequestNotice({
       wanted={wanted}
       rewardLabel="보상"
       reward={offered}
+      tools={tools}
       status={
         <p className="text-muted text-xs">
           도와줄 포켓몬을 기다리고 있다 ·{' '}
@@ -565,6 +781,7 @@ function RequestNotice({
 export function RequestsView() {
   const { work, failure, busy, last, act } = useWork()
   const sinceSync = useHoursSinceSync()
+  const [ballId, setBallId] = useState<string | null>(null)
   const message = last ? say(last) : null
   const gift = last ? sayGift(last) : null
 
@@ -586,6 +803,9 @@ export function RequestsView() {
     )
   }
 
+  const { balls } = work.tools
+  // The ball picked, or else the commonest one there is any of.
+  const ball = balls.find((b) => b.id === ballId) ?? balls.find((b) => b.quantity > 0) ?? balls[0]
   const out = work.workplaces.filter((w) => w.worker).length
   const ready = work.workplaces.filter((w) => w.worker?.can_settle).length
 
@@ -618,7 +838,15 @@ export function RequestsView() {
       <ul className="grid gap-3 lg:grid-cols-3">
         <GosuNotice work={work} busy={busy} act={act} />
         {work.workplaces.map((place) => (
-          <RequestNotice key={place.id} place={place} work={work} busy={busy} act={act} />
+          <RequestNotice
+            key={place.id}
+            place={place}
+            work={work}
+            ball={ball}
+            onBall={setBallId}
+            busy={busy}
+            act={act}
+          />
         ))}
       </ul>
 

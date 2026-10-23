@@ -188,7 +188,8 @@ select is(public.reroll(pg_temp.workplace(2)), '{"outcome": "rerolled"}'::jsonb,
   'a request can be turned down as soon as it is up');
 select is(public.work() -> 'workplaces' -> 1,
   jsonb_build_object('id', pg_temp.workplace(2), 'slot', 2, 'arrived', false, 'hours_to_arrive', 8,
-                     'client', null, 'is_shiny', null, 'shift_hours', null, 'task', null, 'types', null,
+                     'client', null, 'is_shiny', null, 'shift_hours', null, 'milk_hours', null, 'gave_egg', null,
+                     'task', null, 'types', null,
                      'can_reroll', false, 'worker', null),
   'and the next one is 8 hours away, saying nothing of who it is from');
 select is(public.assign(pg_temp.workplace(2), (select rattata from mon)), '{"outcome": "not_arrived"}'::jsonb,
