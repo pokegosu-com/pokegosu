@@ -26,15 +26,32 @@ function stack(): HTMLElement {
 
 const noop = () => () => {}
 
+/** One thing said, with its own four seconds. */
+function Line({ onGone, children }: { onGone: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    const timer = setTimeout(onGone, SHOWN_MS)
+    return () => clearTimeout(timer)
+    // Its four seconds start when it is said, and nothing said after resets them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return (
+    <p className="bg-ink text-surface pointer-events-auto max-w-task rounded-md px-4 py-2.5 text-sm font-medium">
+      {children}
+    </p>
+  )
+}
+
 /**
  * What just happened, said for a moment over the top of the page, just under
  * the top bar, so nothing on the page moves when it comes and goes. It is the
  * one dark fill in the interface, so it stands out from the page.
  * `id` is what happened: a new one says it again, even when the words are the
- * same.
+ * same. What was said before stays for the rest of its four seconds, so quick
+ * actions one after another are all read.
  */
 export function Toast({ id, children }: { id: unknown; children: React.ReactNode }) {
-  const [gone, setGone] = useState<unknown>(null)
+  const [said, setSaid] = useState<unknown>(null)
+  const [lines, setLines] = useState<{ key: number; text: React.ReactNode }[]>([])
   // The stack is the document's, so it is only there once the page runs.
   const mounted = useSyncExternalStore(
     noop,
@@ -47,18 +64,24 @@ export function Toast({ id, children }: { id: unknown; children: React.ReactNode
     stack()
   }, [])
 
-  useEffect(() => {
-    if (id == null) return
-    const timer = setTimeout(() => setGone(id), SHOWN_MS)
-    return () => clearTimeout(timer)
-  }, [id])
+  // Kept as it was when said, so a later render does not change a line on screen.
+  if (id !== said) {
+    setSaid(id)
+    if (id != null && children != null) {
+      setLines([...lines, { key: (lines.at(-1)?.key ?? 0) + 1, text: children }])
+    }
+  }
 
-  const shown = mounted && id != null && children != null && gone !== id
-  return shown
+  return mounted && lines.length > 0
     ? createPortal(
-        <p className="bg-ink text-surface pointer-events-auto max-w-task rounded-md px-4 py-2.5 text-sm font-medium">
-          {children}
-        </p>,
+        lines.map((line) => (
+          <Line
+            key={line.key}
+            onGone={() => setLines((all) => all.filter((l) => l.key !== line.key))}
+          >
+            {line.text}
+          </Line>
+        )),
         stack(),
       )
     : null
