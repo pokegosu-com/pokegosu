@@ -110,13 +110,37 @@ func sync(opts SyncOptions, settingsPath string) (int, error) {
 		return 0, err
 	}
 
+	// Named directories are read for what they hold alone, such as a log
+	// written by hand, so they neither use nor change what this machine's
+	// own logs have held.
+	messagesPath := state.MessagesPath(settingsPath)
+	keep := len(opts.Paths) == 0
+	var kept state.Messages
+	if keep {
+		kept, err = state.LoadMessages(messagesPath)
+		if err != nil {
+			// Left as it is rather than overwritten, since it may hold the
+			// only count of messages whose logs are gone.
+			fmt.Fprintf(os.Stderr, "pokegosu: %v; messages whose logs are gone are not counted, and the file is left alone\n", err)
+			keep = false
+		}
+	}
+
 	// The server ignores anything older anyway; this keeps a first run from
 	// carrying months of logs across the network to be dropped.
-	result, err := scan.Run(scan.Options{Roots: opts.Paths, Providers: selected, Since: cfg.EnrolledAt})
+	result, err := scan.Run(scan.Options{Roots: opts.Paths, Providers: selected, Since: cfg.EnrolledAt, Kept: kept.Records})
 	if err != nil {
 		return 0, err
 	}
 	report(opts.Quiet, result)
+
+	// Saved before anything is sent: what the logs held is true whether or
+	// not the server takes it.
+	if keep {
+		if err := state.SaveMessages(messagesPath, state.Keep(result.Records, cfg.EnrolledAt)); err != nil {
+			fmt.Fprintf(os.Stderr, "pokegosu: keeping the messages read: %v\n", err)
+		}
+	}
 
 	cachePath := state.Path(settingsPath)
 	cache := state.Load(cachePath, cfg.APIURL, cfg.DeviceID)
@@ -185,6 +209,9 @@ func report(quiet bool, result scan.Result) {
 			count(result.Messages, "message", "messages"),
 			count(result.Stats.Files, "file", "files"),
 			count(len(result.Roots), "directory", "directories"))
+		if result.Restored > 0 {
+			fmt.Printf("counted %s whose logs are gone\n", count(result.Restored, "message", "messages"))
+		}
 	}
 
 	if s := result.Stats; s.BadLines > 0 || s.BadRecords > 0 || s.Unreadable > 0 {

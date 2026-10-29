@@ -44,6 +44,10 @@ type Entry struct {
 	// Tokens is everything the message consumed, cache included. Never
 	// negative.
 	Tokens int64
+
+	// Source is the log file the record was read from. Empty when it came
+	// from nowhere on disk, as in a test.
+	Source string
 }
 
 // Rollup is the absolute token total for one provider in one UTC hour. This
@@ -127,9 +131,15 @@ type messageKey struct {
 
 type record struct {
 	provider    string
+	messageID   string
+	requestID   string
 	at          time.Time
 	tokens      int64
 	isSidechain bool
+
+	// sources are the files the message was read from, so that a client can
+	// tell later whether its logs are still there.
+	sources []string
 }
 
 // NewAggregator returns an empty Aggregator.
@@ -168,9 +178,12 @@ func (a *Aggregator) Add(e Entry) {
 		idx = len(a.records)
 		a.records = append(a.records, record{
 			provider:    e.Provider,
+			messageID:   e.MessageID,
+			requestID:   e.RequestID,
 			at:          e.At,
 			tokens:      e.Tokens,
 			isSidechain: e.IsSidechain,
+			sources:     appendSource(nil, e.Source),
 		})
 		mk := messageKey{e.Provider, e.MessageID}
 		a.byMessage[mk] = append(a.byMessage[mk], idx)
@@ -186,6 +199,7 @@ func (a *Aggregator) Add(e Entry) {
 		r.tokens = e.Tokens
 		r.isSidechain = e.IsSidechain
 	}
+	r.sources = appendSource(r.sources, e.Source)
 	// Index this spelling of the message too, so the next copy matches
 	// directly instead of falling through to the sidechain scan.
 	a.exact[a.exactKeyOf(e)] = idx
@@ -223,6 +237,71 @@ func replaces(e Entry, stored record) bool {
 		return stored.isSidechain
 	}
 	return e.Tokens > stored.tokens
+}
+
+func appendSource(sources []string, source string) []string {
+	if source == "" {
+		return sources
+	}
+	for _, s := range sources {
+		if s == source {
+			return sources
+		}
+	}
+	return append(sources, source)
+}
+
+// Record is one message after deduplication, with the files it was read
+// from. It is what a client keeps between scans, so that a message still
+// counts after the agent has deleted its log.
+type Record struct {
+	Provider    string
+	MessageID   string
+	RequestID   string
+	IsSidechain bool
+	At          time.Time
+	Tokens      int64
+	Sources     []string
+}
+
+// Records returns every message recorded, in the order first seen.
+func (a *Aggregator) Records() []Record {
+	out := make([]Record, len(a.records))
+	for i, r := range a.records {
+		out[i] = Record{
+			Provider:    r.provider,
+			MessageID:   r.messageID,
+			RequestID:   r.requestID,
+			IsSidechain: r.isSidechain,
+			At:          r.at,
+			Tokens:      r.tokens,
+			Sources:     append([]string(nil), r.sources...),
+		}
+	}
+	return out
+}
+
+// Restore adds a message kept from an earlier scan whose logs are gone, and
+// reports whether it counted.
+//
+// A message the logs still hold, in any spelling, is left as they say: what
+// is read now is the truth, and a count corrected by a newer parser has to be
+// able to fall.
+func (a *Aggregator) Restore(r Record) bool {
+	e := Entry{
+		Provider:    r.Provider,
+		MessageID:   r.MessageID,
+		RequestID:   r.RequestID,
+		IsSidechain: r.IsSidechain,
+		At:          r.At,
+		Tokens:      r.Tokens,
+	}
+	if _, found := a.lookup(e); found {
+		return false
+	}
+	a.Add(e)
+	a.records[len(a.records)-1].sources = append([]string(nil), r.Sources...)
+	return true
 }
 
 // Messages reports how many distinct messages have been recorded.

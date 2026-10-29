@@ -2,11 +2,14 @@
 //
 // This is the read half of sync, kept separate so it can be exercised without
 // a server: `coder scan` prints what it found, `sync` uploads the same
-// result. No network, no stored state.
+// result. No network, and no stored state of its own: what an earlier scan
+// kept comes in through Options.Kept.
 package scan
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
@@ -34,6 +37,14 @@ type Options struct {
 	// Since drops buckets that start before it, rounded down to the hour so
 	// that every bucket returned covers a full hour. Zero keeps everything.
 	Since time.Time
+
+	// Kept is what an earlier scan read, from Result.Records. A message in it
+	// counts again only when every file it was read from is gone and no log
+	// read now holds it: agents delete their own logs (Claude Code after
+	// thirty days, Codex by compressing them), and the usage still happened.
+	// A message whose file is still there is as that file says, so a count a
+	// newer parser corrects can fall.
+	Kept []usage.Record
 }
 
 // Result is what a scan found.
@@ -50,6 +61,15 @@ type Result struct {
 
 	// Roots lists the directories actually read, in the order read.
 	Roots []string
+
+	// Records is every message to keep for the next scan: what was read
+	// now, what of Kept still counts, and Kept's messages from providers not
+	// read this time, untouched.
+	Records []usage.Record
+
+	// Restored is how many messages of Kept counted because their logs are
+	// gone.
+	Restored int
 }
 
 // Run parses the logs and returns the rollups.
@@ -92,9 +112,38 @@ func Run(opts Options) (Result, error) {
 		}
 	}
 
+	read := make(map[string]bool, len(providers))
+	for _, p := range providers {
+		read[p.ID()] = true
+	}
+	var untouched []usage.Record
+	for _, r := range opts.Kept {
+		switch {
+		case !read[r.Provider]:
+			untouched = append(untouched, r)
+		case gone(r.Sources) && agg.Restore(r):
+			result.Restored++
+		}
+	}
+
 	result.Rollups = agg.Rollups(opts.Since)
 	result.Messages = agg.Messages()
+	result.Records = append(agg.Records(), untouched...)
 	return result, nil
+}
+
+// gone reports whether none of the files are there any more. A message with
+// no file named is not one a deletion can explain, so it is not gone.
+func gone(files []string) bool {
+	if len(files) == 0 {
+		return false
+	}
+	for _, f := range files {
+		if _, err := os.Lstat(f); err == nil || !errors.Is(err, fs.ErrNotExist) {
+			return false
+		}
+	}
+	return true
 }
 
 // existing keeps the directories that are actually there. A provider's
