@@ -51,6 +51,10 @@ type messageLine struct {
 	Request   string `json:"request,omitempty"`
 	Sidechain bool   `json:"sidechain,omitempty"`
 
+	// Session is absent from what the first release of this file wrote, and
+	// reads as no session.
+	Session string `json:"session,omitempty"`
+
 	// At keeps nanoseconds: without a request id, the time is part of what
 	// says two lines are the same message.
 	At     string `json:"at"`
@@ -91,6 +95,7 @@ func LoadMessages(path string) (Messages, error) {
 			Provider:    line.Provider,
 			MessageID:   line.ID,
 			RequestID:   line.Request,
+			SessionID:   line.Session,
 			IsSidechain: line.Sidechain,
 			At:          at,
 			Tokens:      line.Tokens,
@@ -132,6 +137,7 @@ func SaveMessages(path string, m Messages) error {
 			Provider:  r.Provider,
 			ID:        r.MessageID,
 			Request:   r.RequestID,
+			Session:   r.SessionID,
 			Sidechain: r.IsSidechain,
 			At:        r.At.UTC().Format(time.RFC3339Nano),
 			Tokens:    r.Tokens,

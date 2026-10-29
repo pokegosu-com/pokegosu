@@ -16,7 +16,7 @@ func TestMessagesRoundTrip(t *testing.T) {
 	at := mustParse(t, "2026-09-12T11:10:00Z").Add(123456789 * time.Nanosecond)
 
 	want := Messages{Records: []usage.Record{
-		{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", At: at, Tokens: 100,
+		{Provider: "claude_code", MessageID: "msg_1", RequestID: "req_1", SessionID: "s1", At: at, Tokens: 100,
 			Sources: []string{"/logs/a.jsonl", "/logs/b.jsonl"}},
 		{Provider: "claude_code", MessageID: "msg_2", IsSidechain: true, At: at, Tokens: 200,
 			Sources: []string{"/logs/b.jsonl"}},
