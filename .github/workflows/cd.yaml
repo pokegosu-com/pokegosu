@@ -102,9 +102,20 @@ jobs:
         with:
           path: 'apps/pokedex-web/public/sprites'
           key: "pokedex-sprites-${{ hashFiles('apps/pokedex-web/sprites.json') }}"
-      # Every app gets every variable; each schema reads only its own.
+      # pokedex-web's pages are built from a database of the tag's migrations,
+      # started here, rather than from production: the migrations alone write
+      # the pokedex_ tables, and a build's thousands of reads across the
+      # internet once had one go unanswered and fail the deploy. The same four
+      # services as CI's `supabase:verify`.
+      - if: "matrix.app.id == 'pokedex-web'"
+        run: 'pnpm exec supabase start -x studio,edge-runtime,logflare,vector,imgproxy,realtime,storage-api,postgres-meta,mailpit,supavisor'
+      # Every app gets every variable; each schema reads only its own. The
+      # POKEDEX_SUPABASE_* pair is the local development URL and key the
+      # database above answers to, for pokedex-web's build alone.
       - run: 'pnpm --dir ${{ matrix.app.source }} run deploy:vinext'
         env:
+          POKEDEX_SUPABASE_URL: "${{ matrix.app.id == 'pokedex-web' && 'http://127.0.0.1:54321' || '' }}"
+          POKEDEX_SUPABASE_PUBLISHABLE_KEY: "${{ matrix.app.id == 'pokedex-web' && 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' || '' }}"
           CLOUDFLARE_API_TOKEN: '${{ secrets.CLOUDFLARE_API_TOKEN }}'
           CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CLOUDFLARE_ACCOUNT_ID }}'
           NEXT_PUBLIC_ACCOUNT_URL: '${{ vars.NEXT_PUBLIC_ACCOUNT_URL }}'
