@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/coder/state"
+	"github.com/pokegosu-com/pokegosu/apps/cli/internal/config"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/scan"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
@@ -47,6 +49,18 @@ func Scan(opts ScanOptions) error {
 	}
 
 	scanOpts := scan.Options{Roots: opts.Paths, Providers: selected}
+
+	// What sync keeps is read here too, so that scan prints what sync would
+	// send. It is only read: scan stores nothing.
+	if len(opts.Paths) == 0 {
+		if settingsPath, err := config.Path(); err == nil {
+			kept, err := state.LoadMessages(state.MessagesPath(settingsPath))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "pokegosu: %v; messages whose logs are gone are not counted\n", err)
+			}
+			scanOpts.Kept = kept.Records
+		}
+	}
 	if opts.Since != "" {
 		at, err := parseSince(opts.Since)
 		if err != nil {
@@ -189,6 +203,9 @@ func printText(result scan.Result) {
 		thousands(result.Total()),
 		count(result.Messages, "message", "messages"),
 		count(result.Stats.Files, "file", "files"))
+	if result.Restored > 0 {
+		fmt.Printf("%s of them kept from logs that are gone\n", count(result.Restored, "message", "messages"))
+	}
 }
 
 // thousands groups digits so that a nine-digit token count stays readable.

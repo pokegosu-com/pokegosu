@@ -166,6 +166,7 @@ func (p Parser) parseFile(path string, emit func(usage.Entry)) (provider.Stats, 
 			switch entry, status := parseLine(trimmed); status {
 			case statusEntry:
 				stats.Entries++
+				entry.Source = path
 				emit(entry)
 			case statusBadRecord:
 				stats.BadRecords++
