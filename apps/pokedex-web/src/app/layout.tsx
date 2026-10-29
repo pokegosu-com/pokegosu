@@ -5,7 +5,7 @@ import { Fonts } from '@pokegosu/ui/fonts'
 import { faviconUrl } from '@pokegosu/ui/icon'
 import { Footer } from '@pokegosu/ui/footer'
 
-import { DEXES, ko, pokedex } from '@/lib/pokedex'
+import { DEXES, dexKinds, ko } from '@/lib/pokedex'
 
 import './globals.css'
 
@@ -16,10 +16,7 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
-  const { data: kinds, error } = await pokedex()
-    .from('pokedex_kinds')
-    .select('id, ko_name, en_name')
-  if (error) throw error
+  const kinds = await dexKinds()
   // Each pokedex is a section, so an entry's page still shows which one it is in.
   const sections = DEXES.flatMap((id) => {
     const kind = kinds.find((k) => k.id === id)
