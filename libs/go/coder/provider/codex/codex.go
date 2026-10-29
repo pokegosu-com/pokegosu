@@ -169,6 +169,10 @@ type session struct {
 	// burst is when the first two usage lines were written, used to spot a
 	// replay when the parent's log is not there to compare against.
 	burst []time.Time
+
+	// path is the file the session was read from, which each of its turns
+	// names as its source.
+	path string
 }
 
 // Parse implements provider.Provider. Files are visited in lexical order.
@@ -213,6 +217,7 @@ func (p Parser) Parse(root string, emit func(usage.Entry)) (provider.Stats, erro
 		if s == nil {
 			continue
 		}
+		s.path = path
 		sessions = append(sessions, s)
 		if s.id != "" {
 			byID[s.id] = append(byID[s.id], s)
@@ -222,7 +227,9 @@ func (p Parser) Parse(root string, emit func(usage.Entry)) (provider.Stats, erro
 	for _, s := range sessions {
 		for _, t := range s.turns[replayed(s, parentOf(s, byID)):] {
 			stats.Entries++
-			emit(entryOf(t))
+			e := entryOf(t)
+			e.Source = s.path
+			emit(e)
 		}
 	}
 	return stats, nil
