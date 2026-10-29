@@ -145,20 +145,80 @@ func TestParseEmptyFile(t *testing.T) {
 	}
 }
 
-// Without an id a message cannot be deduplicated, and the log holds two or
-// three copies of it, so counting it would inflate the total.
-func TestParseSkipsRecordsItCannotDeduplicate(t *testing.T) {
-	content := `{"timestamp":"2026-09-12T11:00:00Z","message":{"usage":{"input_tokens":5,"output_tokens":5}}}` + "\n" +
-		`{"message":{"id":"msg_2","usage":{"input_tokens":5,"output_tokens":5}}}` + "\n" +
+// A line with no time, a negative count, a version that is not one, or an
+// empty session, request, message or model is passed over, as ccusage passes
+// it over.
+func TestParseSkipsRecordsItCannotTrust(t *testing.T) {
+	content := `{"message":{"id":"msg_2","usage":{"input_tokens":5,"output_tokens":5}}}` + "\n" +
 		`{"timestamp":"not a date","message":{"id":"msg_3","usage":{"input_tokens":5,"output_tokens":5}}}` + "\n" +
-		`{"timestamp":"2026-09-12T11:00:00Z","message":{"id":"msg_4","usage":{"input_tokens":-5,"output_tokens":5}}}` + "\n"
+		`{"timestamp":"2026-09-12T11:00:00Z","message":{"id":"msg_4","usage":{"input_tokens":-5,"output_tokens":5}}}` + "\n" +
+		`{"timestamp":"2026-09-12T11:00:00Z","version":"two","message":{"id":"msg_5","usage":{"input_tokens":5}}}` + "\n" +
+		`{"timestamp":"2026-09-12T11:00:00Z","sessionId":"","message":{"id":"msg_6","usage":{"input_tokens":5}}}` + "\n" +
+		`{"timestamp":"2026-09-12T11:00:00Z","requestId":"","message":{"id":"msg_7","usage":{"input_tokens":5}}}` + "\n" +
+		`{"timestamp":"2026-09-12T11:00:00Z","message":{"id":"","usage":{"input_tokens":5}}}` + "\n" +
+		`{"timestamp":"2026-09-12T11:00:00Z","message":{"id":"msg_9","model":"","usage":{"input_tokens":5}}}` + "\n"
 
 	entries, stats := parse(t, map[string]string{"s.jsonl": content})
 	if len(entries) != 0 {
 		t.Fatalf("entries = %+v, want none", entries)
 	}
-	if stats.BadRecords != 4 {
-		t.Errorf("BadRecords = %d, want 4", stats.BadRecords)
+	if stats.BadRecords != 8 {
+		t.Errorf("BadRecords = %d, want 8", stats.BadRecords)
+	}
+}
+
+// A line with no message id at all still counts, as ccusage counts it; it
+// just cannot be matched with its copies.
+func TestParseCountsALineWithoutAMessageID(t *testing.T) {
+	line := `{"timestamp":"2026-09-12T11:00:00Z","version":"2.1.3","message":{"usage":{"input_tokens":5,"output_tokens":5}}}`
+	entries, stats := parse(t, map[string]string{"s.jsonl": line + "\n"})
+	if len(entries) != 1 || entries[0].Tokens != 10 || entries[0].MessageID != "" {
+		t.Fatalf("entries = %+v, want one of 10 tokens with no id", entries)
+	}
+	if stats.BadRecords != 0 {
+		t.Errorf("BadRecords = %d, want 0", stats.BadRecords)
+	}
+}
+
+// The session comes from the line, or from the file's name when the line has
+// none.
+func TestParseReadsTheSession(t *testing.T) {
+	withSession := `{"timestamp":"2026-09-12T11:00:00Z","sessionId":"s1","message":{"id":"msg_1","usage":{"input_tokens":1}}}`
+	without := `{"timestamp":"2026-09-12T11:00:00Z","message":{"id":"msg_2","usage":{"input_tokens":1}}}`
+	entries, _ := parse(t, map[string]string{"p/from-name.jsonl": withSession + "\n" + without + "\n"})
+	if len(entries) != 2 || entries[0].SessionID != "s1" || entries[1].SessionID != "from-name" {
+		t.Fatalf("entries = %+v, want sessions s1 and from-name", entries)
+	}
+}
+
+// An advisor's call is billed apart from the message it sits in, so it counts
+// as a message of its own. The model's own iterations are still left out.
+func TestParseCountsAdvisorCalls(t *testing.T) {
+	line := `{"timestamp":"2026-09-12T11:00:00Z","sessionId":"s1","requestId":"req_1","message":{"id":"msg_1","usage":{` +
+		`"input_tokens":1,"cache_creation_input_tokens":2,"cache_read_input_tokens":3,"output_tokens":4,"iterations":[` +
+		`{"type":"message","input_tokens":1,"cache_creation_input_tokens":2,"cache_read_input_tokens":3,"output_tokens":4},` +
+		`{"type":"advisor_message","model":"claude-opus-5","input_tokens":100,"output_tokens":200},` +
+		`{"type":"advisor_message","model":null,"input_tokens":1000},` +
+		`{"type":"advisor_message","model":"claude-opus-5","input_tokens":3000,"cache_read_input_tokens":4000}]}}}`
+
+	entries, stats := parse(t, map[string]string{"s.jsonl": line + "\n"})
+	if len(entries) != 3 {
+		t.Fatalf("entries = %+v, want the message and two advisor calls", entries)
+	}
+	want := []struct {
+		id     string
+		tokens int64
+	}{{"msg_1", 10}, {"msg_1:advisor:0", 300}, {"msg_1:advisor:1", 7000}}
+	for i, w := range want {
+		if entries[i].MessageID != w.id || entries[i].Tokens != w.tokens {
+			t.Errorf("entry %d = %s %d, want %s %d", i, entries[i].MessageID, entries[i].Tokens, w.id, w.tokens)
+		}
+		if entries[i].RequestID != "req_1" || entries[i].SessionID != "s1" {
+			t.Errorf("entry %d = %+v, want the line's request and session", i, entries[i])
+		}
+	}
+	if stats.Entries != 3 {
+		t.Errorf("Entries = %d, want 3", stats.Entries)
 	}
 }
 

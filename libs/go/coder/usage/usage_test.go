@@ -126,19 +126,84 @@ func entry(t *testing.T, msg, req, ts string, tokens int64, sidechain bool) Entr
 	}
 }
 
-// Without a request id the timestamp separates records, since nothing else
-// says whether two lines describe the same call.
+func inSession(e Entry, session string) Entry {
+	e.SessionID = session
+	return e
+}
+
+// Without a request id, a gateway's placeholder id is told apart by its
+// timestamp, since nothing else says whether two lines describe one call.
 func TestAddWithoutRequestIDFallsBackToTimestamp(t *testing.T) {
 	a := NewAggregator()
-	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
-	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:00Z", 100, false))
+	a.Add(inSession(entry(t, "gw_1", "", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "gw_1", "", "2026-09-12T11:10:00Z", 100, false), "s1"))
 	if got := a.Messages(); got != 1 {
 		t.Errorf("Messages() = %d, want 1: same timestamp is the same record", got)
 	}
 
-	a.Add(entry(t, "msg_1", "", "2026-09-12T11:10:05Z", 100, false))
+	a.Add(inSession(entry(t, "gw_1", "", "2026-09-12T11:10:05Z", 100, false), "s1"))
 	if got := a.Messages(); got != 2 {
 		t.Errorf("Messages() = %d, want 2: a different timestamp is a different record", got)
+	}
+}
+
+// An Anthropic id is unique per response, and Claude Code writes a line per
+// content block under it at different times, so without a request id it is
+// one message within its session.
+func TestAddWithoutRequestIDJoinsAnAnthropicIDInItsSession(t *testing.T) {
+	a := NewAggregator()
+	a.Add(inSession(entry(t, "msg_1", "", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "msg_1", "", "2026-09-12T11:10:05Z", 100, false), "s1"))
+	if got := a.Messages(); got != 1 {
+		t.Errorf("Messages() = %d, want 1", got)
+	}
+
+	a.Add(inSession(entry(t, "msg_1", "", "2026-09-12T11:10:05Z", 100, false), "s2"))
+	if got := a.Messages(); got != 2 {
+		t.Errorf("Messages() = %d, want 2: without a request id, another session is another record", got)
+	}
+}
+
+// A request id says the call is one, whichever session it was copied into.
+func TestAddWithRequestIDJoinsAcrossSessions(t *testing.T) {
+	a := NewAggregator()
+	a.Add(inSession(entry(t, "msg_1", "req_1", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "msg_1", "req_1", "2026-09-12T11:40:00Z", 100, false), "s2"))
+	if got := a.Messages(); got != 1 {
+		t.Errorf("Messages() = %d, want 1", got)
+	}
+}
+
+// A record without a message id cannot be matched, and counts as it is.
+func TestAddCountsEveryRecordWithoutAMessageID(t *testing.T) {
+	a := NewAggregator()
+	a.Add(inSession(entry(t, "", "", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "", "", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	if got := a.Rollups(time.Time{})[0].Tokens; got != 200 {
+		t.Errorf("tokens = %d, want 200", got)
+	}
+}
+
+// A sidechain replay is matched within its session only: a sub-agent replays
+// the messages of the session it runs in.
+func TestAddMatchesSidechainReplayInItsSession(t *testing.T) {
+	a := NewAggregator()
+	a.Add(inSession(entry(t, "msg_1", "req_parent", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "msg_1", "req_other", "2026-09-12T11:10:30Z", 100, true), "s2"))
+	if got := a.Messages(); got != 2 {
+		t.Errorf("Messages() = %d, want 2: a sidechain in another session is not a replay", got)
+	}
+}
+
+// Once a message has been copied into a second session, a sidechain in either
+// session replays it.
+func TestAddMatchesSidechainReplayInACopiedSession(t *testing.T) {
+	a := NewAggregator()
+	a.Add(inSession(entry(t, "msg_1", "req_1", "2026-09-12T11:10:00Z", 100, false), "s1"))
+	a.Add(inSession(entry(t, "msg_1", "req_1", "2026-09-12T11:40:00Z", 100, false), "s2"))
+	a.Add(inSession(entry(t, "msg_1", "req_replay", "2026-09-12T11:41:00Z", 100, true), "s2"))
+	if got := a.Messages(); got != 1 {
+		t.Errorf("Messages() = %d, want 1", got)
 	}
 }
 
