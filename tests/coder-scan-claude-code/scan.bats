@@ -66,12 +66,31 @@ assert_case() {
     assert_case forked-session
 }
 
-@test "without a request id the timestamp separates records" {
+@test "without a request id an Anthropic id is one message, and another id is told apart by time" {
+    # Claude Code writes a line per content block under one msg_ id at
+    # different times; a gateway can reuse one placeholder id for every
+    # response, so only the time separates those.
     assert_case missing-request-id
 }
 
 @test "a sidechain replay is the message it replays" {
     assert_case sidechain-replay
+}
+
+@test "a sidechain in another session is not a replay" {
+    # A sub-agent replays the session it runs in, so the same message id with
+    # another request id in an unrelated session is another call.
+    assert_case sidechain-other-session
+}
+
+@test "an advisor's call counts beside the message it sits in" {
+    # The top-level usage leaves the advisor out; its copies deduplicate with
+    # the message's.
+    assert_case advisor-calls
+}
+
+@test "a line with no message id counts, and a line with an empty id or a bad version does not" {
+    assert_case untrusted-lines
 }
 
 @test "a record written before the response finished loses to the complete one" {

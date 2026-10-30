@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,10 @@ type Entry struct {
 	// RequestID identifies the API call. Empty when the log does not carry
 	// one, which changes how duplicates are matched.
 	RequestID string
+
+	// SessionID is the session the record was written in. It separates
+	// records only where the ids above cannot: see Aggregator.Add.
+	SessionID string
 
 	// IsSidechain marks a record written by a sub-agent transcript, which
 	// replays its parent's messages under new request ids.
@@ -109,8 +114,9 @@ type Aggregator struct {
 	// same message.
 	exact map[exactKey]int
 
-	// byMessage indexes records by (provider, message) for the sidechain
-	// fallback, where request ids differ but the message is one.
+	// byMessage indexes records by (provider, message, session) for the
+	// sidechain fallback, where request ids differ but the message is one. A
+	// record copied across sessions is indexed under each of them.
 	byMessage map[messageKey][]int
 }
 
@@ -119,20 +125,24 @@ type exactKey struct {
 	messageID string
 	requestID string
 
-	// at distinguishes records only when there is no request id. With one,
-	// the request id already says whether two records are the same call.
-	at int64
+	// session and at distinguish records only when there is no request id.
+	// With one, the request id already says whether two records are the same
+	// call.
+	session string
+	at      int64
 }
 
 type messageKey struct {
 	provider  string
 	messageID string
+	session   string
 }
 
 type record struct {
 	provider    string
 	messageID   string
 	requestID   string
+	sessionID   string
 	at          time.Time
 	tokens      int64
 	isSidechain bool
@@ -154,14 +164,22 @@ func NewAggregator() *Aggregator {
 // message.
 //
 // Two records are the same message when provider, message id and request id
-// all match. Without a request id the timestamp has to match too. Session is
-// not part of the key: resuming or forking a session copies its earlier
-// messages into the new session, ids and all, and counting them there again
-// inflated real totals by a tenth.
+// all match. Session is not part of that: resuming or forking a session copies
+// its earlier messages into the new session, ids and all, and counting them
+// there again inflated real totals by a tenth.
+//
+// Without a request id, the records also have to share a session, since a
+// gateway can reuse one message id for every response. A real Anthropic id
+// (msg_ or resp_) is unique per response, and Claude Code writes one line per
+// content block under it at different times, so those match across times;
+// any other id has to match the timestamp too.
+//
+// A record with no message id at all matches nothing and counts as it is.
 //
 // The exception is a sidechain replay. A sub-agent transcript repeats its
 // parent's messages under fresh request ids, so when either side is marked as
-// a sidechain, matching provider and message id is enough.
+// a sidechain, matching provider, message id and session is enough. A message
+// copied into another session can be replayed from either.
 //
 // When two records merge, the larger token count wins and a real message is
 // preferred over its sidechain copy — a record can be written before the
@@ -180,14 +198,15 @@ func (a *Aggregator) Add(e Entry) {
 			provider:    e.Provider,
 			messageID:   e.MessageID,
 			requestID:   e.RequestID,
+			sessionID:   e.SessionID,
 			at:          e.At,
 			tokens:      e.Tokens,
 			isSidechain: e.IsSidechain,
 			sources:     appendSource(nil, e.Source),
 		})
-		mk := messageKey{e.Provider, e.MessageID}
-		a.byMessage[mk] = append(a.byMessage[mk], idx)
-		a.exact[a.exactKeyOf(e)] = idx
+		if e.MessageID != "" {
+			a.index(e, idx)
+		}
 		return
 	}
 
@@ -201,15 +220,30 @@ func (a *Aggregator) Add(e Entry) {
 	}
 	r.sources = appendSource(r.sources, e.Source)
 	// Index this spelling of the message too, so the next copy matches
-	// directly instead of falling through to the sidechain scan.
+	// directly instead of falling through to the sidechain scan, and a
+	// sidechain in this session finds it.
+	a.index(e, idx)
+}
+
+func (a *Aggregator) index(e Entry, idx int) {
 	a.exact[a.exactKeyOf(e)] = idx
+	mk := messageKey{e.Provider, e.MessageID, e.SessionID}
+	for _, held := range a.byMessage[mk] {
+		if held == idx {
+			return
+		}
+	}
+	a.byMessage[mk] = append(a.byMessage[mk], idx)
 }
 
 func (a *Aggregator) lookup(e Entry) (int, bool) {
+	if e.MessageID == "" {
+		return 0, false
+	}
 	if idx, ok := a.exact[a.exactKeyOf(e)]; ok {
 		return idx, true
 	}
-	for _, idx := range a.byMessage[messageKey{e.Provider, e.MessageID}] {
+	for _, idx := range a.byMessage[messageKey{e.Provider, e.MessageID, e.SessionID}] {
 		if e.IsSidechain || a.records[idx].isSidechain {
 			return idx, true
 		}
@@ -224,9 +258,19 @@ func (a *Aggregator) exactKeyOf(e Entry) exactKey {
 		requestID: e.RequestID,
 	}
 	if e.RequestID == "" {
-		k.at = e.At.UTC().UnixNano()
+		k.session = e.SessionID
+		if !isAnthropicID(e.MessageID) {
+			k.at = e.At.UTC().UnixNano()
+		}
 	}
 	return k
+}
+
+// isAnthropicID reports whether a message id is one the API made, which is
+// unique per response, rather than a placeholder a gateway reuses. A prefix is
+// a heuristic, the same one ccusage uses.
+func isAnthropicID(id string) bool {
+	return strings.HasPrefix(id, "msg_") || strings.HasPrefix(id, "resp_")
 }
 
 // replaces reports whether the incoming record should supersede the stored
@@ -258,13 +302,15 @@ type Record struct {
 	Provider    string
 	MessageID   string
 	RequestID   string
+	SessionID   string
 	IsSidechain bool
 	At          time.Time
 	Tokens      int64
 	Sources     []string
 }
 
-// Records returns every message recorded, in the order first seen.
+// Records returns every message recorded, in the order first seen. A message
+// copied across sessions carries the first session it was seen in.
 func (a *Aggregator) Records() []Record {
 	out := make([]Record, len(a.records))
 	for i, r := range a.records {
@@ -272,6 +318,7 @@ func (a *Aggregator) Records() []Record {
 			Provider:    r.provider,
 			MessageID:   r.messageID,
 			RequestID:   r.requestID,
+			SessionID:   r.sessionID,
 			IsSidechain: r.isSidechain,
 			At:          r.at,
 			Tokens:      r.tokens,
@@ -292,6 +339,7 @@ func (a *Aggregator) Restore(r Record) bool {
 		Provider:    r.Provider,
 		MessageID:   r.MessageID,
 		RequestID:   r.RequestID,
+		SessionID:   r.SessionID,
 		IsSidechain: r.IsSidechain,
 		At:          r.At,
 		Tokens:      r.Tokens,

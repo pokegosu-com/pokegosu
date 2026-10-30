@@ -9,17 +9,20 @@
 //     orders of magnitude.
 //   - Messages are deduplicated by .message.id. The same message is written
 //     two or three times with identical usage; .uuid differs on every line and
-//     using it inflates the total two- to threefold.
+//     using it inflates the total two- to threefold. The rest of the rule is
+//     in usage.Aggregator.Add.
 //   - The .iterations array repeats the top-level usage fields, so it is
-//     ignored. Adding it in would double-count.
+//     ignored, except for an advisor's call, which the top level leaves out.
 //
-// Verified against Claude Code logs on 2026-09-12.
+// Verified against Claude Code logs on 2026-09-12, and against ccusage's
+// Claude adapter (rust/adapters/claude/src) on 2026-10-29.
 package claudecode
 
 import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -75,18 +78,39 @@ func (Parser) Roots() ([]string, error) {
 //
 // requestId and isSidechain sit at the top level of the line, not inside
 // message.
+//
+// The identifiers are pointers because a field that is absent and one that is
+// an empty string mean different things: see parseLine.
 type logLine struct {
-	Timestamp   string `json:"timestamp"`
-	RequestID   string `json:"requestId"`
-	IsSidechain bool   `json:"isSidechain"`
+	Timestamp   string  `json:"timestamp"`
+	Version     *string `json:"version"`
+	SessionID   *string `json:"sessionId"`
+	RequestID   *string `json:"requestId"`
+	IsSidechain bool    `json:"isSidechain"`
 	Message     *struct {
-		ID    string       `json:"id"`
+		ID    *string      `json:"id"`
+		Model *string      `json:"model"`
 		Usage *usageFields `json:"usage"`
 	} `json:"message"`
 }
 
 // usageFields is the token block of a log line.
 type usageFields struct {
+	tokenFields
+
+	// Iterations repeat the top-level fields for the model's own turns, so
+	// only an advisor's are read from them.
+	Iterations []iteration `json:"iterations"`
+}
+
+type iteration struct {
+	Type  string  `json:"type"`
+	Model *string `json:"model"`
+	tokenFields
+}
+
+// tokenFields are the four counts, wherever they appear.
+type tokenFields struct {
 	InputTokens              int64 `json:"input_tokens"`
 	CacheCreationInputTokens int64 `json:"cache_creation_input_tokens"`
 	CacheCreation            *struct {
@@ -101,7 +125,7 @@ type usageFields struct {
 // The two agree in every line seen so far, but ccusage reads it this way and
 // only the breakdown can distinguish the 1h cache, so the flat field is the
 // fallback rather than the source.
-func (u usageFields) cacheCreationTokens() int64 {
+func (u tokenFields) cacheCreationTokens() int64 {
 	if u.CacheCreation != nil {
 		return u.CacheCreation.Ephemeral5m + u.CacheCreation.Ephemeral1h
 	}
@@ -163,11 +187,13 @@ func (p Parser) parseFile(path string, emit func(usage.Entry)) (provider.Stats, 
 
 		if trimmed := strings.TrimSpace(string(line)); trimmed != "" {
 			stats.Lines++
-			switch entry, status := parseLine(trimmed); status {
+			switch entries, status := parseLine(trimmed, sessionOf(path)); status {
 			case statusEntry:
-				stats.Entries++
-				entry.Source = path
-				emit(entry)
+				for _, entry := range entries {
+					stats.Entries++
+					entry.Source = path
+					emit(entry)
+				}
 			case statusBadRecord:
 				stats.BadRecords++
 			case statusBadLine:
@@ -194,40 +220,113 @@ const (
 	statusBadRecord                   // carries usage, but nothing we can trust
 )
 
-// parseLine reads one log line.
-func parseLine(line string) (usage.Entry, lineStatus) {
+// sessionOf is the session a file holds when its lines do not say: Claude
+// Code names each log after its session.
+func sessionOf(path string) string {
+	return strings.TrimSuffix(filepath.Base(path), ".jsonl")
+}
+
+// parseLine reads one log line into the message it records and any advisor
+// calls made inside it. fallbackSession stands in for a line with no
+// sessionId.
+//
+// A line is passed over, as ccusage passes it over, when its version is not a
+// version or when it names a session, request, message or model as an empty
+// string: absent and empty are different things there.
+func parseLine(line, fallbackSession string) ([]usage.Entry, lineStatus) {
 	var l logLine
 	if err := json.Unmarshal([]byte(line), &l); err != nil {
-		return usage.Entry{}, statusBadLine
+		return nil, statusBadLine
 	}
 	if l.Message == nil || l.Message.Usage == nil {
-		return usage.Entry{}, statusSkip
+		return nil, statusSkip
 	}
 
-	if l.Message.ID == "" {
-		// Without an id the message cannot be deduplicated, and counting it
-		// would inflate the total by the two or three copies the log holds.
-		return usage.Entry{}, statusBadRecord
-	}
 	at, err := time.Parse(time.RFC3339, l.Timestamp)
 	if err != nil {
-		return usage.Entry{}, statusBadRecord
+		return nil, statusBadRecord
+	}
+	if (l.Version != nil && !isVersion(*l.Version)) ||
+		isEmpty(l.SessionID) || isEmpty(l.RequestID) ||
+		isEmpty(l.Message.ID) || isEmpty(l.Message.Model) {
+		return nil, statusBadRecord
 	}
 
-	u := l.Message.Usage
+	tokens, ok := l.Message.Usage.tokens()
+	if !ok {
+		return nil, statusBadRecord
+	}
+
+	base := usage.Entry{
+		Provider:    ID,
+		MessageID:   deref(l.Message.ID),
+		RequestID:   deref(l.RequestID),
+		SessionID:   deref(l.SessionID),
+		IsSidechain: l.IsSidechain,
+		At:          at,
+		Tokens:      tokens,
+	}
+	if base.SessionID == "" {
+		base.SessionID = fallbackSession
+	}
+	entries := []usage.Entry{base}
+
+	// An advisor's call is billed apart from the message it sits in, and the
+	// top-level usage does not include it. It is counted as a message of its
+	// own, under an id ccusage gives it too, so its copies deduplicate like
+	// any other.
+	n := 0
+	for _, it := range l.Message.Usage.Iterations {
+		if it.Type != "advisor_message" || it.Model == nil || *it.Model == "" {
+			continue
+		}
+		tokens, ok := it.tokens()
+		if !ok {
+			return nil, statusBadRecord
+		}
+		advisor := base
+		if base.MessageID != "" {
+			advisor.MessageID = fmt.Sprintf("%s:advisor:%d", base.MessageID, n)
+		}
+		advisor.Tokens = tokens
+		entries = append(entries, advisor)
+		n++
+	}
+	return entries, statusEntry
+}
+
+// tokens sums the four fields, and is not ok when any is negative.
+func (u tokenFields) tokens() (int64, bool) {
 	cacheCreation := u.cacheCreationTokens()
 	if u.InputTokens < 0 || cacheCreation < 0 ||
 		u.CacheReadInputTokens < 0 || u.OutputTokens < 0 {
-		return usage.Entry{}, statusBadRecord
+		return 0, false
 	}
+	return u.InputTokens + cacheCreation + u.CacheReadInputTokens + u.OutputTokens, true
+}
 
-	return usage.Entry{
-		Provider:    ID,
-		MessageID:   l.Message.ID,
-		RequestID:   l.RequestID,
-		IsSidechain: l.IsSidechain,
-		At:          at,
-		Tokens: u.InputTokens + cacheCreation +
-			u.CacheReadInputTokens + u.OutputTokens,
-	}, statusEntry
+func isEmpty(s *string) bool { return s != nil && *s == "" }
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// isVersion reports whether s starts like a semantic version: digits, a dot,
+// digits, a dot and a digit.
+func isVersion(s string) bool {
+	i := 0
+	for part := 0; part < 2; part++ {
+		start := i
+		for i < len(s) && s[i] >= '0' && s[i] <= '9' {
+			i++
+		}
+		if i == start || i >= len(s) || s[i] != '.' {
+			return false
+		}
+		i++
+	}
+	return i < len(s) && s[i] >= '0' && s[i] <= '9'
 }
