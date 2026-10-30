@@ -66,10 +66,11 @@ func TestKeep(t *testing.T) {
 		{Provider: "claude_code", MessageID: "before", At: mustParse(t, "2026-09-12T10:59:00Z")},
 		{Provider: "claude_code", MessageID: "same hour", At: mustParse(t, "2026-09-12T11:05:00Z")},
 		{Provider: "codex", MessageID: "codex", At: mustParse(t, "2026-09-12T12:00:00Z")},
+		{Provider: "someday", MessageID: "unknown", At: mustParse(t, "2026-09-12T12:00:00Z")},
 	}
 
 	got := Keep(records, enrolled)
-	if len(got.Records) != 1 || got.Records[0].MessageID != "same hour" {
-		t.Errorf("Keep = %+v, want only the Claude Code message from the enrolment hour on", got.Records)
+	if len(got.Records) != 2 || got.Records[0].MessageID != "same hour" || got.Records[1].MessageID != "codex" {
+		t.Errorf("Keep = %+v, want the Claude Code and Codex messages from the enrolment hour on", got.Records)
 	}
 }
