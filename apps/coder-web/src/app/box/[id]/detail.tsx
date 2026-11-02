@@ -230,71 +230,71 @@ function PokemonDetail({
             </span>
             {/* Hidden while the level is still counting up, so nothing is
                 pressed on a level the bar hasn't reached. */}
-            {working ? (
+            {!climbing && (
+              <>
+                {evolveNow && p.evolves_to && (
+                  <button
+                    type="button"
+                    className={primary}
+                    disabled={busy || working}
+                    onClick={() => act({ fn: 'evolve', companion_id: p.id })}
+                  >
+                    {evolveLabel(p.evolves_to)}
+                  </button>
+                )}
+                {stones.map((e) => (
+                  <button
+                    key={e.item.id}
+                    type="button"
+                    className={primary}
+                    disabled={busy || working}
+                    onClick={() => act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })}
+                  >
+                    <UseItemLabel item={e.item} />
+                  </button>
+                ))}
+                {p.can_receive_egg && (
+                  <button
+                    type="button"
+                    className={primary}
+                    disabled={busy || working}
+                    onClick={() => act({ fn: 'receive_egg', companion_id: p.id })}
+                  >
+                    알 받기
+                  </button>
+                )}
+                {p.ribbons_waiting.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className={primary}
+                    disabled={busy || working}
+                    onClick={() =>
+                      act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
+                    }
+                  >
+                    {ko(r)} 받기
+                  </button>
+                ))}
+                {!p.is_main && (
+                  <button
+                    type="button"
+                    className={quiet}
+                    disabled={busy || working}
+                    onClick={() => act({ fn: 'set_main', companion_id: p.id })}
+                  >
+                    파트너로
+                  </button>
+                )}
+              </>
+            )}
+            {/* One out on a request keeps its buttons, disabled, so its page
+                shows what is waiting for it, as the box's dot does; this says
+                why none of it can be done yet. */}
+            {working && (
               <Link href="/requests" className="text-muted hover:text-ink text-xs">
                 의뢰를 하는 중
               </Link>
-            ) : (
-              !climbing && (
-                <>
-                  {evolveNow && p.evolves_to && (
-                    <button
-                      type="button"
-                      className={primary}
-                      disabled={busy}
-                      onClick={() => act({ fn: 'evolve', companion_id: p.id })}
-                    >
-                      {evolveLabel(p.evolves_to)}
-                    </button>
-                  )}
-                  {stones.map((e) => (
-                    <button
-                      key={e.item.id}
-                      type="button"
-                      className={primary}
-                      disabled={busy}
-                      onClick={() =>
-                        act({ fn: 'use_item', companion_id: p.id, item_id: e.item.id })
-                      }
-                    >
-                      <UseItemLabel item={e.item} />
-                    </button>
-                  ))}
-                  {p.can_receive_egg && (
-                    <button
-                      type="button"
-                      className={primary}
-                      disabled={busy}
-                      onClick={() => act({ fn: 'receive_egg', companion_id: p.id })}
-                    >
-                      알 받기
-                    </button>
-                  )}
-                  {p.ribbons_waiting.map((r) => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      className={primary}
-                      disabled={busy}
-                      onClick={() =>
-                        act({ fn: 'receive_ribbon', companion_id: p.id, ribbon_id: r.id })
-                      }
-                    >
-                      {ko(r)} 받기
-                    </button>
-                  ))}
-                  {!p.is_main && (
-                    <button
-                      type="button"
-                      className={quiet}
-                      disabled={busy}
-                      onClick={() => act({ fn: 'set_main', companion_id: p.id })}
-                    >
-                      파트너로
-                    </button>
-                  )}
-                </>
-              )
             )}
           </div>
         </div>
