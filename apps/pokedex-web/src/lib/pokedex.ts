@@ -29,10 +29,10 @@ export function dexNo(n: number): string {
 }
 
 /**
- * A build reads the database some twenty thousand times, and one answer of
- * a server's error failed a whole deploy; supabase-js asks again only after
- * a 503 or 520. A read changes nothing, so it is asked again after any 5xx,
- * a 429 or a dropped connection, waiting longer each time.
+ * One answer of a server's error in a build failed a whole deploy;
+ * supabase-js asks again only after a 503 or 520. A read changes nothing, so
+ * it is asked again after any 5xx, a 429 or a dropped connection, waiting
+ * longer each time.
  */
 async function patientFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const method = (init?.method ?? 'GET').toUpperCase()
@@ -51,11 +51,24 @@ async function patientFetch(input: RequestInfo | URL, init?: RequestInit): Promi
 }
 
 /**
+ * The migrations alone write the pokedex_ tables, so any database they built
+ * holds the same pokedex. A deploy builds from one started beside the build,
+ * named by POKEDEX_SUPABASE_URL and its key: an answer from production that
+ * never came once held a deploy for five minutes and failed it. The browser
+ * still talks to production through NEXT_PUBLIC_SUPABASE_URL.
+ */
+function project(): { url: string; key: string } | undefined {
+  const url = process.env.POKEDEX_SUPABASE_URL
+  const key = process.env.POKEDEX_SUPABASE_PUBLISHABLE_KEY
+  return url && key ? { url, key } : undefined
+}
+
+/**
  * The pokedex_ tables are readable by anyone, so these pages read them as a
  * visitor: no session, and no cookies to keep.
  */
 export function pokedex() {
-  return createClient({ getAll: () => [], setAll: () => {} }, patientFetch)
+  return createClient({ getAll: () => [], setAll: () => {} }, patientFetch, project())
 }
 
 /**
@@ -76,8 +89,41 @@ export async function every<T>(
   }
 }
 
-export async function typeNames(): Promise<Map<string, string>> {
-  const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
-  if (error) throw error
-  return new Map(data.map((t) => [t.id, ko(t)]))
+const kept = new Map<string, Promise<unknown>>()
+
+/**
+ * A build renders some five thousand pages in a handful of processes, and
+ * every page of a pokedex reads the same rows. Reading them once per process
+ * rather than once per page took a build from some forty thousand reads to
+ * some hundred and fifty, and its prerender from five minutes to half of
+ * one: it had spent them waiting on the database. "use cache" would be the
+ * convention, but vinext's prerender keeps nothing in it. The pokedex
+ * changes only with a deploy, so nothing kept goes stale; a failed read is
+ * forgotten, to be asked again.
+ */
+export function once<T>(key: string, read: () => Promise<T>): Promise<T> {
+  let promise = kept.get(key) as Promise<T> | undefined
+  if (!promise) {
+    promise = read()
+    kept.set(key, promise)
+    promise.catch(() => kept.delete(key))
+  }
+  return promise
+}
+
+/** Every pokedex's id and name. */
+export function dexKinds() {
+  return once('kinds', async () => {
+    const { data, error } = await pokedex().from('pokedex_kinds').select('id, ko_name, en_name')
+    if (error) throw error
+    return data
+  })
+}
+
+export function typeNames(): Promise<Map<string, string>> {
+  return once('types', async () => {
+    const { data, error } = await pokedex().from('pokedex_types').select('id, ko_name, en_name')
+    if (error) throw error
+    return new Map(data.map((t) => [t.id, ko(t)]))
+  })
 }

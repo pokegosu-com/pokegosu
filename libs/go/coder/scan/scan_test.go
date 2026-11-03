@@ -8,6 +8,7 @@ import (
 
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider/claudecode"
+	"github.com/pokegosu-com/pokegosu/libs/go/coder/provider/codex"
 	"github.com/pokegosu-com/pokegosu/libs/go/coder/usage"
 )
 
@@ -245,5 +246,76 @@ func TestRunPassesOtherProvidersThrough(t *testing.T) {
 	}
 	if len(result.Records) != 1 || result.Records[0].MessageID != "x" {
 		t.Errorf("Records = %+v, want the other provider's message kept", result.Records)
+	}
+}
+
+// codexCase copies one file of a shared Codex case into dir.
+func codexCase(t *testing.T, dir, caseName, file string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "tests", "coder-scan-codex", "cases", caseName, "logs", "2025", "05", "12", file))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, file)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func codexOnly() []provider.Provider { return []provider.Provider{codex.New()} }
+
+// A Codex turn has no id, and is kept under its time and what it spent.
+func TestRunKeepsCodexTurnsWhoseLogsAreGone(t *testing.T) {
+	root := t.TempDir()
+	plain := codexCase(t, root, "normal-session", "rollout-2025-05-12T14-00-00-s1.jsonl")
+
+	first, err := Run(Options{Roots: []string{root}, Providers: codexOnly()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := first.Total(); got != 330 {
+		t.Fatalf("first Total() = %d, want 330", got)
+	}
+	if err := os.Remove(plain); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := Run(Options{Roots: []string{root}, Providers: codexOnly(), Kept: first.Records})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := second.Total(); got != 330 {
+		t.Errorf("Total() = %d, want 330", got)
+	}
+	if second.Restored != first.Messages {
+		t.Errorf("Restored = %d, want all %d turns", second.Restored, first.Messages)
+	}
+}
+
+// Codex compresses a week-old log and deletes the plain one. The turns are
+// read from the compressed file, so the kept ones do not count again.
+func TestRunDoesNotRestoreCodexTurnsACompressedLogHolds(t *testing.T) {
+	root := t.TempDir()
+	plain := codexCase(t, root, "normal-session", "rollout-2025-05-12T14-00-00-s1.jsonl")
+
+	first, err := Run(Options{Roots: []string{root}, Providers: codexOnly()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(plain); err != nil {
+		t.Fatal(err)
+	}
+	codexCase(t, root, "compressed-session", "rollout-2025-05-12T14-00-00-s1.jsonl.zst")
+
+	second, err := Run(Options{Roots: []string{root}, Providers: codexOnly(), Kept: first.Records})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := second.Total(); got != 330 {
+		t.Errorf("Total() = %d, want 330, not 660", got)
+	}
+	if second.Restored != 0 {
+		t.Errorf("Restored = %d, want 0", second.Restored)
 	}
 }

@@ -24,10 +24,14 @@ export type ServerClient = ReturnType<typeof createServerClient<Database>>
 
 /** Return type is written out: pnpm's isolated node_modules leaves the inferred
  *  Supabase types unnameable from a consuming package. */
-export function createClient(cookies: CookieStore, fetch?: typeof globalThis.fetch): ServerClient {
+export function createClient(
+  cookies: CookieStore,
+  fetch?: typeof globalThis.fetch,
+  project?: { url: string; key: string },
+): ServerClient {
   return createServerClient<Database>(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    project?.url ?? env.NEXT_PUBLIC_SUPABASE_URL,
+    project?.key ?? env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
       cookies,
       global: fetch ? { fetch } : undefined,

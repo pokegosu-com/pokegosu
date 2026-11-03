@@ -20,8 +20,13 @@ import (
 // cache, this is a record: losing it loses nothing while the logs are there,
 // but nothing brings back a message whose log went first.
 //
-// Only Claude Code is kept. Codex's logs name no message, so its records
-// would need another key.
+// Codex is kept the same way. Its logs name no message, so a turn is kept
+// under what the aggregator deduplicates it by, its time and what it spent,
+// as ccusage does. A newer parser that reads a turn's numbers differently
+// gives it another key; while the turn's file is there that changes nothing,
+// but a turn whose file is gone and whose copy survives in another file would
+// then count twice. Codex copies a log only by compressing or archiving it,
+// and a parser change is rare, so the two have to meet for this to happen.
 //
 // It describes this machine's logs, not any server, so it is not thrown
 // away when the machine is enrolled again.
@@ -30,7 +35,7 @@ type Messages struct {
 }
 
 // KeptProviders are the providers whose messages are kept.
-var KeptProviders = map[string]bool{"claude_code": true}
+var KeptProviders = map[string]bool{"claude_code": true, "codex": true}
 
 // MessagesPath returns the record, beside the settings.
 func MessagesPath(settingsPath string) string {
