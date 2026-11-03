@@ -335,9 +335,11 @@ function GosuNotice({ work, busy, act }: { work: Started; busy: boolean; act: Ac
 }
 
 /**
- * Who goes: the choice as a button that opens the list, best paid first. A
- * Pokémon already out on a request is not offered: it stays until done. Nor
- * is the partner: tokens raise it, so it stays home.
+ * Who goes: the choice as a button that opens the list, best paid first, and
+ * among those paid the same the ones without the Helper Ribbon, so a request
+ * goes to a Pokémon still earning one. A Pokémon already out on a request is
+ * not offered: it stays until done. Nor is the partner: tokens raise it, so it
+ * stays home.
  */
 function Picker({
   place,
@@ -355,7 +357,11 @@ function Picker({
   const candidates = work.pokemon
     .filter((p) => p.workplace_id === null && !p.is_main)
     .map((p) => ({ p, offer: p.offers.find((o) => o.workplace_id === place.id)! }))
-    .sort((a, b) => b.offer.points - a.offer.points)
+    .sort(
+      (a, b) =>
+        b.offer.points - a.offer.points ||
+        Number(a.p.ribbons.includes('helper')) - Number(b.p.ribbons.includes('helper')),
+    )
   const [chosen, setChosen] = useState('')
   const [open, setOpen] = useState(false)
   const picked = candidates.find((c) => c.p.id === chosen) ?? candidates[0]
