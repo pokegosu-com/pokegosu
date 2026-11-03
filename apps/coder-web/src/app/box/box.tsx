@@ -102,8 +102,8 @@ const sorts: Record<Sort, (a: Item, b: Item) => number> = {
 function hasTask(item: Item, bag: BagItem[]): boolean {
   if (item.kind === 'egg') return item.e.tokens >= item.e.tokens_needed
   const p = item.p
-  // One out on a request waits until it is back.
-  if (p.workplace_id) return false
+  // One out on a request is marked too: nothing can be done until it is back,
+  // but the box should still say something is waiting for it.
   return (
     p.can_evolve ||
     p.can_receive_egg ||
