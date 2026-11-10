@@ -1,5 +1,5 @@
 import { exactTokens } from '@/lib/format'
-import { ko, type Box } from '@/lib/game'
+import { ko, type Box, type Named } from '@/lib/game'
 import { josa } from '@/lib/josa'
 
 import type { Last, Outcome } from './use-game'
@@ -12,11 +12,6 @@ function nameOf(box: Box | null, companionId: unknown): string {
 function speciesName(box: Box | null, speciesId: unknown): string {
   const found = box?.started ? box.pokemon.find((p) => p.species_id === speciesId) : undefined
   return found ? ko(found) : '포켓몬'
-}
-
-function itemName(box: Box | null, itemId: unknown): string {
-  const found = box?.started ? box.bag.find((b) => b.id === itemId) : undefined
-  return found ? ko(found) : '도구'
 }
 
 /**
@@ -43,13 +38,13 @@ export function say(
     case 'evolve:evolved':
     case 'use_item:evolved': {
       const evolved = `${josa(nameOf(before, id), '이')} ${josa(nameOf(box, id), '으로')} 진화했다.`
-      // Nincada's shell is left in the box, and Shelmet's in the bag.
+      // Nincada's shell is left in the box.
       if (o.shed) return `${evolved} 박스에 ${josa(nameOf(box, o.shed), '이')} 생겼다!`
-      if (o.received) return `${evolved} ${josa(itemName(box, o.received), '을')} 받았다!`
       return evolved
     }
     case 'receive_egg:received':
-      return '알을 받았다!'
+      // An egg of the one it needs says whose; a national egg is a surprise.
+      return o.species ? `${ko(o.species as Named)}의 알을 받았다!` : '알을 받았다!'
     case 'receive_ribbon:received': {
       const ribbonId = action.fn === 'receive_ribbon' ? action.ribbon_id : undefined
       const pokemon = box?.started ? box.pokemon.find((p) => p.id === id) : undefined
