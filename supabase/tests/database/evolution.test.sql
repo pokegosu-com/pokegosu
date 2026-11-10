@@ -13,7 +13,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = extensions, public;
 
-select plan(61);
+select plan(67);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-00000000000a', 'a@test.local');
@@ -131,13 +131,33 @@ select is(pg_temp.next((select poipole from movers)), 'naganadel', 'Poipole lear
 -- The box in place of the party
 -- ------------------------------------------------------------
 create temporary table party as
-select pg_temp.pokemon('pancham', 32) as pancham, pg_temp.pokemon('mantyke', 1) as mantyke;
+select pg_temp.pokemon('pancham', 32) as pancham, pg_temp.pokemon('mantyke', 50) as mantyke;
 
 select is(pg_temp.next((select pancham from party)), null, 'Pancham at Lv.32 needs a Dark type in the box');
 select is(pg_temp.next((select mantyke from party)), null, 'and Mantyke a Remoraid');
-select pg_temp.pokemon('umbreon', 1), pg_temp.pokemon('remoraid', 1);
-select is(pg_temp.next((select pancham from party)) || ' ' || pg_temp.next((select mantyke from party)),
-  'pangoro mantine', 'which once there, they evolve');
+select is(pg_temp.boxed((select mantyke from party)) -> 'needed_egg' ->> 'ko_name', '총어',
+  'so at Lv.50 Mantyke may give a Remoraid egg in place of its own');
+select is(public.receive_egg((select mantyke from party), (select id from public.pokedex_species where slug = 'octillery')),
+  '{"outcome": "not_offered"}'::jsonb, 'but no other');
+create temporary table remoraid_egg as
+select public.receive_egg((select mantyke from party), (select id from public.pokedex_species where slug = 'remoraid')) as outcome;
+select is((select outcome from remoraid_egg) -> 'species' ->> 'ko_name', '총어', 'which it gives when asked');
+select is(
+  (select row(s.slug, c.egg_kind, f.slug, c.hatched_at is null)::text
+     from public.coder_companions c
+     join public.pokedex_species s on s.id = c.species_id
+     join public.pokedex_species f on f.id = c.egg_from
+    where c.id = ((select outcome from remoraid_egg) ->> 'companion_id')::uuid),
+  '(remoraid,national,mantyke,t)', 'a national egg of Remoraid, from Mantyke');
+select is(pg_temp.next((select mantyke from party)), null, 'an egg is not yet a Remoraid in the box');
+update public.coder_companions
+   set species_id = (select id from public.pokedex_species where slug = 'octillery'), hatched_at = now(), level = 25
+ where id = ((select outcome from remoraid_egg) ->> 'companion_id')::uuid;
+select is(pg_temp.next((select mantyke from party)), 'mantine', 'and once it is, Mantyke evolves, an Octillery as well');
+select is(pg_temp.boxed(pg_temp.pokemon('mantyke', 50)) ->> 'needed_egg', null,
+  'with one of the line in the box, Mantyke gives only its own egg');
+select pg_temp.pokemon('umbreon', 1);
+select is(pg_temp.next((select pancham from party)), 'pangoro', 'and Pancham with a Dark type');
 
 
 -- ------------------------------------------------------------
@@ -188,17 +208,15 @@ select is(pg_temp.items((select sliggoo from holders)), 'damp-rock:goodra', 'and
 create temporary table bugs as
 select pg_temp.pokemon('shelmet', 1, null) as shelmet;
 
-select pg_temp.give('linking-cord');
-select is(public.use_item((select shelmet from bugs), 'linking-cord'), '{"outcome": "no_effect"}'::jsonb,
-  'a Linking Cord does nothing to Shelmet with no Karrablast in the box');
+select pg_temp.give('linking-cord', 2);
+select is(public.use_item((select shelmet from bugs), 'linking-cord'),
+  '{"outcome": "evolved", "from": 616, "to": 617}'::jsonb,
+  'a Linking Cord makes Shelmet Accelgor with no Karrablast in the box, and leaves nothing');
 alter table bugs add column karrablast uuid;
 update bugs set karrablast = pg_temp.pokemon('karrablast', 1);
-select is(public.use_item((select shelmet from bugs), 'linking-cord'),
-  '{"outcome": "evolved", "from": 616, "to": 617, "received": "shelmet-shell"}'::jsonb,
-  'with one, Shelmet becomes Accelgor and leaves its shell');
-select is(public.use_item((select karrablast from bugs), 'shelmet-shell'),
+select is(public.use_item((select karrablast from bugs), 'linking-cord'),
   '{"outcome": "evolved", "from": 588, "to": 589}'::jsonb,
-  'which makes Karrablast Escavalier');
+  'and Karrablast Escavalier with no Shelmet');
 
 
 -- ------------------------------------------------------------

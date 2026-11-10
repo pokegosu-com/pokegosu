@@ -1,9 +1,8 @@
 // Draws the bag sprites PokeAPI/sprites has none for into public/drawn: the
-// Linking Cord and Meltan Candy, which the Coder game sells, the Shelmet
-// Shell, which is the game's own, and the items Generation VIII evolves
-// with, Legends: Arceus's and Generation IX's too, which PokeAPI/sprites
-// stops short of. The files are not committed: this script is what they
-// are, and the same run draws the same bytes.
+// Linking Cord and Meltan Candy, which the Coder game sells, and the items
+// Generation VIII evolves with, Legends: Arceus's and Generation IX's too,
+// which PokeAPI/sprites stops short of. The files are not committed: this
+// script is what they are, and the same run draws the same bytes.
 //
 // Each is drawn as the bag sprites are, 30px with a #313131 outline and four
 // tones lit from the top left, so it sits among them. A shape is a function
@@ -201,59 +200,6 @@ function meltanCandy(): Shape[] {
       const normal: Vector = [nx, ny, Math.sqrt(1 - d)]
       const band = Math.abs(normal[0] * axis[0] + normal[1] * axis[1] + normal[2] * axis[2]) < 0.2
       return tone(band ? nut : silver, lit(normal))
-    },
-  ]
-}
-
-/**
- * The Shelmet Shell: the shell Shelmet leaves when it becomes Accelgor, from
- * the side as Shelmet is seen, the coil behind and the spotted brim over the
- * opening it looked out of, now empty.
- */
-function shelmetShell(): Shape[] {
-  const ivory: Palette = ['#ffffff', '#efe8d6', '#cfc5a9', '#9d9277']
-  const spot: Palette = ['#4f7fd0', '#2a5cb4', '#1f4590', '#163266']
-  const ellipse = (x: number, y: number, cx: number, cy: number, rx: number, ry: number, a = 0) => {
-    const dx = x - cx
-    const dy = y - cy
-    const u = (dx * Math.cos(a) + dy * Math.sin(a)) / rx
-    const v = (-dx * Math.sin(a) + dy * Math.cos(a)) / ry
-    return { u, v, d: u * u + v * v }
-  }
-  const ball = (palette: Palette, e: { u: number; v: number; d: number }) =>
-    tone(palette, lit([e.u, e.v, Math.sqrt(Math.max(0, 1 - e.d))]))
-  return [
-    // The coil, a ball with its turn and its eye darker.
-    (x, y) => {
-      const e = ellipse(x, y, 19.4, 12.6, 7.6, 7.6)
-      if (e.d > 1) return null
-      // Lit a little more than a ball, so its turns show on its dark side.
-      const r = Math.sqrt(e.d)
-      if (Math.abs(r - 0.66) < 0.09 || Math.abs(r - 0.33) < 0.09) return ivory[3]
-      return tone(ivory, lit([e.u, e.v, Math.sqrt(1 - e.d)]) + 0.25)
-    },
-    // The opening it looked out of, empty, so what is behind shows through.
-    (x, y) => (ellipse(x, y, 11.2, 16.4, 6.4, 4.4).d <= 1 ? CLEAR : null),
-    // The lower lip.
-    (x, y) => {
-      const e = ellipse(x, y, 13, 21.2, 6.8, 2.6, 0.12)
-      return e.d <= 1 ? ball(ivory, e) : null
-    },
-    // The brim, tilted up at the front.
-    (x, y) => {
-      const e = ellipse(x, y, 11.6, 11.2, 8.4, 3.2, -0.22)
-      return e.d <= 1 ? ball(ivory, e) : null
-    },
-    // Its spots.
-    (x, y) => {
-      for (const [cx, cy] of [
-        [9.4, 10.8],
-        [14.4, 9.6],
-      ]) {
-        const e = ellipse(x, y, cx, cy, 1.9, 1.1, -0.22)
-        if (e.d <= 1) return tone(spot, lit([e.u * 0.5, -0.4, 0.8]))
-      }
-      return null
     },
   ]
 }
@@ -752,7 +698,6 @@ const MEGA_STONES: Record<string, [Colour, Colour]> = {
 const ITEMS: Record<string, Shape[]> = {
   'linking-cord': linkingCord(),
   'meltan-candy': meltanCandy(),
-  'shelmet-shell': shelmetShell(),
   'tart-apple': apple(['#fbffc2', '#c7e65a', '#93b92e', '#5c7a18']),
   'sweet-apple': apple(['#ffd8cc', '#f26a52', '#c93c32', '#8a1f1c']),
   'cracked-pot': crackedPot(),

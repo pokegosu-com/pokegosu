@@ -9,7 +9,8 @@ import { claimable, timeZone, type Box, type Curve } from '@/lib/game'
 type Action =
   | { fn: 'start_game' }
   | { fn: 'claim'; companion_id: string; tokens: number }
-  | { fn: 'hatch' | 'evolve' | 'receive_egg' | 'set_main'; companion_id: string }
+  | { fn: 'hatch' | 'evolve' | 'set_main'; companion_id: string }
+  | { fn: 'receive_egg'; companion_id: string; species_id?: number }
   | { fn: 'receive_ribbon'; companion_id: string; ribbon_id: string }
   | { fn: 'set_markings'; companion_id: string; markings: number }
   | { fn: 'use_item'; companion_id: string; item_id: string }

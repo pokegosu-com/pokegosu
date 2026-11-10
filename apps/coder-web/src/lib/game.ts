@@ -80,6 +80,12 @@ export type Pokemon = {
   /** The workplace it is working at, if any. */
   workplace_id: string | null
   can_receive_egg: boolean
+  /**
+   * The egg it may give in place of its Lv.50 one, while it may give one: of
+   * the Pokémon its evolution needs in the box, when the box has none, as
+   * Mantyke's Remoraid.
+   */
+  needed_egg: ({ species_id: number } & Named) | null
   ribbons: ({ id: string; received_at: string } & Named)[]
   ribbons_waiting: ({ id: string } & Named)[]
   created_at: string

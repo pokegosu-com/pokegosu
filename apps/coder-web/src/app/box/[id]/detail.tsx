@@ -263,6 +263,22 @@ function PokemonDetail({
                     알 받기
                   </button>
                 )}
+                {p.needed_egg && (
+                  <button
+                    type="button"
+                    className={primary}
+                    disabled={busy || working}
+                    onClick={() =>
+                      act({
+                        fn: 'receive_egg',
+                        companion_id: p.id,
+                        species_id: p.needed_egg!.species_id,
+                      })
+                    }
+                  >
+                    {ko(p.needed_egg)}의 알 받기
+                  </button>
+                )}
                 {p.ribbons_waiting.map((r) => (
                   <button
                     key={r.id}

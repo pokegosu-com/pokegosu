@@ -1729,6 +1729,12 @@ export type Database = {
           species_id: number
         }[]
       }
+      needed_egg: {
+        Args: {
+          pokemon: Database['public']['Tables']['coder_companions']['Row']
+        }
+        Returns: number
+      }
       normalize_code: { Args: { typed: string }; Returns: string }
       open_workplaces: { Args: { owner: string }; Returns: undefined }
       owned_line: {
@@ -1738,7 +1744,10 @@ export type Database = {
       pending_enrollment: { Args: { code: string }; Returns: Json }
       point_balance: { Args: { owner: string }; Returns: number }
       pokedex_first_form: { Args: { species_id: number }; Returns: number }
-      receive_egg: { Args: { companion_id: string }; Returns: Json }
+      receive_egg: {
+        Args: { companion_id: string; species_id?: number }
+        Returns: Json
+      }
       receive_ribbon: {
         Args: { companion_id: string; ribbon_id: string }
         Returns: Json
